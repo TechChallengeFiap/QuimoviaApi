@@ -22,6 +22,8 @@
       "vitest/globals",
       "node"
     ],
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true
   }
 }
