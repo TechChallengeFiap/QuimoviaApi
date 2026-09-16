@@ -16,6 +16,6 @@ module.exports = {
       },
     ],
   },
-  collectCoverageFrom: ['src/**/*.ts'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/generated/**'],
   coverageDirectory: './coverage',
 };
