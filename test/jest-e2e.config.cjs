@@ -3,6 +3,7 @@ module.exports = {
   rootDir: '..',
   testEnvironment: 'node',
   testRegex: '.*\\.e2e-spec\\.ts$',
+  testTimeout: 15000,
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
