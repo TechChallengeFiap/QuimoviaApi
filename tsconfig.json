@@ -18,10 +18,7 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": [
-      "vitest/globals",
-      "node"
-    ],
+    "types": ["jest", "node"],
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true
