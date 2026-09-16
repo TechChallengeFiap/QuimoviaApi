@@ -6,10 +6,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
+    .setTitle('QuimoviaAPI')
+    .setDescription('A QuimoviaAPI é uma API REST desenvolvida para o gerenciamento de produtos químicos, oferecendo recursos para cadastro, consulta, atualização e exclusão de produtos e suas respectivas informações.')
     .setVersion('1.0')
-    .addTag('cats')
+    .addTag('Produtos Químicos', 'Operações relacionadas aos produtos químicos')
+    .addTag('Cargas Químicas', 'Operações relacionadas as cargas químicas')
+    .addTag('Inspeções', 'Operações relacionadas as inspeções')
+    .addTag('Documentação das Cargas', 'Operações relacionadas as documentações das cargas')
+    .addTag('Operações dos usuários', 'Operações relacionadas as operações dos usuários')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
