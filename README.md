@@ -57,6 +57,22 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## CI/CD com GitHub Actions
+
+O projeto possui um fluxo automatizado de Integração Contínua (CI) configurado via GitHub Actions em [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+O pipeline é disparado automaticamente a cada `push` ou `pull_request` direcionado às branches `main`, `master` e `develop`, além de permitir disparo manual (`workflow_dispatch`).
+
+### Etapas do Pipeline:
+1. **Instalação de Dependências**: Execução de `npm ci` em ambiente Node.js 24 com cache de dependências.
+2. **Validação Básica do Projeto**: Análise estática e linting com `npm run lint` (Oxlint).
+3. **Geração do Cliente Prisma**: Execução de `npx prisma generate` para criação dos artefatos de acesso a dados.
+4. **Verificação de Build e Compilação**: Verificação da compilação da aplicação com `npm run build` (NestJS CLI / TypeScript).
+5. **Execução de Testes**:
+   - **Testes Unitários**: `npm test`
+   - **Testes de Integração / E2E**: `npm run test:e2e`
+   - **Cobertura de Código**: `npm run test:cov` (com upload automático de artefatos de cobertura no GitHub).
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
