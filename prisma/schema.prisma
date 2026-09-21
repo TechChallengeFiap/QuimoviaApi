@@ -11,3 +11,31 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+enum PerfilUsuario {
+  OPERADOR_PORTUARIO
+  EMBARCADOR_MOTORISTA
+  RESPONSAVEL_TECNICO
+  GESTOR_OPERACIONAL
+  ADMINISTRADOR_SISTEMA
+}
+
+enum StatusUsuario {
+  ATIVO
+  INATIVO
+  BLOQUEADO
+}
+
+model Usuario {
+  id           String        @id @default(uuid())
+  nome         String        @db.VarChar(120)
+  email        String        @unique @db.VarChar(180)
+  senhaHash    String        @db.VarChar(255)
+  perfil       PerfilUsuario
+  status       StatusUsuario @default(ATIVO)
+  ultimoLogin  DateTime?
+  criadoEm     DateTime      @default(now())
+  atualizadoEm DateTime      @updatedAt
+
+  @@map("usuarios")
+}
