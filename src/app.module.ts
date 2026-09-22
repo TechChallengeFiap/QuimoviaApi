@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.ts';
 import { AppService } from './app.service.ts';
-import { PrismaModule } from './prisma/prisma.module.ts';
+import { PrismaModule } from './shared/infrastructure/persistence/prisma/prisma.module.ts';
 
 @Module({
   imports: [PrismaModule],
