@@ -21,6 +21,9 @@
     "types": ["jest", "node"],
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "resolveJsonModule": true
   }
 }
