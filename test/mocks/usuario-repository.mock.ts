@@ -2,8 +2,8 @@ import type {
   FiltrosDeBuscaDeUsuarios,
   PaginaDeUsuarios,
   UsuarioRepository,
-} from '../../src/application/usuarios/contracts/usuario.repository.js';
-import type { Usuario } from '../../src/domain/usuarios/entities/usuario.entity.js';
+} from '../../src/modules/identidade-acesso/domain/repositories/usuario.repository.js';
+import type { Usuario } from '../../src/modules/identidade-acesso/domain/entities/usuario.entity.js';
 
 /** Implementação em memória de UsuarioRepository, para uso nos testes. */
 export class UsuarioRepositoryMock implements UsuarioRepository {
