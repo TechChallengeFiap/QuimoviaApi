@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-import { PerfilUsuario } from '../../../domain/usuarios/value-objects/perfil-usuario.js';
-import { StatusUsuario } from '../../../domain/usuarios/value-objects/status-usuario.js';
+import { PerfilUsuario } from '#domain/usuarios/value-objects/perfil-usuario.js';
+import { StatusUsuario } from '#domain/usuarios/value-objects/status-usuario.js';
 
 export class CriarUsuarioDto {
   @ApiProperty({ example: 'Maria Silva', minLength: 3 })

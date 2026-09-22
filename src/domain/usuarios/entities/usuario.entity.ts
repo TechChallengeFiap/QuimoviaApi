@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { RegraDeNegocioError } from '../../../shared/errors/dominio.error.js';
+import { RegraDeNegocioError } from '#shared/errors/dominio.error.js';
 import { PerfilUsuario } from '../value-objects/perfil-usuario.js';
 import { StatusUsuario } from '../value-objects/status-usuario.js';
 

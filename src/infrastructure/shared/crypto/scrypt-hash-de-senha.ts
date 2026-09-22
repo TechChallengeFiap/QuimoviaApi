@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { HashDeSenha } from '../../../application/usuarios/contracts/hash-de-senha.js';
+import { HashDeSenha } from '#application/usuarios/contracts/hash-de-senha.js';
 
 const derivarChave = promisify(scrypt) as (
   senha: string,

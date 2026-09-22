@@ -12,12 +12,12 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AtualizarUsuarioUseCase } from '../../../application/usuarios/use-cases/atualizar-usuario.use-case.js';
-import { BuscarUsuarioPorIdUseCase } from '../../../application/usuarios/use-cases/buscar-usuario-por-id.use-case.js';
-import { CriarUsuarioUseCase } from '../../../application/usuarios/use-cases/criar-usuario.use-case.js';
-import { ListarUsuariosUseCase } from '../../../application/usuarios/use-cases/listar-usuarios.use-case.js';
-import { RemoverUsuarioUseCase } from '../../../application/usuarios/use-cases/remover-usuario.use-case.js';
-import { DominioExceptionFilter } from '../../shared/filters/dominio-exception.filter.js';
+import { AtualizarUsuarioUseCase } from '#application/usuarios/use-cases/atualizar-usuario.use-case.js';
+import { BuscarUsuarioPorIdUseCase } from '#application/usuarios/use-cases/buscar-usuario-por-id.use-case.js';
+import { CriarUsuarioUseCase } from '#application/usuarios/use-cases/criar-usuario.use-case.js';
+import { ListarUsuariosUseCase } from '#application/usuarios/use-cases/listar-usuarios.use-case.js';
+import { RemoverUsuarioUseCase } from '#application/usuarios/use-cases/remover-usuario.use-case.js';
+import { DominioExceptionFilter } from '#presentation/shared/filters/dominio-exception.filter.js';
 import { AtualizarUsuarioDto } from '../dtos/atualizar-usuario.dto.js';
 import { CriarUsuarioDto } from '../dtos/criar-usuario.dto.js';
 import { ListarUsuariosQueryDto } from '../dtos/listar-usuarios-query.dto.js';

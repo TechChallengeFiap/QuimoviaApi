@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { PerfilUsuario } from '../../../domain/usuarios/value-objects/perfil-usuario.js';
-import { StatusUsuario } from '../../../domain/usuarios/value-objects/status-usuario.js';
+import { PerfilUsuario } from '#domain/usuarios/value-objects/perfil-usuario.js';
+import { StatusUsuario } from '#domain/usuarios/value-objects/status-usuario.js';
 import { USUARIO_REPOSITORY } from '../contracts/usuario.repository.js';
 import type {
   PaginaDeUsuarios,

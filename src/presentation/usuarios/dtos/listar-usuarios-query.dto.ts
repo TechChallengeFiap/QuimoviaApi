@@ -1,8 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
-import { PerfilUsuario } from '../../../domain/usuarios/value-objects/perfil-usuario.js';
-import { StatusUsuario } from '../../../domain/usuarios/value-objects/status-usuario.js';
+import { PerfilUsuario } from '#domain/usuarios/value-objects/perfil-usuario.js';
+import { StatusUsuario } from '#domain/usuarios/value-objects/status-usuario.js';
 
 export class ListarUsuariosQueryDto {
   @ApiPropertyOptional({ enum: PerfilUsuario })

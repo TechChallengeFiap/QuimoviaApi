@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Usuario } from '../../../domain/usuarios/entities/usuario.entity.js';
-import { PerfilUsuario } from '../../../domain/usuarios/value-objects/perfil-usuario.js';
-import { StatusUsuario } from '../../../domain/usuarios/value-objects/status-usuario.js';
+import { Usuario } from '#domain/usuarios/entities/usuario.entity.js';
+import { PerfilUsuario } from '#domain/usuarios/value-objects/perfil-usuario.js';
+import { StatusUsuario } from '#domain/usuarios/value-objects/status-usuario.js';
 
 /**
  * Representação de um usuário exposta pela API.

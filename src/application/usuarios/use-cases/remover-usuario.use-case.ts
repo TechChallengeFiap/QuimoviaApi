@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { RecursoNaoEncontradoError } from '../../../shared/errors/dominio.error.js';
+import { RecursoNaoEncontradoError } from '#shared/errors/dominio.error.js';
 import { USUARIO_REPOSITORY } from '../contracts/usuario.repository.js';
 import type { UsuarioRepository } from '../contracts/usuario.repository.js';
 

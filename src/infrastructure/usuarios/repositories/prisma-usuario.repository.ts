@@ -3,12 +3,12 @@ import {
   FiltrosDeBuscaDeUsuarios,
   PaginaDeUsuarios,
   UsuarioRepository,
-} from '../../../application/usuarios/contracts/usuario.repository.js';
-import { Usuario } from '../../../domain/usuarios/entities/usuario.entity.js';
-import { PerfilUsuario } from '../../../domain/usuarios/value-objects/perfil-usuario.js';
-import { StatusUsuario } from '../../../domain/usuarios/value-objects/status-usuario.js';
-import type { UsuarioModel as UsuarioPersistido } from '../../../generated/prisma/models.js';
-import { PrismaService } from '../../../prisma/prisma.service.js';
+} from '#application/usuarios/contracts/usuario.repository.js';
+import { Usuario } from '#domain/usuarios/entities/usuario.entity.js';
+import { PerfilUsuario } from '#domain/usuarios/value-objects/perfil-usuario.js';
+import { StatusUsuario } from '#domain/usuarios/value-objects/status-usuario.js';
+import type { UsuarioModel as UsuarioPersistido } from '#generated/prisma/models.js';
+import { PrismaService } from '#prisma-service/prisma.service.js';
 
 @Injectable()
 export class PrismaUsuarioRepository implements UsuarioRepository {

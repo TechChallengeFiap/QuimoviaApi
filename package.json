@@ -6,6 +6,15 @@
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
+  "imports": {
+    "#domain/*": "./dist/domain/*",
+    "#application/*": "./dist/application/*",
+    "#infrastructure/*": "./dist/infrastructure/*",
+    "#presentation/*": "./dist/presentation/*",
+    "#shared/*": "./dist/shared/*",
+    "#prisma-service/*": "./dist/prisma/*",
+    "#generated/*": "./dist/generated/*"
+  },
   "scripts": {
     "build": "nest build",
     "deploy": "nest deploy",

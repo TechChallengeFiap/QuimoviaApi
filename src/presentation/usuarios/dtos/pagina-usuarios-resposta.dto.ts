@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PaginaDeUsuarios } from '../../../application/usuarios/contracts/usuario.repository.js';
+import { PaginaDeUsuarios } from '#application/usuarios/contracts/usuario.repository.js';
 import { UsuarioRespostaDto } from './usuario-resposta.dto.js';
 
 export class PaginaUsuariosRespostaDto {

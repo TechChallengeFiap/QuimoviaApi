@@ -12,7 +12,7 @@ import {
   DominioError,
   RecursoNaoEncontradoError,
   RegraDeNegocioError,
-} from '../../../shared/errors/dominio.error.js';
+} from '#shared/errors/dominio.error.js';
 
 /**
  * Traduz os erros de domínio/aplicação em respostas HTTP apropriadas,

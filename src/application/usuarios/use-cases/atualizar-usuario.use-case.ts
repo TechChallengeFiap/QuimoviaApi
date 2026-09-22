@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Usuario } from '../../../domain/usuarios/entities/usuario.entity.js';
-import { PerfilUsuario } from '../../../domain/usuarios/value-objects/perfil-usuario.js';
-import { StatusUsuario } from '../../../domain/usuarios/value-objects/status-usuario.js';
+import { Usuario } from '#domain/usuarios/entities/usuario.entity.js';
+import { PerfilUsuario } from '#domain/usuarios/value-objects/perfil-usuario.js';
+import { StatusUsuario } from '#domain/usuarios/value-objects/status-usuario.js';
 import {
   ConflitoError,
   RecursoNaoEncontradoError,
-} from '../../../shared/errors/dominio.error.js';
+} from '#shared/errors/dominio.error.js';
 import { HASH_DE_SENHA } from '../contracts/hash-de-senha.js';
 import type { HashDeSenha } from '../contracts/hash-de-senha.js';
 import { USUARIO_REPOSITORY } from '../contracts/usuario.repository.js';
