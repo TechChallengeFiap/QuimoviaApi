@@ -133,4 +133,22 @@ describe('UsersController (e2e)', () => {
         expect(body.status).toBe('ACTIVE');
       });
   });
+
+  it('remove um usuário e passa a retornar 404 nas buscas seguintes', async () => {
+    const created = await request(app.getHttpServer()).post('/usuarios').send({
+      name: 'Maria Silva',
+      email: 'maria.delete@quimovia.com',
+      password: 'S3nhaForte!',
+      role: 'PORT_OPERATOR',
+    });
+
+    const id = created.body.id as string;
+
+    await request(app.getHttpServer()).delete(`/usuarios/${id}`).expect(204);
+    await request(app.getHttpServer()).get(`/usuarios/${id}`).expect(404);
+  });
+
+  it('retorna 404 ao remover um usuário inexistente', async () => {
+    await request(app.getHttpServer()).delete('/usuarios/id-inexistente').expect(404);
+  });
 });

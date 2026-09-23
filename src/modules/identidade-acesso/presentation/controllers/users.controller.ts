@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   HttpStatus,
   Param,
   Patch,
@@ -11,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateUserUseCase } from '../../application/use-cases/users/create-user.use-case.js';
+import { DeleteUserUseCase } from '../../application/use-cases/users/delete-user.use-case.js';
 import { FindUserByIdUseCase } from '../../application/use-cases/users/find-user-by-id.use-case.js';
 import { ListUsersUseCase } from '../../application/use-cases/users/list-users.use-case.js';
 import { UpdateUserUseCase } from '../../application/use-cases/users/update-user.use-case.js';
@@ -30,6 +33,7 @@ export class UsersController {
     private readonly listUsers: ListUsersUseCase,
     private readonly findUserById: FindUserByIdUseCase,
     private readonly updateUser: UpdateUserUseCase,
+    private readonly deleteUser: DeleteUserUseCase,
   ) {}
 
   @Post()
@@ -71,5 +75,15 @@ export class UsersController {
   ): Promise<UserResponseDto> {
     const user = await this.updateUser.execute(id, dto);
     return UserResponseDto.fromEntity(user);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove um usuário' })
+  @ApiParam({ name: 'id' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Usuário não encontrado' })
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.deleteUser.execute(id);
   }
 }

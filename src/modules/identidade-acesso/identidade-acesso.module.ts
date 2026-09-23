@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CreateUserUseCase } from './application/use-cases/users/create-user.use-case.js';
+import { DeleteUserUseCase } from './application/use-cases/users/delete-user.use-case.js';
 import { FindUserByIdUseCase } from './application/use-cases/users/find-user-by-id.use-case.js';
 import { ListUsersUseCase } from './application/use-cases/users/list-users.use-case.js';
 import { UpdateUserUseCase } from './application/use-cases/users/update-user.use-case.js';
@@ -16,6 +17,7 @@ import { UsersController } from './presentation/controllers/users.controller.js'
     ListUsersUseCase,
     FindUserByIdUseCase,
     UpdateUserUseCase,
+    DeleteUserUseCase,
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
     { provide: PASSWORD_HASHER, useClass: ScryptPasswordHasher },
   ],
