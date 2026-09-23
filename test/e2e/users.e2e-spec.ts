@@ -73,4 +73,36 @@ describe('UsersController (e2e)', () => {
       .send({ name: 'Ok', email: 'invalido', password: '123', role: 'INEXISTENTE' })
       .expect(400);
   });
+
+  it('busca um usuário pelo id e retorna 404 para id inexistente', async () => {
+    const created = await request(app.getHttpServer()).post('/usuarios').send({
+      name: 'Maria Silva',
+      email: 'maria.find@quimovia.com',
+      password: 'S3nhaForte!',
+      role: 'PORT_OPERATOR',
+    });
+
+    await request(app.getHttpServer())
+      .get(`/usuarios/${created.body.id}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.email).toBe('maria.find@quimovia.com');
+      });
+
+    await request(app.getHttpServer()).get('/usuarios/id-inexistente').expect(404);
+  });
+
+  it('lista usuários paginados', async () => {
+    await request(app.getHttpServer()).post('/usuarios').send({
+      name: 'Maria Silva',
+      email: 'maria.list@quimovia.com',
+      password: 'S3nhaForte!',
+      role: 'PORT_OPERATOR',
+    });
+
+    const response = await request(app.getHttpServer()).get('/usuarios').expect(200);
+
+    expect(response.body).toMatchObject({ page: 1, pageSize: 20 });
+    expect(response.body.items.length).toBeGreaterThanOrEqual(1);
+  });
 });
