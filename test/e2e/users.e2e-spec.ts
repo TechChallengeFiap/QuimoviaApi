@@ -105,4 +105,32 @@ describe('UsersController (e2e)', () => {
     expect(response.body).toMatchObject({ page: 1, pageSize: 20 });
     expect(response.body.items.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('atualiza um usuário, incluindo bloquear e desbloquear', async () => {
+    const created = await request(app.getHttpServer()).post('/usuarios').send({
+      name: 'Maria Silva',
+      email: 'maria.update@quimovia.com',
+      password: 'S3nhaForte!',
+      role: 'PORT_OPERATOR',
+    });
+
+    const id = created.body.id as string;
+
+    await request(app.getHttpServer())
+      .patch(`/usuarios/${id}`)
+      .send({ name: 'Maria Souza', status: 'BLOCKED' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.name).toBe('Maria Souza');
+        expect(body.status).toBe('BLOCKED');
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/usuarios/${id}`)
+      .send({ status: 'ACTIVE' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.status).toBe('ACTIVE');
+      });
+  });
 });
