@@ -11,3 +11,31 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+enum UserRole {
+  PORT_OPERATOR
+  SHIPPER_DRIVER
+  TECHNICAL_MANAGER
+  OPERATIONS_MANAGER
+  SYSTEM_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String     @db.VarChar(120)
+  email        String     @unique @db.VarChar(180)
+  passwordHash String     @db.VarChar(255)
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("users")
+}
