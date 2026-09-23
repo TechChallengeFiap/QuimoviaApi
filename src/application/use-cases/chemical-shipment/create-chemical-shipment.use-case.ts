@@ -1,8 +1,8 @@
 import {
   ChemicalShipmentVO,
   CreateChemicalShipmentVO,
-} from '../../../domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { ChemicalShipmentRepository } from '../../../infrastructure/repositories/chemical-shipment.repository.ts';
+} from '@/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { ChemicalShipmentRepository } from '@/infrastructure/repositories/chemical-shipment.repository.js';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()

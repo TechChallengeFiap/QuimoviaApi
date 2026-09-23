@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../shared/infrastructure/persistence/prisma/prisma.service.ts';
-import type { ChemicalShipmentModel } from '../../generated/prisma/models.ts';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import type { ChemicalShipmentModel } from '@/generated/prisma/models.js';
 import {
   ChemicalShipmentVO,
   CreateChemicalShipmentVO,
-} from '../../domain/entities/chemical-shipment/chemical-shipment.entity.ts';
+} from '@/domain/entities/chemical-shipment/chemical-shipment.entity.js';
 
 @Injectable()
 export class ChemicalShipmentRepository {

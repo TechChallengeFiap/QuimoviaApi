@@ -31,3 +31,8 @@ model ChemicalShipment {
   updatedAt         DateTime       @updatedAt
   deletedAt         DateTime?
 }
+
+model Teste {
+  id   String @id @default(uuid())
+  nome String
+}

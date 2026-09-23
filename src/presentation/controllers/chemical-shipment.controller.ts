@@ -7,8 +7,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
-import { CreateChemicalShipmentDTO } from '../dtos/chemical-shipment/create-chemical-shipment.dto.ts';
+import { CreateChemicalShipmentUseCase } from '@/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.js';
+import { CreateChemicalShipmentDTO } from '@/presentation/dtos/chemical-shipment/create-chemical-shipment.dto.js';
 
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
