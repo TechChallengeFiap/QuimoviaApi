@@ -6,13 +6,8 @@ module.exports = {
   testTimeout: 15000,
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
-    // Aliases de src/shared e src/generated (espelham o campo "imports" do
-    // package.json, que aponta para dist/ em runtime; nos testes
-    // resolvemos direto para src/).
     '^@/(.*)\\.js$': '<rootDir>/src/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^#shared/(.*)\\.js$': '<rootDir>/src/shared/$1',
-    '^#generated/(.*)\\.js$': '<rootDir>/src/generated/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
