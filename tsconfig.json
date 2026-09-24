@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "preserve",
-    "moduleResolution": "bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
@@ -21,6 +21,9 @@
     "types": ["jest", "node"],
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "resolveJsonModule": true
   }
 }

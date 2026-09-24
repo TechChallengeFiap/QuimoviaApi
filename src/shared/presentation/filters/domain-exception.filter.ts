@@ -12,7 +12,7 @@ import {
   ConflictError,
   DomainError,
   ResourceNotFoundError,
-} from '../../domain/errors/domain.error.js';
+} from '@/shared/domain/errors/domain.error.js';
 
 /**
  * Traduz os erros de domínio/aplicação em respostas HTTP apropriadas,

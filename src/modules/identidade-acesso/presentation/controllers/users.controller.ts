@@ -12,17 +12,17 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CreateUserUseCase } from '../../application/use-cases/users/create-user.use-case.js';
-import { DeleteUserUseCase } from '../../application/use-cases/users/delete-user.use-case.js';
-import { FindUserByIdUseCase } from '../../application/use-cases/users/find-user-by-id.use-case.js';
-import { ListUsersUseCase } from '../../application/use-cases/users/list-users.use-case.js';
-import { UpdateUserUseCase } from '../../application/use-cases/users/update-user.use-case.js';
-import { DomainExceptionFilter } from '#shared/presentation/filters/domain-exception.filter.js';
-import { CreateUserDto } from '../dtos/create-user.dto.js';
-import { ListUsersQueryDto } from '../dtos/list-users-query.dto.js';
-import { UpdateUserDto } from '../dtos/update-user.dto.js';
-import { UserPageResponseDto } from '../dtos/user-page-response.dto.js';
-import { UserResponseDto } from '../dtos/user-response.dto.js';
+import { CreateUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/create-user.use-case.js';
+import { DeleteUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/delete-user.use-case.js';
+import { FindUserByIdUseCase } from '@/modules/identidade-acesso/application/use-cases/users/find-user-by-id.use-case.js';
+import { ListUsersUseCase } from '@/modules/identidade-acesso/application/use-cases/users/list-users.use-case.js';
+import { UpdateUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/update-user.use-case.js';
+import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
+import { CreateUserDto } from '@/modules/identidade-acesso/presentation/dtos/create-user.dto.js';
+import { ListUsersQueryDto } from '@/modules/identidade-acesso/presentation/dtos/list-users-query.dto.js';
+import { UpdateUserDto } from '@/modules/identidade-acesso/presentation/dtos/update-user.dto.js';
+import { UserPageResponseDto } from '@/modules/identidade-acesso/presentation/dtos/user-page-response.dto.js';
+import { UserResponseDto } from '@/modules/identidade-acesso/presentation/dtos/user-response.dto.js';
 
 @ApiTags('Operações dos usuários')
 @Controller('usuarios')

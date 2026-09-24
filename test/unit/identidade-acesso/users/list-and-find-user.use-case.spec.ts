@@ -1,8 +1,8 @@
-import { FindUserByIdUseCase } from '../../../../src/modules/identidade-acesso/application/use-cases/users/find-user-by-id.use-case.js';
-import { ListUsersUseCase } from '../../../../src/modules/identidade-acesso/application/use-cases/users/list-users.use-case.js';
-import { User } from '../../../../src/modules/identidade-acesso/domain/entities/user.entity.js';
-import { UserRole } from '../../../../src/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { ResourceNotFoundError } from '../../../../src/shared/domain/errors/domain.error.js';
+import { FindUserByIdUseCase } from '@/modules/identidade-acesso/application/use-cases/users/find-user-by-id.use-case.js';
+import { ListUsersUseCase } from '@/modules/identidade-acesso/application/use-cases/users/list-users.use-case.js';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
 
 describe('FindUserByIdUseCase', () => {

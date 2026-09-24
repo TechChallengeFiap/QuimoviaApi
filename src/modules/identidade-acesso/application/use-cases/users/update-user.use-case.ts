@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { User } from '../../../domain/entities/user.entity.js';
-import { UserRole } from '../../../domain/enums/user-role.enum.js';
-import { UserStatus } from '../../../domain/enums/user-status.enum.js';
-import { ConflictError, ResourceNotFoundError } from '#shared/domain/errors/domain.error.js';
-import { PASSWORD_HASHER } from '../../contracts/password-hasher.contract.js';
-import type { PasswordHasher } from '../../contracts/password-hasher.contract.js';
-import { USER_REPOSITORY } from '../../../domain/repositories/user.repository.js';
-import type { UserRepository } from '../../../domain/repositories/user.repository.js';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
+import { ConflictError, ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { PASSWORD_HASHER } from '@/modules/identidade-acesso/application/contracts/password-hasher.contract.js';
+import type { PasswordHasher } from '@/modules/identidade-acesso/application/contracts/password-hasher.contract.js';
+import { USER_REPOSITORY } from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
+import type { UserRepository } from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
 
 export interface UpdateUserInput {
   name?: string;

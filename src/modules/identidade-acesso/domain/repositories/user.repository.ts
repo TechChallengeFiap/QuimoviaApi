@@ -1,6 +1,6 @@
-import { User } from '../entities/user.entity.js';
-import { UserRole } from '../enums/user-role.enum.js';
-import { UserStatus } from '../enums/user-status.enum.js';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
 
 export interface UserSearchFilters {
   role?: UserRole;

@@ -2,16 +2,15 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { App } from 'supertest/types';
-import { PASSWORD_HASHER } from '../../src/modules/identidade-acesso/application/contracts/password-hasher.contract.js';
-import { USER_REPOSITORY } from '../../src/modules/identidade-acesso/domain/repositories/user.repository.js';
-import { IdentidadeAcessoModule } from '../../src/modules/identidade-acesso/identidade-acesso.module.js';
-import { DomainExceptionFilter } from '../../src/shared/presentation/filters/domain-exception.filter.js';
+import { PASSWORD_HASHER } from '@/modules/identidade-acesso/application/contracts/password-hasher.contract.js';
+import { USER_REPOSITORY } from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
+import { IdentidadeAcessoModule } from '@/modules/identidade-acesso/identidade-acesso.module.js';
+import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 
 describe('UsersController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
