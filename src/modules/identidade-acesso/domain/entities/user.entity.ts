@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { BusinessRuleError } from '#shared/domain/errors/domain.error.js';
-import { UserRole } from '../enums/user-role.enum.js';
-import { UserStatus } from '../enums/user-status.enum.js';
+import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
 
 const MIN_NAME_LENGTH = 3;
 const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

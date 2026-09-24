@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '../../domain/entities/user.entity.js';
-import { UserRole } from '../../domain/enums/user-role.enum.js';
-import { UserStatus } from '../../domain/enums/user-status.enum.js';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
 
 /**
  * Representação de um usuário exposta pela API.

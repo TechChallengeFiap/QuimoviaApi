@@ -3,12 +3,12 @@ import {
   UserRepository,
   UserSearchFilters,
   UserPage,
-} from '../../../domain/repositories/user.repository.js';
-import { User } from '../../../domain/entities/user.entity.js';
-import { UserRole } from '../../../domain/enums/user-role.enum.js';
-import { UserStatus } from '../../../domain/enums/user-status.enum.js';
-import type { UserModel as PersistedUser } from '#generated/prisma/models.js';
-import { PrismaService } from '#shared/infrastructure/persistence/prisma/prisma.service.js';
+} from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
+import type { UserModel as PersistedUser } from '@/generated/prisma/models.js';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {

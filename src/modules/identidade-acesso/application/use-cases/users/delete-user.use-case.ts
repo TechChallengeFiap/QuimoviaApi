@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ResourceNotFoundError } from '#shared/domain/errors/domain.error.js';
-import { USER_REPOSITORY } from '../../../domain/repositories/user.repository.js';
-import type { UserRepository } from '../../../domain/repositories/user.repository.js';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { USER_REPOSITORY } from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
+import type { UserRepository } from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
 
 @Injectable()
 export class DeleteUserUseCase {

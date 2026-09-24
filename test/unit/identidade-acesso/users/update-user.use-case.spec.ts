@@ -1,11 +1,11 @@
-import { UpdateUserUseCase } from '../../../../src/modules/identidade-acesso/application/use-cases/users/update-user.use-case.js';
-import { User } from '../../../../src/modules/identidade-acesso/domain/entities/user.entity.js';
-import { UserRole } from '../../../../src/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { UserStatus } from '../../../../src/modules/identidade-acesso/domain/enums/user-status.enum.js';
+import { UpdateUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/update-user.use-case.js';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
 import {
   ConflictError,
   ResourceNotFoundError,
-} from '../../../../src/shared/domain/errors/domain.error.js';
+} from '@/shared/domain/errors/domain.error.js';
 import { PasswordHasherMock } from '../../../mocks/password-hasher.mock.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
 
