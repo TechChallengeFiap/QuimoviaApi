@@ -6,6 +6,8 @@ module.exports = {
   testTimeout: 15000,
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
+    '^@/(.*)\\.js$': '<rootDir>/src/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
