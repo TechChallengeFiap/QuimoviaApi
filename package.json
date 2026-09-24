@@ -22,7 +22,8 @@
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.config.cjs",
     "migrate:dev": "prisma migrate dev",
     "migrate:generate": "prisma generate",
-    "migrate:deploy": "prisma migrate deploy"
+    "migrate:deploy": "prisma migrate deploy",
+    "prepare": "ts-patch install"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
