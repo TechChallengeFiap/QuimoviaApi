@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ChemicalShipmentController } from '@/presentation/controllers/chemical-shipment.controller.js';
-import { CreateChemicalShipmentUseCase } from '@/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.js';
-import { ChemicalShipmentRepository } from '@/infrastructure/repositories/chemical-shipment.repository.js';
+import { ChemicalShipmentController } from '@/modules/chemical-shipment/presentation/controllers/chemical-shipment.controller.ts';
+import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
+import { ChemicalShipmentRepository } from '@/modules/chemical-shipment/repositories/chemical-shipment.repository.ts';
 
 @Module({
   imports: [],

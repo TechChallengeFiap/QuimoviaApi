@@ -1,6 +1,6 @@
-import { CreateUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/create-user.use-case.js';
-import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { ConflictError } from '@/shared/domain/errors/domain.error.js';
+import { CreateUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/create-user.use-case.ts';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
+import { ConflictError } from '@/shared/domain/errors/domain.error.ts';
 import { PasswordHasherMock } from '../../../mocks/password-hasher.mock.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
 

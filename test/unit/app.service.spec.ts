@@ -1,4 +1,4 @@
-import { AppService } from '@/app.service.js';
+import { AppService } from '@/app.service.ts';
 
 describe('AppService', () => {
   let appService: AppService;

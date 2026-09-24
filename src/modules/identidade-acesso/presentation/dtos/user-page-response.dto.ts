@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserPage } from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
+import { UserPage } from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
 import { UserResponseDto } from './user-response.dto.js';
 
 export class UserPageResponseDto {

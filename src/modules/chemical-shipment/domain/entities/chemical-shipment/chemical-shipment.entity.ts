@@ -1,4 +1,4 @@
-import { StatusShipment } from '@/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
 
 export class ChemicalShipmentVO {
   readonly id: string;

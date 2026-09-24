@@ -1,4 +1,4 @@
-import { ScryptPasswordHasher } from '@/modules/identidade-acesso/infrastructure/services/password-hasher.service.js';
+import { ScryptPasswordHasher } from '@/modules/identidade-acesso/infrastructure/services/password-hasher.service.ts';
 
 describe('ScryptPasswordHasher', () => {
   const passwordHasher = new ScryptPasswordHasher();
