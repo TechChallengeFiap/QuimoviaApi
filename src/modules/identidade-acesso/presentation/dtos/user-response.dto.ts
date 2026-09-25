@@ -8,17 +8,28 @@ import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status
  *
  * Deliberadamente não inclui o hash da senha.
  */
+interface UserResponseDtoData {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class UserResponseDto {
-  @ApiProperty() id: string;
-  @ApiProperty() name: string;
-  @ApiProperty() email: string;
+  @ApiProperty({ type: String }) id: string;
+  @ApiProperty({ type: String }) name: string;
+  @ApiProperty({ type: String }) email: string;
   @ApiProperty({ enum: UserRole }) role: UserRole;
   @ApiProperty({ enum: UserStatus }) status: UserStatus;
   @ApiProperty({ nullable: true, type: String }) lastLoginAt: Date | null;
-  @ApiProperty() createdAt: Date;
-  @ApiProperty() updatedAt: Date;
+  @ApiProperty({ type: Date }) createdAt: Date;
+  @ApiProperty({ type: Date }) updatedAt: Date;
 
-  private constructor(data: UserResponseDto) {
+  private constructor(data: UserResponseDtoData) {
     Object.assign(this, data);
   }
 

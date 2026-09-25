@@ -3,6 +3,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateChemicalShipmentDTO {
   @ApiProperty({
+    type: String,
     description: 'ID do produto',
     example: 'prod-001',
   })
@@ -11,6 +12,7 @@ export class CreateChemicalShipmentDTO {
   productId: string;
 
   @ApiProperty({
+    type: String,
     description: 'ID do usuário responsável',
     example: 'user-001',
   })
@@ -19,6 +21,7 @@ export class CreateChemicalShipmentDTO {
   responsibleUserId: string;
 
   @ApiProperty({
+    type: String,
     description: 'ID da documentação',
     example: 'doc-001',
   })
