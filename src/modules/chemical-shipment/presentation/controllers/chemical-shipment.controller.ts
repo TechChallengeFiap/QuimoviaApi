@@ -1,14 +1,24 @@
-import { Body, Controller, HttpCode, HttpStatus, Inject, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Post,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
 import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/chemical-shipment/create-chemical-shipment.dto.ts';
+import { ChemicalShipmentResponseDto } from '@/modules/chemical-shipment/presentation/dtos/chemical-shipment/chemical-shipment-response.dto.ts';
 
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
@@ -43,18 +53,7 @@ export class ChemicalShipmentController {
   })
   @ApiCreatedResponse({
     description: 'Carga química cadastrada com sucesso.',
-    schema: {
-      example: {
-        id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-        productId: 'prod-001',
-        status: 'ANALYZING',
-        responsibleUserId: 'user-001',
-        documentsIds: 'doc-001',
-        createdAt: '2026-09-22T19:00:00.000Z',
-        updatedAt: '2026-09-22T19:00:00.000Z',
-        deletedAt: null,
-      },
-    },
+    type: ChemicalShipmentResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Dados inválidos fornecidos no corpo da requisição.',
@@ -75,7 +74,9 @@ export class ChemicalShipmentController {
   })
   async createChemicalShipment(
     @Body() chemicalShipment: CreateChemicalShipmentDTO,
-  ) {
-    return this.createChemicalShipmentUseCase.execute(chemicalShipment);
+  ): Promise<ChemicalShipmentResponseDto> {
+    const shipment =
+      await this.createChemicalShipmentUseCase.execute(chemicalShipment);
+    return ChemicalShipmentResponseDto.fromEntity(shipment);
   }
 }
