@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -14,6 +14,7 @@ import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentat
 @ApiTags('Cargas Químicas')
 export class ChemicalShipmentController {
   constructor(
+    @Inject(CreateChemicalShipmentUseCase)
     private readonly createChemicalShipmentUseCase: CreateChemicalShipmentUseCase,
   ) {}
 

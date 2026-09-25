@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   UseFilters,
+  Inject,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/create-user.use-case.ts';
@@ -29,11 +30,11 @@ import { UserResponseDto } from '@/modules/identidade-acesso/presentation/dtos/u
 @UseFilters(DomainExceptionFilter)
 export class UsersController {
   constructor(
-    private readonly createUser: CreateUserUseCase,
-    private readonly listUsers: ListUsersUseCase,
-    private readonly findUserById: FindUserByIdUseCase,
-    private readonly updateUser: UpdateUserUseCase,
-    private readonly deleteUser: DeleteUserUseCase,
+    @Inject(CreateUserUseCase) private readonly createUser: CreateUserUseCase,
+    @Inject(ListUsersUseCase) private readonly listUsers: ListUsersUseCase,
+    @Inject(FindUserByIdUseCase) private readonly findUserById: FindUserByIdUseCase,
+    @Inject(UpdateUserUseCase) private readonly updateUser: UpdateUserUseCase,
+    @Inject(DeleteUserUseCase) private readonly deleteUser: DeleteUserUseCase,
   ) {}
 
   @Post()

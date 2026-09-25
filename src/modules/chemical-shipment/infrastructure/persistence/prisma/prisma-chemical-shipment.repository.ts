@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
 import type { ChemicalShipmentModel as PersistedChemicalShipment } from '@/generated/prisma/models.ts';
 import {
@@ -10,7 +10,9 @@ import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/rep
 export class PrismaChemicalShipmentRepository
   implements ChemicalShipmentRepository
 {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
+  ) {}
 
   async create(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
     const createdChemicalShipment =
@@ -23,7 +25,6 @@ export class PrismaChemicalShipmentRepository
           productId: chemicalShipment.productId,
           responsibleUserId: chemicalShipment.responsibleUserId,
           documentsIds: chemicalShipment.documentsIds,
-          deletedAt: chemicalShipment.deletedAt,
         },
       });
 
