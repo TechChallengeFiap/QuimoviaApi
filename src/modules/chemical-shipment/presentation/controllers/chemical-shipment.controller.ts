@@ -14,6 +14,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
@@ -79,4 +80,11 @@ export class ChemicalShipmentController {
       await this.createChemicalShipmentUseCase.execute(chemicalShipment);
     return ChemicalShipmentResponseDto.fromEntity(shipment);
   }
+
+  // @Get()
+  // @ApiOperation({
+  //   summary: 'Lista todas as cargas químicas',
+  // })
+  // @ApiResponse({status: HttpStatus.OK, type: ChemicalShipmentResponseDto})
+  // @ApiResponse({status: HttpStatus.INTERNAL_SERVER_ERROR, description: 'Erro interno do servidor ao processar a listagem das cargas químicas.'})
 }
