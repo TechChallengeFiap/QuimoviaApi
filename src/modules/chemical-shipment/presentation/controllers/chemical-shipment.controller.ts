@@ -3,8 +3,11 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpException,
   HttpStatus,
   Inject,
+  InternalServerErrorException,
+  Logger,
   Param,
   Post,
   Query,
@@ -31,11 +34,14 @@ import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/applica
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
 import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.ts';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.ts';
+import { DomainError } from '@/shared/domain/errors/domain.error.ts';
 
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
 @UseFilters(DomainExceptionFilter)
 export class ChemicalShipmentController {
+  private readonly logger = new Logger(ChemicalShipmentController.name);
+
   constructor(
     @Inject(CreateChemicalShipmentUseCase)
     private readonly createChemicalShipmentUseCase: CreateChemicalShipmentUseCase,
@@ -99,9 +105,24 @@ export class ChemicalShipmentController {
     )
     chemicalShipment: CreateChemicalShipmentDTO,
   ): Promise<ChemicalShipmentResponseDto> {
-    const shipment =
-      await this.createChemicalShipmentUseCase.execute(chemicalShipment);
-    return ChemicalShipmentResponseDto.fromEntity(shipment);
+    try {
+      const shipment =
+        await this.createChemicalShipmentUseCase.execute(chemicalShipment);
+      return ChemicalShipmentResponseDto.fromEntity(shipment);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao criar carga química: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      if (error instanceof HttpException || error instanceof DomainError) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Erro interno do servidor ao processar a criação da carga química.',
+      );
+    }
   }
 
   @Get()
@@ -165,8 +186,23 @@ export class ChemicalShipmentController {
     )
     query: ListChemicalShipmentsQueryDto,
   ): Promise<ChemicalShipmentPageResponseDto> {
-    const page = await this.listChemicalShipmentsUseCase.execute(query);
-    return ChemicalShipmentPageResponseDto.fromPage(page);
+    try {
+      const page = await this.listChemicalShipmentsUseCase.execute(query);
+      return ChemicalShipmentPageResponseDto.fromPage(page);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao listar cargas químicas: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      if (error instanceof HttpException || error instanceof DomainError) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Erro interno do servidor ao processar a listagem das cargas químicas.',
+      );
+    }
   }
 
   @Get(':id')
@@ -198,7 +234,22 @@ export class ChemicalShipmentController {
   async findChemicalShipmentById(
     @Param('id') id: string,
   ): Promise<ChemicalShipmentResponseDto> {
-    const shipment = await this.findChemicalShipmentByIdUseCase.execute(id);
-    return ChemicalShipmentResponseDto.fromEntity(shipment);
+    try {
+      const shipment = await this.findChemicalShipmentByIdUseCase.execute(id);
+      return ChemicalShipmentResponseDto.fromEntity(shipment);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao buscar carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      if (error instanceof HttpException || error instanceof DomainError) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Erro interno do servidor ao processar a busca da carga química.',
+      );
+    }
   }
 }

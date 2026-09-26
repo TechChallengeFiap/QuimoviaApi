@@ -3,11 +3,13 @@ import {
   CreateChemicalShipmentData,
 } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
 
 @Injectable()
 export class CreateChemicalShipmentUseCase {
+  private readonly logger = new Logger(CreateChemicalShipmentUseCase.name);
+
   constructor(
     @Inject(CHEMICAL_SHIPMENT_REPOSITORY) private readonly chemicalShipments: ChemicalShipmentRepository,
   ) {}
@@ -15,9 +17,17 @@ export class CreateChemicalShipmentUseCase {
   async execute(
     input: CreateChemicalShipmentData,
   ): Promise<ChemicalShipment> {
-    this.validateInput(input);
-    const chemicalShipment = ChemicalShipment.create(input);
-    return this.chemicalShipments.create(chemicalShipment);
+    try {
+      this.validateInput(input);
+      const chemicalShipment = ChemicalShipment.create(input);
+      return await this.chemicalShipments.create(chemicalShipment);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao executar criação da carga química: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
   }
 
   private validateInput(input: CreateChemicalShipmentData): void {
