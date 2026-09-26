@@ -2,7 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.ts';
 import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
 import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.ts';
-import { ConflictError, ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
+import {
+  ConflictError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.ts';
 import { PASSWORD_HASHER } from '@/modules/identidade-acesso/application/contracts/password-hasher.contract.ts';
 import type { PasswordHasher } from '@/modules/identidade-acesso/application/contracts/password-hasher.contract.ts';
 import { USER_REPOSITORY } from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
@@ -63,7 +66,9 @@ export class UpdateUserUseCase {
     const existing = await this.users.findByEmail(normalizedEmail);
 
     if (existing) {
-      throw new ConflictError(`Já existe um usuário cadastrado com o e-mail "${normalizedEmail}".`);
+      throw new ConflictError(
+        `Já existe um usuário cadastrado com o e-mail "${normalizedEmail}".`,
+      );
     }
 
     user.changeEmail(normalizedEmail);

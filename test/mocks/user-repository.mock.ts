@@ -28,7 +28,9 @@ export class UserRepositoryMock implements UserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return [...this.users.values()].find((user) => user.email === email) ?? null;
+    return (
+      [...this.users.values()].find((user) => user.email === email) ?? null
+    );
   }
 
   async list(filters: UserSearchFilters): Promise<UserPage> {

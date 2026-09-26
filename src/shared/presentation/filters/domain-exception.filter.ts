@@ -39,7 +39,9 @@ export class DomainExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    response.status(httpException.getStatus()).json(httpException.getResponse());
+    response
+      .status(httpException.getStatus())
+      .json(httpException.getResponse());
   }
 
   private toHttpException(error: DomainError) {

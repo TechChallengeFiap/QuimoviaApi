@@ -9,7 +9,9 @@ describe('FindUserByIdUseCase', () => {
   it('lança erro quando o usuário não existe', async () => {
     const useCase = new FindUserByIdUseCase(new UserRepositoryMock());
 
-    await expect(useCase.execute('id-inexistente')).rejects.toThrow(ResourceNotFoundError);
+    await expect(useCase.execute('id-inexistente')).rejects.toThrow(
+      ResourceNotFoundError,
+    );
   });
 
   it('retorna o usuário quando ele existe', async () => {

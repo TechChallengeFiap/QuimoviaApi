@@ -24,7 +24,11 @@ describe('UsersController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
     );
     app.useGlobalFilters(new DomainExceptionFilter(app.get(HttpAdapterHost)));
     await app.init();
@@ -69,7 +73,12 @@ describe('UsersController (e2e)', () => {
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
       .post('/usuarios')
-      .send({ name: 'Ok', email: 'invalido', password: '123', role: 'INEXISTENTE' })
+      .send({
+        name: 'Ok',
+        email: 'invalido',
+        password: '123',
+        role: 'INEXISTENTE',
+      })
       .expect(400);
   });
 
@@ -88,7 +97,9 @@ describe('UsersController (e2e)', () => {
         expect(body.email).toBe('maria.find@quimovia.com');
       });
 
-    await request(app.getHttpServer()).get('/usuarios/id-inexistente').expect(404);
+    await request(app.getHttpServer())
+      .get('/usuarios/id-inexistente')
+      .expect(404);
   });
 
   it('lista usuários paginados', async () => {
@@ -99,7 +110,9 @@ describe('UsersController (e2e)', () => {
       role: 'PORT_OPERATOR',
     });
 
-    const response = await request(app.getHttpServer()).get('/usuarios').expect(200);
+    const response = await request(app.getHttpServer())
+      .get('/usuarios')
+      .expect(200);
 
     expect(response.body).toMatchObject({ page: 1, pageSize: 20 });
     expect(response.body.items.length).toBeGreaterThanOrEqual(1);
@@ -148,6 +161,8 @@ describe('UsersController (e2e)', () => {
   });
 
   it('retorna 404 ao remover um usuário inexistente', async () => {
-    await request(app.getHttpServer()).delete('/usuarios/id-inexistente').expect(404);
+    await request(app.getHttpServer())
+      .delete('/usuarios/id-inexistente')
+      .expect(404);
   });
 });

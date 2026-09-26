@@ -2,7 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
 import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.ts';
 import { USER_REPOSITORY } from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
-import type { UserPage, UserRepository } from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
+import type {
+  UserPage,
+  UserRepository,
+} from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 20;
@@ -16,7 +19,9 @@ export interface ListUsersInput {
 
 @Injectable()
 export class ListUsersUseCase {
-  constructor(@Inject(USER_REPOSITORY) private readonly users: UserRepository) {}
+  constructor(
+    @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+  ) {}
 
   async execute(input: ListUsersInput = {}): Promise<UserPage> {
     return this.users.list({

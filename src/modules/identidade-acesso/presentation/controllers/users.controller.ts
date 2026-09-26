@@ -32,7 +32,8 @@ export class UsersController {
   constructor(
     @Inject(CreateUserUseCase) private readonly createUser: CreateUserUseCase,
     @Inject(ListUsersUseCase) private readonly listUsers: ListUsersUseCase,
-    @Inject(FindUserByIdUseCase) private readonly findUserById: FindUserByIdUseCase,
+    @Inject(FindUserByIdUseCase)
+    private readonly findUserById: FindUserByIdUseCase,
     @Inject(UpdateUserUseCase) private readonly updateUser: UpdateUserUseCase,
     @Inject(DeleteUserUseCase) private readonly deleteUser: DeleteUserUseCase,
   ) {}
@@ -40,7 +41,10 @@ export class UsersController {
   @Post()
   @ApiOperation({ summary: 'Cadastra um novo usuário' })
   @ApiResponse({ status: HttpStatus.CREATED, type: UserResponseDto })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'E-mail já cadastrado' })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'E-mail já cadastrado',
+  })
   async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
     const user = await this.createUser.execute(dto);
     return UserResponseDto.fromEntity(user);
@@ -58,7 +62,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Busca um usuário pelo id' })
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: HttpStatus.OK, type: UserResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Usuário não encontrado' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Usuário não encontrado',
+  })
   async findById(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.findUserById.execute(id);
     return UserResponseDto.fromEntity(user);
@@ -68,8 +75,14 @@ export class UsersController {
   @ApiOperation({ summary: 'Atualiza os dados de um usuário' })
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: HttpStatus.OK, type: UserResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Usuário não encontrado' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'E-mail já cadastrado' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Usuário não encontrado',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'E-mail já cadastrado',
+  })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
@@ -83,7 +96,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Remove um usuário' })
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Usuário não encontrado' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Usuário não encontrado',
+  })
   async remove(@Param('id') id: string): Promise<void> {
     await this.deleteUser.execute(id);
   }

@@ -35,8 +35,8 @@ describe('CreateUserUseCase', () => {
 
     await useCase.execute(input);
 
-    await expect(useCase.execute({ ...input, name: 'Outra Maria' })).rejects.toThrow(
-      ConflictError,
-    );
+    await expect(
+      useCase.execute({ ...input, name: 'Outra Maria' }),
+    ).rejects.toThrow(ConflictError);
   });
 });

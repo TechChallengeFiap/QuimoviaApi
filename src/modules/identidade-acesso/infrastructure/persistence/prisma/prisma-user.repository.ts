@@ -12,9 +12,7 @@ import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
-  constructor(
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-  ) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async create(user: User): Promise<User> {
     const record = await this.prisma.user.create({

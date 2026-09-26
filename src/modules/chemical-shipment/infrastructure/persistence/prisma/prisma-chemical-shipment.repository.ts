@@ -1,20 +1,23 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
 import type { ChemicalShipmentModel as PersistedChemicalShipment } from '@/generated/prisma/models.ts';
-import {
-  ChemicalShipment,
-} from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import type { ChemicalShipmentPage, ChemicalShipmentRepository, ChemicalShipmentSearchFilters } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
+import type {
+  ChemicalShipmentPage,
+  ChemicalShipmentRepository,
+  ChemicalShipmentSearchFilters,
+} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
 
 @Injectable()
-export class PrismaChemicalShipmentRepository
-  implements ChemicalShipmentRepository
-{
+export class PrismaChemicalShipmentRepository implements ChemicalShipmentRepository {
   private readonly logger = new Logger(PrismaChemicalShipmentRepository.name);
 
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
+  delete(id: string): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
 
   async create(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
     try {
@@ -41,7 +44,9 @@ export class PrismaChemicalShipmentRepository
     }
   }
 
-  async list(filters: ChemicalShipmentSearchFilters): Promise<ChemicalShipmentPage> {
+  async list(
+    filters: ChemicalShipmentSearchFilters,
+  ): Promise<ChemicalShipmentPage> {
     try {
       const page = Number(filters.page);
       const pageSize = Number(filters.pageSize);
@@ -65,7 +70,9 @@ export class PrismaChemicalShipmentRepository
       ]);
 
       return {
-        items: items.map((item) => PrismaChemicalShipmentRepository.toDomain(item)),
+        items: items.map((item) =>
+          PrismaChemicalShipmentRepository.toDomain(item),
+        ),
         total,
         page,
         pageSize,
@@ -95,18 +102,44 @@ export class PrismaChemicalShipmentRepository
     }
   }
 
+  async update(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
+    try {
+      const updatedChemicalShipment =
+        await this.prismaService.chemicalShipment.update({
+          where: { id: chemicalShipment.id },
+          data: {
+            id: chemicalShipment.id,
+            createdAt: chemicalShipment.createdAt,
+            updatedAt: chemicalShipment.updatedAt,
+            status: chemicalShipment.status,
+            productId: chemicalShipment.productId,
+            responsibleUserId: chemicalShipment.responsibleUserId,
+            documentsIds: chemicalShipment.documentsIds,
+          },
+        });
+
+      return PrismaChemicalShipmentRepository.toDomain(updatedChemicalShipment);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao persistir carga química no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
   private static toDomain(
     chemicalShipment: PersistedChemicalShipment,
   ): ChemicalShipment {
     return ChemicalShipment.restore({
-        id: chemicalShipment.id,
-        createdAt: chemicalShipment.createdAt,
-        updatedAt: chemicalShipment.updatedAt,
-        status: chemicalShipment.status,
-        productId: chemicalShipment.productId,
-        responsibleUserId: chemicalShipment.responsibleUserId,
-        documentsIds: chemicalShipment.documentsIds,
-        deletedAt: chemicalShipment.deletedAt ?? null,
+      id: chemicalShipment.id,
+      createdAt: chemicalShipment.createdAt,
+      updatedAt: chemicalShipment.updatedAt,
+      status: chemicalShipment.status,
+      productId: chemicalShipment.productId,
+      responsibleUserId: chemicalShipment.responsibleUserId,
+      documentsIds: chemicalShipment.documentsIds,
+      deletedAt: chemicalShipment.deletedAt ?? null,
     });
   }
 }

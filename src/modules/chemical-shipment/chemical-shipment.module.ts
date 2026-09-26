@@ -10,10 +10,13 @@ import { FindChemicalShipmentByIdUseCase } from './application/use-cases/chemica
   imports: [],
   controllers: [ChemicalShipmentController],
   providers: [
-    CreateChemicalShipmentUseCase, 
+    CreateChemicalShipmentUseCase,
     ListChemicalShipmentUseCase,
     FindChemicalShipmentByIdUseCase,
-    {provide: CHEMICAL_SHIPMENT_REPOSITORY, useClass: PrismaChemicalShipmentRepository }
+    {
+      provide: CHEMICAL_SHIPMENT_REPOSITORY,
+      useClass: PrismaChemicalShipmentRepository,
+    },
   ],
 })
 export class ChemicalShipmentModule {}

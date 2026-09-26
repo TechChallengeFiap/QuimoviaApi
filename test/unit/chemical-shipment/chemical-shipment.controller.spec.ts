@@ -6,7 +6,10 @@ import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/applica
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
@@ -42,7 +45,9 @@ describe('ChemicalShipmentController', () => {
       ],
     }).compile();
 
-    controller = module.get<ChemicalShipmentController>(ChemicalShipmentController);
+    controller = module.get<ChemicalShipmentController>(
+      ChemicalShipmentController,
+    );
   });
 
   describe('createChemicalShipment', () => {
@@ -60,7 +65,9 @@ describe('ChemicalShipmentController', () => {
     });
 
     it('deve repassar BadRequestException sem mascarar', async () => {
-      createUseCase.execute.mockRejectedValue(new BadRequestException('Dados inválidos'));
+      createUseCase.execute.mockRejectedValue(
+        new BadRequestException('Dados inválidos'),
+      );
 
       await expect(
         controller.createChemicalShipment({
@@ -72,7 +79,9 @@ describe('ChemicalShipmentController', () => {
     });
 
     it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
-      createUseCase.execute.mockRejectedValue(new Error('Falha de conexão com banco'));
+      createUseCase.execute.mockRejectedValue(
+        new Error('Falha de conexão com banco'),
+      );
 
       await expect(
         controller.createChemicalShipment({
@@ -122,17 +131,19 @@ describe('ChemicalShipmentController', () => {
         new ResourceNotFoundError('Carga Química', 'inexistente'),
       );
 
-      await expect(controller.findChemicalShipmentById('inexistente')).rejects.toThrow(
-        ResourceNotFoundError,
-      );
+      await expect(
+        controller.findChemicalShipmentById('inexistente'),
+      ).rejects.toThrow(ResourceNotFoundError);
     });
 
     it('deve capturar erro inesperado na busca por ID e lançar InternalServerErrorException', async () => {
-      findByIdUseCase.execute.mockRejectedValue(new Error('Erro interno não tratado'));
-
-      await expect(controller.findChemicalShipmentById('id-123')).rejects.toThrow(
-        InternalServerErrorException,
+      findByIdUseCase.execute.mockRejectedValue(
+        new Error('Erro interno não tratado'),
       );
+
+      await expect(
+        controller.findChemicalShipmentById('id-123'),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 });

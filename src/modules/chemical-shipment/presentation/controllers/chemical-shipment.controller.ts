@@ -9,6 +9,7 @@ import {
   InternalServerErrorException,
   Logger,
   Param,
+  Patch,
   Post,
   Query,
   UseFilters,
@@ -18,12 +19,15 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
 import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.ts';
@@ -35,6 +39,8 @@ import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/app
 import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.ts';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.ts';
 import { DomainError } from '@/shared/domain/errors/domain.error.ts';
+import { UpdateChemicalShipmentDto } from '../dtos/update-chemical-shipment.dto.ts';
+import { UpdateChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
 
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
@@ -49,6 +55,8 @@ export class ChemicalShipmentController {
     private readonly listChemicalShipmentsUseCase: ListChemicalShipmentUseCase,
     @Inject(FindChemicalShipmentByIdUseCase)
     private readonly findChemicalShipmentByIdUseCase: FindChemicalShipmentByIdUseCase,
+    @Inject(UpdateChemicalShipmentUseCase)
+    private readonly updateChemicalShipmentUseCase: UpdateChemicalShipmentUseCase,
   ) {}
 
   @Post()
@@ -128,7 +136,8 @@ export class ChemicalShipmentController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Lista as cargas químicas, com filtro por status, produto, usuário responsável e documentos',
+    summary:
+      'Lista as cargas químicas, com filtro por status, produto, usuário responsável e documentos',
     description:
       'Retorna uma lista paginada de cargas químicas. Permite filtrar por status, ID do produto, usuário responsável e ID dos documentos.',
   })
@@ -147,12 +156,14 @@ export class ChemicalShipmentController {
   @ApiQuery({
     name: 'responsibleUserId',
     required: false,
-    description: 'Filtra as cargas químicas pelo identificador do usuário responsável',
+    description:
+      'Filtra as cargas químicas pelo identificador do usuário responsável',
   })
   @ApiQuery({
     name: 'documentsIds',
     required: false,
-    description: 'Filtra as cargas químicas pelo identificador do documento anexado',
+    description:
+      'Filtra as cargas químicas pelo identificador do documento anexado',
   })
   @ApiQuery({
     name: 'page',
@@ -249,6 +260,92 @@ export class ChemicalShipmentController {
 
       throw new InternalServerErrorException(
         'Erro interno do servidor ao processar a busca da carga química.',
+      );
+    }
+  }
+
+  @Patch(':id')
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID da carga química',
+    example: '1234567890a1b2c3d4e5f6',
+  })
+  @ApiBody({
+    type: UpdateChemicalShipmentDto,
+    description: 'Dados necessários para a atualização da carga química.',
+    examples: {
+      padrão: {
+        summary: 'Exemplo de payload válido',
+        description:
+          'Payload com dados mínimos obrigatórios para atualizar a carga química',
+        value: {
+          status: StatusShipment.APPROVED,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Carga química atualizada com sucesso.',
+    type: ChemicalShipmentResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos fornecidos no corpo da requisição.',
+    schema: {
+      example: {
+        message: [
+          'O productId não pode estar vazio',
+          'O productId deve ser uma string',
+        ],
+        error: 'Bad Request',
+        statusCode: 400,
+      },
+    },
+  })
+  @ApiForbiddenResponse({
+    description: 'Você não tem permissão para realizar esta ação.',
+    schema: {
+      example: {
+        message: ['Você não tem permissão para realizar esta ação.'],
+        error: 'Forbidden',
+        statusCode: 403,
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Carga química não encontrada.',
+    schema: {
+      example: {
+        message: ['Carga química não encontrada.'],
+        error: 'Not Found',
+        statusCode: 404,
+      },
+    },
+  })
+  async updateChemicalShipment(
+    @Param('id') id: string,
+    @Body() updateChemicalShipmentDto: UpdateChemicalShipmentDto,
+  ): Promise<ChemicalShipmentResponseDto> {
+    try {
+      const updatedShipment = await this.updateChemicalShipmentUseCase.execute(
+        id,
+        updateChemicalShipmentDto,
+      );
+
+      return ChemicalShipmentResponseDto.fromEntity(updatedShipment);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao atualizar carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      if (error instanceof HttpException || error instanceof DomainError) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Erro interno do servidor ao processar a atualização da carga química.',
       );
     }
   }

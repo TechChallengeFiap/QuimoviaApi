@@ -33,7 +33,11 @@ export class ScryptPasswordHasher implements PasswordHasher {
     }
 
     const storedKey = Buffer.from(keyHex, 'hex');
-    const providedKey = await deriveKey(password, Buffer.from(saltHex, 'hex'), storedKey.length);
+    const providedKey = await deriveKey(
+      password,
+      Buffer.from(saltHex, 'hex'),
+      storedKey.length,
+    );
 
     return timingSafeEqual(storedKey, providedKey);
   }

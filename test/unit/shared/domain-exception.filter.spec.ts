@@ -12,7 +12,9 @@ describe('DomainExceptionFilter', () => {
 
   beforeEach(() => {
     mockHttpAdapter = { reply: jest.fn() };
-    const httpAdapterHost = { httpAdapter: mockHttpAdapter } as unknown as HttpAdapterHost;
+    const httpAdapterHost = {
+      httpAdapter: mockHttpAdapter,
+    } as unknown as HttpAdapterHost;
     filter = new DomainExceptionFilter(httpAdapterHost);
 
     mockResponse = {

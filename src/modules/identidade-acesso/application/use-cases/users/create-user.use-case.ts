@@ -28,7 +28,9 @@ export class CreateUserUseCase {
     const existing = await this.users.findByEmail(email);
 
     if (existing) {
-      throw new ConflictError(`Já existe um usuário cadastrado com o e-mail "${email}".`);
+      throw new ConflictError(
+        `Já existe um usuário cadastrado com o e-mail "${email}".`,
+      );
     }
 
     const user = User.create({

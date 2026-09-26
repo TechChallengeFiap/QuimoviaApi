@@ -1,7 +1,7 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { StatusShipment } from "../../domain/value-objects/chemical-shipment/status-shipment.vo.ts";
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
-import { Type } from "class-transformer";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class ListChemicalShipmentsQueryDto {
   @ApiPropertyOptional({
@@ -24,7 +24,8 @@ export class ListChemicalShipmentsQueryDto {
   productId?: string;
 
   @ApiPropertyOptional({
-    description: 'Filtra as cargas químicas pelo identificador do usuário responsável',
+    description:
+      'Filtra as cargas químicas pelo identificador do usuário responsável',
     type: String,
     example: 'user-001',
   })
@@ -33,7 +34,8 @@ export class ListChemicalShipmentsQueryDto {
   responsibleUserId?: string;
 
   @ApiPropertyOptional({
-    description: 'Filtra as cargas químicas pelo identificador do documento anexado',
+    description:
+      'Filtra as cargas químicas pelo identificador do documento anexado',
     type: String,
     example: 'doc-001',
   })

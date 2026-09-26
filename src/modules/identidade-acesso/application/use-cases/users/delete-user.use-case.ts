@@ -5,7 +5,9 @@ import type { UserRepository } from '@/modules/identidade-acesso/domain/reposito
 
 @Injectable()
 export class DeleteUserUseCase {
-  constructor(@Inject(USER_REPOSITORY) private readonly users: UserRepository) {}
+  constructor(
+    @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+  ) {}
 
   async execute(id: string): Promise<void> {
     const user = await this.users.findById(id);

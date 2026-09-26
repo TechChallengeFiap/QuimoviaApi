@@ -8,7 +8,9 @@ describe('DeleteUserUseCase', () => {
   it('lança erro quando o usuário não existe', async () => {
     const useCase = new DeleteUserUseCase(new UserRepositoryMock());
 
-    await expect(useCase.execute('id-inexistente')).rejects.toThrow(ResourceNotFoundError);
+    await expect(useCase.execute('id-inexistente')).rejects.toThrow(
+      ResourceNotFoundError,
+    );
   });
 
   it('remove um usuário existente', async () => {
