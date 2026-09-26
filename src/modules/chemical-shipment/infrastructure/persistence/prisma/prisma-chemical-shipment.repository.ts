@@ -15,9 +15,6 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
-  delete(id: string): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
 
   async create(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
     try {
@@ -56,6 +53,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
         productId: filters.productId,
         responsibleUserId: filters.responsibleUserId,
         documentsIds: filters.documentsIds,
+        deletedAt: null,
       };
 
       const [items, total] = await Promise.all([
@@ -122,6 +120,23 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
     } catch (error) {
       this.logger.error(
         `Erro ao persistir carga química no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    try {
+      await this.prismaService.chemicalShipment.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Erro ao remover carga química no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;

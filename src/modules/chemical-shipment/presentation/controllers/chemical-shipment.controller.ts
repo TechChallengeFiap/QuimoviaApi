@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpException,
@@ -41,7 +42,7 @@ import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exce
 import { DomainError } from '@/shared/domain/errors/domain.error.ts';
 import { UpdateChemicalShipmentDto } from '../dtos/update-chemical-shipment.dto.ts';
 import { UpdateChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
-
+import { DeleteChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.ts';
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
 @UseFilters(DomainExceptionFilter)
@@ -57,6 +58,8 @@ export class ChemicalShipmentController {
     private readonly findChemicalShipmentByIdUseCase: FindChemicalShipmentByIdUseCase,
     @Inject(UpdateChemicalShipmentUseCase)
     private readonly updateChemicalShipmentUseCase: UpdateChemicalShipmentUseCase,
+    @Inject(DeleteChemicalShipmentUseCase)
+    private readonly deleteChemicalShipmentUseCase: DeleteChemicalShipmentUseCase,
   ) {}
 
   @Post()
@@ -346,6 +349,51 @@ export class ChemicalShipmentController {
 
       throw new InternalServerErrorException(
         'Erro interno do servidor ao processar a atualização da carga química.',
+      );
+    }
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID da carga química',
+    example: '1234567890a1b2c3d4e5f6',
+  })
+  @ApiOperation({
+    summary: 'Remove uma carga química',
+    description: 'Remove uma carga química pelo ID.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Carga química removida com sucesso.',
+    type: ChemicalShipmentResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Carga química não encontrada.',
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description:
+      'Erro interno do servidor ao processar a remoção da carga química.',
+  })
+  async removeChemicalShipment(@Param('id') id: string): Promise<void> {
+    try {
+      await this.deleteChemicalShipmentUseCase.execute(id);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao remover carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      if (error instanceof HttpException || error instanceof DomainError) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Erro interno do servidor ao processar a remoção da carga química.',
       );
     }
   }
