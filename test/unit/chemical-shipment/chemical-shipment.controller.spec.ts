@@ -11,6 +11,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
+import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.ts';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
@@ -18,6 +19,7 @@ describe('ChemicalShipmentController', () => {
   let listUseCase: jest.Mocked<ListChemicalShipmentUseCase>;
   let findByIdUseCase: jest.Mocked<FindChemicalShipmentByIdUseCase>;
   let updateUseCase: jest.Mocked<UpdateChemicalShipmentUseCase>;
+  let deleteUseCase: jest.Mocked<DeleteChemicalShipmentUseCase>;
 
   const mockShipment = ChemicalShipment.create({
     productId: 'prod-001',
@@ -42,6 +44,10 @@ describe('ChemicalShipmentController', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<UpdateChemicalShipmentUseCase>;
 
+    deleteUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<DeleteChemicalShipmentUseCase>;
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ChemicalShipmentController],
       providers: [
@@ -49,6 +55,7 @@ describe('ChemicalShipmentController', () => {
         { provide: ListChemicalShipmentUseCase, useValue: listUseCase },
         { provide: FindChemicalShipmentByIdUseCase, useValue: findByIdUseCase },
         { provide: UpdateChemicalShipmentUseCase, useValue: updateUseCase },
+        { provide: DeleteChemicalShipmentUseCase, useValue: deleteUseCase },
       ],
     }).compile();
 
@@ -192,6 +199,36 @@ describe('ChemicalShipmentController', () => {
           responsibleUserId: 'user-001',
           documentsIds: 'doc-001',
         }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
+  describe('deleteChemicalShipment', () => {
+    it('deve deletar a carga química com sucesso', async () => {
+      deleteUseCase.execute.mockResolvedValue();
+
+      const result = await controller.deleteChemicalShipment(mockShipment.id);
+
+      expect(result).toBeUndefined();
+    });
+
+    it('deve repassar BadRequestException sem mascarar', async () => {
+      deleteUseCase.execute.mockRejectedValue(
+        new BadRequestException('Dados inválidos'),
+      );
+
+      await expect(
+        controller.deleteChemicalShipment(mockShipment.id),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
+      deleteUseCase.execute.mockRejectedValue(
+        new Error('Falha de conexão com banco'),
+      );
+
+      await expect(
+        controller.deleteChemicalShipment(mockShipment.id),
       ).rejects.toThrow(InternalServerErrorException);
     });
   });

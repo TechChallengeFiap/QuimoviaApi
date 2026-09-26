@@ -379,7 +379,7 @@ export class ChemicalShipmentController {
     description:
       'Erro interno do servidor ao processar a remoção da carga química.',
   })
-  async removeChemicalShipment(@Param('id') id: string): Promise<void> {
+  async deleteChemicalShipment(@Param('id') id: string): Promise<void> {
     try {
       await this.deleteChemicalShipmentUseCase.execute(id);
     } catch (error) {
