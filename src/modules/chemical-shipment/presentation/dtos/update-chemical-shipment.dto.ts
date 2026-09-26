@@ -5,15 +5,27 @@ import { StatusShipment } from '../../domain/value-objects/chemical-shipment/sta
 export class UpdateChemicalShipmentDto extends PartialType(
   CreateChemicalShipmentDTO,
 ) {
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    type: () => StatusShipment,
+  })
   declare status?: StatusShipment;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    type: () => String,
+  })
   declare productId?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    type: () => String,
+  })
   declare responsibleUserId?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    type: () => String,
+  })
   declare documentsIds?: string;
 }
