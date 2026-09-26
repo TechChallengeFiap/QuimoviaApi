@@ -4,7 +4,7 @@ import type { ChemicalShipmentModel as PersistedChemicalShipment } from '@/gener
 import {
   ChemicalShipment,
 } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/repositories/chemical-shipment.repository.ts';
+import type { ChemicalShipmentPage, ChemicalShipmentRepository, ChemicalShipmentSearchFilters } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
 
 @Injectable()
 export class PrismaChemicalShipmentRepository
@@ -31,6 +31,36 @@ export class PrismaChemicalShipmentRepository
     return PrismaChemicalShipmentRepository.toDomain(createdChemicalShipment);
   }
 
+  async list(filters: ChemicalShipmentSearchFilters): Promise<ChemicalShipmentPage> {
+    const page = Number(filters.page);
+    const pageSize = Number(filters.pageSize);
+
+    const where = {
+      status: filters.status,
+      productId: filters.productId,
+      responsibleUserId: filters.responsibleUserId,
+      documentsIds: filters.documentsIds,
+    };
+
+    const [items, total] = await Promise.all([
+      this.prismaService.chemicalShipment.findMany({
+        where,
+        take: pageSize,
+        skip: (page - 1) * pageSize,
+      }),
+      this.prismaService.chemicalShipment.count({
+        where,
+      }),
+    ]);
+
+    return {
+      items: items.map((item) => PrismaChemicalShipmentRepository.toDomain(item)),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
   update(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
     throw new Error('Method not implemented.');
   }
@@ -41,9 +71,7 @@ export class PrismaChemicalShipmentRepository
   findById(id: string): Promise<ChemicalShipment | null> {
     throw new Error('Method not implemented.');
   }
-  findAll(): Promise<ChemicalShipment[]> {
-    throw new Error('Method not implemented.');
-  }
+
 
   private static toDomain(
     chemicalShipment: PersistedChemicalShipment,
