@@ -3,7 +3,9 @@ import {
   Catch,
   ConflictException,
   ExceptionFilter,
+  Injectable,
   NotFoundException,
+  Optional,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
@@ -19,15 +21,25 @@ import {
  * mantendo essas camadas livres de qualquer conhecimento do NestJS.
  */
 @Catch(DomainError)
+@Injectable()
 export class DomainExceptionFilter implements ExceptionFilter {
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(@Optional() private readonly httpAdapterHost?: HttpAdapterHost) {}
 
   catch(error: DomainError, host: ArgumentsHost): void {
     const httpException = this.toHttpException(error);
-    const { httpAdapter } = this.httpAdapterHost;
     const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
 
-    httpAdapter.reply(ctx.getResponse(), httpException.getResponse(), httpException.getStatus());
+    if (this.httpAdapterHost?.httpAdapter) {
+      this.httpAdapterHost.httpAdapter.reply(
+        response,
+        httpException.getResponse(),
+        httpException.getStatus(),
+      );
+      return;
+    }
+
+    response.status(httpException.getStatus()).json(httpException.getResponse());
   }
 
   private toHttpException(error: DomainError) {

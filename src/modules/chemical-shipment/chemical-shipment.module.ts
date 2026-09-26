@@ -4,6 +4,7 @@ import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/appli
 import { CHEMICAL_SHIPMENT_REPOSITORY } from './domain/repositories/chemical-shipment.repository.ts';
 import { PrismaChemicalShipmentRepository } from './infrastructure/persistence/prisma/prisma-chemical-shipment.repository.ts';
 import { ListChemicalShipmentUseCase } from './application/use-cases/chemical-shipment/list-chemical-shipment.use-case.ts';
+import { FindChemicalShipmentByIdUseCase } from './application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
 
 @Module({
   imports: [],
@@ -11,6 +12,7 @@ import { ListChemicalShipmentUseCase } from './application/use-cases/chemical-sh
   providers: [
     CreateChemicalShipmentUseCase, 
     ListChemicalShipmentUseCase,
+    FindChemicalShipmentByIdUseCase,
     {provide: CHEMICAL_SHIPMENT_REPOSITORY, useClass: PrismaChemicalShipmentRepository }
   ],
 })

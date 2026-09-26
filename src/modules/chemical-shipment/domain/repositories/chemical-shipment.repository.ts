@@ -20,6 +20,7 @@ export interface ChemicalShipmentSearchFilters {
 export interface ChemicalShipmentRepository {
   create(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment>;
   list(filters: ChemicalShipmentSearchFilters): Promise<ChemicalShipmentPage>;
+  findById(id: string): Promise<ChemicalShipment | null>;
 }
 
 export const CHEMICAL_SHIPMENT_REPOSITORY = Symbol('ChemicalShipmentRepository');

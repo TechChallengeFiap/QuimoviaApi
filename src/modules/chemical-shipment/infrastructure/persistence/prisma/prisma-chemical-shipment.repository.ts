@@ -68,8 +68,12 @@ export class PrismaChemicalShipmentRepository
   delete(id: string): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  findById(id: string): Promise<ChemicalShipment | null> {
-    throw new Error('Method not implemented.');
+  async findById(id: string): Promise<ChemicalShipment | null> {
+    const record = await this.prismaService.chemicalShipment.findUnique({
+      where: { id },
+    });
+
+    return record ? PrismaChemicalShipmentRepository.toDomain(record) : null;
   }
 
 
