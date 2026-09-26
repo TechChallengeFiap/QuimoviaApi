@@ -54,4 +54,13 @@ export class ChemicalShipmentMock implements ChemicalShipmentRepository {
       pageSize: filters.pageSize,
     };
   }
+
+  async update(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
+    this.chemicalShipments.set(chemicalShipment.id, chemicalShipment);
+    return chemicalShipment;
+  }
+
+  async delete(id: string): Promise<void> {
+    this.chemicalShipments.delete(id);
+  }
 }

@@ -10,12 +10,14 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
   let createUseCase: jest.Mocked<CreateChemicalShipmentUseCase>;
   let listUseCase: jest.Mocked<ListChemicalShipmentUseCase>;
   let findByIdUseCase: jest.Mocked<FindChemicalShipmentByIdUseCase>;
+  let updateUseCase: jest.Mocked<UpdateChemicalShipmentUseCase>;
 
   const mockShipment = ChemicalShipment.create({
     productId: 'prod-001',
@@ -36,12 +38,17 @@ describe('ChemicalShipmentController', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<FindChemicalShipmentByIdUseCase>;
 
+    updateUseCase = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<UpdateChemicalShipmentUseCase>;
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ChemicalShipmentController],
       providers: [
         { provide: CreateChemicalShipmentUseCase, useValue: createUseCase },
         { provide: ListChemicalShipmentUseCase, useValue: listUseCase },
         { provide: FindChemicalShipmentByIdUseCase, useValue: findByIdUseCase },
+        { provide: UpdateChemicalShipmentUseCase, useValue: updateUseCase },
       ],
     }).compile();
 
@@ -143,6 +150,48 @@ describe('ChemicalShipmentController', () => {
 
       await expect(
         controller.findChemicalShipmentById('id-123'),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
+  describe('updateChemicalShipment', () => {
+    it('deve atualizar a carga química com sucesso', async () => {
+      updateUseCase.execute.mockResolvedValue(mockShipment);
+
+      const result = await controller.updateChemicalShipment(mockShipment.id, {
+        productId: 'prod-001',
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-001',
+      });
+
+      expect(result.id).toBe(mockShipment.id);
+    });
+
+    it('deve repassar BadRequestException sem mascarar', async () => {
+      updateUseCase.execute.mockRejectedValue(
+        new BadRequestException('Dados inválidos'),
+      );
+
+      await expect(
+        controller.updateChemicalShipment(mockShipment.id, {
+          productId: '',
+          responsibleUserId: 'user-001',
+          documentsIds: 'doc-001',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
+      updateUseCase.execute.mockRejectedValue(
+        new Error('Falha de conexão com banco'),
+      );
+
+      await expect(
+        controller.updateChemicalShipment(mockShipment.id, {
+          productId: 'prod-001',
+          responsibleUserId: 'user-001',
+          documentsIds: 'doc-001',
+        }),
       ).rejects.toThrow(InternalServerErrorException);
     });
   });
