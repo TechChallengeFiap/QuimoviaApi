@@ -1,0 +1,16 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsIn } from 'class-validator';
+import { ProductStatus } from '@/modules/produtos-quimicos/domain/enums/product-status.enum.js';
+
+/** Status que o Operador Portuário pode atribuir a um produto já cadastrado. */
+export const ASSIGNABLE_PRODUCT_STATUSES = [
+  ProductStatus.ACTIVE,
+  ProductStatus.INACTIVE,
+  ProductStatus.BLOCKED,
+] as const;
+
+export class ChangeChemicalProductStatusDto {
+  @ApiProperty({ enum: ASSIGNABLE_PRODUCT_STATUSES, example: ProductStatus.ACTIVE })
+  @IsIn(ASSIGNABLE_PRODUCT_STATUSES)
+  status!: ProductStatus;
+}
