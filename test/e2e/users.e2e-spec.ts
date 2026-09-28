@@ -1,4 +1,5 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { jest } from '@jest/globals';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
@@ -13,6 +14,11 @@ describe('UsersController (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
+    // Os casos de uso registram os erros esperados (404, 409) no log.
+    jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [UserModule],
     })
@@ -31,6 +37,7 @@ describe('UsersController (e2e)', () => {
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await app.close();
   });
 

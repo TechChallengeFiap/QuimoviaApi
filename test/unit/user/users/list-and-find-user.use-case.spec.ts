@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+import { Logger } from '@nestjs/common';
 import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/find-user-by-id.use-case.js';
 import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/list-users.use-case.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
@@ -5,11 +7,25 @@ import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
 
+let loggerError: jest.Spied<typeof Logger.prototype.error>;
+
+beforeEach(() => {
+  loggerError = jest
+    .spyOn(Logger.prototype, 'error')
+    .mockImplementation(() => undefined);
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
 describe('FindUserByIdUseCase', () => {
   it('lança erro quando o usuário não existe', async () => {
     const useCase = new FindUserByIdUseCase(new UserRepositoryMock());
 
-    await expect(useCase.execute('id-inexistente')).rejects.toThrow(ResourceNotFoundError);
+    await expect(useCase.execute('id-inexistente')).rejects.toThrow(
+      ResourceNotFoundError,
+    );
   });
 
   it('retorna o usuário quando ele existe', async () => {
@@ -26,6 +42,20 @@ describe('FindUserByIdUseCase', () => {
     const useCase = new FindUserByIdUseCase(users);
 
     await expect(useCase.execute(user.id)).resolves.toBe(user);
+  });
+
+  it('registra o erro no log e o propaga quando a busca falha', async () => {
+    const users = new UserRepositoryMock();
+    const failure = new Error('Falha de conexão com o banco');
+    jest.spyOn(users, 'findById').mockRejectedValueOnce(failure);
+
+    const useCase = new FindUserByIdUseCase(users);
+
+    await expect(useCase.execute('id-qualquer')).rejects.toBe(failure);
+    expect(loggerError).toHaveBeenCalledWith(
+      'Erro ao buscar o usuário com id id-qualquer: Falha de conexão com o banco',
+      failure.stack,
+    );
   });
 });
 
@@ -63,5 +93,19 @@ describe('ListUsersUseCase', () => {
 
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.role).toBe(UserRole.OPERATIONS_MANAGER);
+  });
+
+  it('registra o erro no log e o propaga quando a listagem falha', async () => {
+    const users = new UserRepositoryMock();
+    const failure = new Error('Falha de conexão com o banco');
+    jest.spyOn(users, 'list').mockRejectedValueOnce(failure);
+
+    const useCase = new ListUsersUseCase(users);
+
+    await expect(useCase.execute()).rejects.toBe(failure);
+    expect(loggerError).toHaveBeenCalledWith(
+      'Erro ao listar os usuários: Falha de conexão com o banco',
+      failure.stack,
+    );
   });
 });

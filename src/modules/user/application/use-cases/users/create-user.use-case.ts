@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
@@ -18,27 +18,39 @@ export interface CreateUserInput {
 
 @Injectable()
 export class CreateUserUseCase {
+  private readonly logger = new Logger(CreateUserUseCase.name);
+
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(PASSWORD_HASHER) private readonly passwordHasher: PasswordHasher,
   ) {}
 
   async execute(input: CreateUserInput): Promise<User> {
-    const email = input.email.trim().toLowerCase();
-    const existing = await this.users.findByEmail(email);
+    try {
+      const email = input.email.trim().toLowerCase();
+      const existing = await this.users.findByEmail(email);
 
-    if (existing) {
-      throw new ConflictError(`Já existe um usuário cadastrado com o e-mail "${email}".`);
+      if (existing) {
+        throw new ConflictError(
+          `Já existe um usuário cadastrado com o e-mail "${email}".`,
+        );
+      }
+
+      const user = User.create({
+        name: input.name,
+        email,
+        passwordHash: await this.passwordHasher.hash(input.password),
+        role: input.role,
+        status: input.status,
+      });
+
+      return await this.users.create(user);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao cadastrar o usuário: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
     }
-
-    const user = User.create({
-      name: input.name,
-      email,
-      passwordHash: await this.passwordHasher.hash(input.password),
-      role: input.role,
-      status: input.status,
-    });
-
-    return this.users.create(user);
   }
 }

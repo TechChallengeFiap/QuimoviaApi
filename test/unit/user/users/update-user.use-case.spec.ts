@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+import { Logger } from '@nestjs/common';
 import { UpdateUserUseCase } from '@/modules/user/application/use-cases/users/update-user.use-case.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
@@ -12,10 +14,18 @@ import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
 describe('UpdateUserUseCase', () => {
   let users: UserRepositoryMock;
   let useCase: UpdateUserUseCase;
+  let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
   beforeEach(() => {
+    loggerError = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     users = new UserRepositoryMock();
     useCase = new UpdateUserUseCase(users, new PasswordHasherMock());
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   async function registerUser(email = 'maria@quimovia.com'): Promise<User> {
@@ -30,9 +40,9 @@ describe('UpdateUserUseCase', () => {
   }
 
   it('lança erro quando o usuário não existe', async () => {
-    await expect(useCase.execute('id-inexistente', { name: 'Novo Nome' })).rejects.toThrow(
-      ResourceNotFoundError,
-    );
+    await expect(
+      useCase.execute('id-inexistente', { name: 'Novo Nome' }),
+    ).rejects.toThrow(ResourceNotFoundError);
   });
 
   it('atualiza nome, perfil e status', async () => {
@@ -53,9 +63,9 @@ describe('UpdateUserUseCase', () => {
     await registerUser('taken@quimovia.com');
     const user = await registerUser('free@quimovia.com');
 
-    await expect(useCase.execute(user.id, { email: 'taken@quimovia.com' })).rejects.toThrow(
-      ConflictError,
-    );
+    await expect(
+      useCase.execute(user.id, { email: 'taken@quimovia.com' }),
+    ).rejects.toThrow(ConflictError);
   });
 
   it('desbloqueia corretamente ao pedir status ACTIVE para um usuário bloqueado', async () => {
@@ -63,8 +73,24 @@ describe('UpdateUserUseCase', () => {
     user.block();
     await users.update(user);
 
-    const updated = await useCase.execute(user.id, { status: UserStatus.ACTIVE });
+    const updated = await useCase.execute(user.id, {
+      status: UserStatus.ACTIVE,
+    });
 
     expect(updated.status).toBe(UserStatus.ACTIVE);
+  });
+
+  it('registra o erro no log e o propaga quando a persistência falha', async () => {
+    const user = await registerUser();
+    const failure = new Error('Falha de conexão com o banco');
+    jest.spyOn(users, 'update').mockRejectedValueOnce(failure);
+
+    await expect(
+      useCase.execute(user.id, { name: 'Maria Souza' }),
+    ).rejects.toBe(failure);
+    expect(loggerError).toHaveBeenCalledWith(
+      `Erro ao atualizar o usuário com id ${user.id}: Falha de conexão com o banco`,
+      failure.stack,
+    );
   });
 });

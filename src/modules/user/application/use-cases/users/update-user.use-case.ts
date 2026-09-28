@@ -1,8 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
-import { ConflictError, ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import {
+  ConflictError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import type { PasswordHasher } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
@@ -18,39 +21,49 @@ export interface UpdateUserInput {
 
 @Injectable()
 export class UpdateUserUseCase {
+  private readonly logger = new Logger(UpdateUserUseCase.name);
+
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(PASSWORD_HASHER) private readonly passwordHasher: PasswordHasher,
   ) {}
 
   async execute(id: string, input: UpdateUserInput): Promise<User> {
-    const user = await this.users.findById(id);
+    try {
+      const user = await this.users.findById(id);
 
-    if (!user) {
-      throw new ResourceNotFoundError('Usuário', id);
+      if (!user) {
+        throw new ResourceNotFoundError('Usuário', id);
+      }
+
+      if (input.name !== undefined) {
+        user.rename(input.name);
+      }
+
+      if (input.email !== undefined) {
+        await this.changeEmail(user, input.email);
+      }
+
+      if (input.password !== undefined) {
+        user.changePassword(await this.passwordHasher.hash(input.password));
+      }
+
+      if (input.role !== undefined) {
+        user.changeRole(input.role);
+      }
+
+      if (input.status !== undefined) {
+        this.changeStatus(user, input.status);
+      }
+
+      return await this.users.update(user);
+    } catch (error) {
+      this.logger.error(
+        `Erro ao atualizar o usuário com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
     }
-
-    if (input.name !== undefined) {
-      user.rename(input.name);
-    }
-
-    if (input.email !== undefined) {
-      await this.changeEmail(user, input.email);
-    }
-
-    if (input.password !== undefined) {
-      user.changePassword(await this.passwordHasher.hash(input.password));
-    }
-
-    if (input.role !== undefined) {
-      user.changeRole(input.role);
-    }
-
-    if (input.status !== undefined) {
-      this.changeStatus(user, input.status);
-    }
-
-    return this.users.update(user);
   }
 
   private async changeEmail(user: User, email: string): Promise<void> {
@@ -63,7 +76,9 @@ export class UpdateUserUseCase {
     const existing = await this.users.findByEmail(normalizedEmail);
 
     if (existing) {
-      throw new ConflictError(`Já existe um usuário cadastrado com o e-mail "${normalizedEmail}".`);
+      throw new ConflictError(
+        `Já existe um usuário cadastrado com o e-mail "${normalizedEmail}".`,
+      );
     }
 
     user.changeEmail(normalizedEmail);
