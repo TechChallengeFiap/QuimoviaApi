@@ -29,27 +29,27 @@ import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.
 @UseFilters(DomainExceptionFilter)
 export class UsersController {
   constructor(
-    private readonly createUser: CreateUserUseCase,
-    private readonly listUsers: ListUsersUseCase,
-    private readonly findUserById: FindUserByIdUseCase,
-    private readonly updateUser: UpdateUserUseCase,
-    private readonly deleteUser: DeleteUserUseCase,
+    private readonly createUserUseCase: CreateUserUseCase,
+    private readonly listUsersUseCase: ListUsersUseCase,
+    private readonly findUserByIdUseCase: FindUserByIdUseCase,
+    private readonly updateUserUseCase: UpdateUserUseCase,
+    private readonly deleteUserUseCase: DeleteUserUseCase,
   ) {}
 
   @Post()
   @ApiOperation({ summary: 'Cadastra um novo usuário' })
   @ApiResponse({ status: HttpStatus.CREATED, type: UserResponseDto })
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'E-mail já cadastrado' })
-  async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
-    const user = await this.createUser.execute(dto);
+  async createUser(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    const user = await this.createUserUseCase.execute(createUserDto);
     return UserResponseDto.fromEntity(user);
   }
 
   @Get()
   @ApiOperation({ summary: 'Lista usuários, com filtro por perfil e status' })
   @ApiResponse({ status: HttpStatus.OK, type: UserPageResponseDto })
-  async list(@Query() query: ListUsersQueryDto): Promise<UserPageResponseDto> {
-    const page = await this.listUsers.execute(query);
+  async listUsers(@Query() query: ListUsersQueryDto): Promise<UserPageResponseDto> {
+    const page = await this.listUsersUseCase.execute(query);
     return UserPageResponseDto.fromPage(page);
   }
 
@@ -58,8 +58,8 @@ export class UsersController {
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: HttpStatus.OK, type: UserResponseDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Usuário não encontrado' })
-  async findById(@Param('id') id: string): Promise<UserResponseDto> {
-    const user = await this.findUserById.execute(id);
+  async findUserById(@Param('id') id: string): Promise<UserResponseDto> {
+    const user = await this.findUserByIdUseCase.execute(id);
     return UserResponseDto.fromEntity(user);
   }
 
@@ -69,11 +69,11 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.OK, type: UserResponseDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Usuário não encontrado' })
   @ApiResponse({ status: HttpStatus.CONFLICT, description: 'E-mail já cadastrado' })
-  async update(
+  async updateUser(
     @Param('id') id: string,
-    @Body() dto: UpdateUserDto,
+    @Body() updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    const user = await this.updateUser.execute(id, dto);
+    const user = await this.updateUserUseCase.execute(id, updateUserDto);
     return UserResponseDto.fromEntity(user);
   }
 
@@ -83,7 +83,7 @@ export class UsersController {
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: HttpStatus.NO_CONTENT })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Usuário não encontrado' })
-  async remove(@Param('id') id: string): Promise<void> {
-    await this.deleteUser.execute(id);
+  async deleteUser(@Param('id') id: string): Promise<void> {
+    await this.deleteUserUseCase.execute(id);
   }
 }

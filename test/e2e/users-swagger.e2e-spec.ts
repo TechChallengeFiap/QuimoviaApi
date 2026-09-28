@@ -57,6 +57,26 @@ describe('Swagger do módulo user (e2e)', () => {
     await app.close();
   });
 
+  it('expõe operationIds descritivos, derivados dos nomes dos métodos', () => {
+    const { paths } = document;
+
+    expect(paths['/usuarios']?.post?.operationId).toBe(
+      'UsersController_createUser',
+    );
+    expect(paths['/usuarios']?.get?.operationId).toBe(
+      'UsersController_listUsers',
+    );
+    expect(paths['/usuarios/{id}']?.get?.operationId).toBe(
+      'UsersController_findUserById',
+    );
+    expect(paths['/usuarios/{id}']?.patch?.operationId).toBe(
+      'UsersController_updateUser',
+    );
+    expect(paths['/usuarios/{id}']?.delete?.operationId).toBe(
+      'UsersController_deleteUser',
+    );
+  });
+
   it('documenta os enums de perfil e status como schemas reutilizáveis', () => {
     expect(document.components?.schemas).toMatchObject({
       UserRole: { type: 'string', enum: USER_ROLES },
