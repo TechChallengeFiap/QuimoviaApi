@@ -1,0 +1,6 @@
+export enum CargoDocumentStatus {
+  PENDING = 'PENDING',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  COMPLIANT = 'COMPLIANT',
+  NON_COMPLIANT = 'NON_COMPLIANT',
+}
