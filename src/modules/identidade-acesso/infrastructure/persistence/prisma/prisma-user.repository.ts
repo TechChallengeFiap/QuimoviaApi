@@ -1,18 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   UserRepository,
   UserSearchFilters,
   UserPage,
-} from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
-import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
-import type { UserModel as PersistedUser } from '@/generated/prisma/models.js';
-import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+} from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.ts';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.ts';
+import type { UserModel as PersistedUser } from '@/generated/prisma/models.ts';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async create(user: User): Promise<User> {
     const record = await this.prisma.user.create({

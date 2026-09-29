@@ -1,11 +1,11 @@
-import { UpdateUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/update-user.use-case.js';
-import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
+import { UpdateUserUseCase } from '@/modules/identidade-acesso/application/use-cases/users/update-user.use-case.ts';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.ts';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.ts';
 import {
   ConflictError,
   ResourceNotFoundError,
-} from '@/shared/domain/errors/domain.error.js';
+} from '@/shared/domain/errors/domain.error.ts';
 import { PasswordHasherMock } from '../../../mocks/password-hasher.mock.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
 
@@ -30,9 +30,9 @@ describe('UpdateUserUseCase', () => {
   }
 
   it('lança erro quando o usuário não existe', async () => {
-    await expect(useCase.execute('id-inexistente', { name: 'Novo Nome' })).rejects.toThrow(
-      ResourceNotFoundError,
-    );
+    await expect(
+      useCase.execute('id-inexistente', { name: 'Novo Nome' }),
+    ).rejects.toThrow(ResourceNotFoundError);
   });
 
   it('atualiza nome, perfil e status', async () => {
@@ -53,9 +53,9 @@ describe('UpdateUserUseCase', () => {
     await registerUser('taken@quimovia.com');
     const user = await registerUser('free@quimovia.com');
 
-    await expect(useCase.execute(user.id, { email: 'taken@quimovia.com' })).rejects.toThrow(
-      ConflictError,
-    );
+    await expect(
+      useCase.execute(user.id, { email: 'taken@quimovia.com' }),
+    ).rejects.toThrow(ConflictError);
   });
 
   it('desbloqueia corretamente ao pedir status ACTIVE para um usuário bloqueado', async () => {
@@ -63,7 +63,9 @@ describe('UpdateUserUseCase', () => {
     user.block();
     await users.update(user);
 
-    const updated = await useCase.execute(user.id, { status: UserStatus.ACTIVE });
+    const updated = await useCase.execute(user.id, {
+      status: UserStatus.ACTIVE,
+    });
 
     expect(updated.status).toBe(UserStatus.ACTIVE);
   });

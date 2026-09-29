@@ -38,6 +38,26 @@ model User {
   updatedAt    DateTime   @updatedAt
 }
 
+enum StatusShipment {
+  ANALYZING
+  INSPECTION
+  APPROVED
+  REPROVED
+  BLOCKED
+  RELEASED
+}
+
+model ChemicalShipment {
+  id                String         @id @default(uuid())
+  productId         String
+  status            StatusShipment @default(ANALYZING)
+  responsibleUserId String
+  documentsIds      String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
+}
+
 enum ProductRiskClass {
   EXPLOSIVES
   GASES

@@ -2,8 +2,8 @@ import type {
   UserRepository,
   UserSearchFilters,
   UserPage,
-} from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
-import type { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
+} from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
+import type { User } from '@/modules/identidade-acesso/domain/entities/user.entity.ts';
 
 /** Implementação em memória de UserRepository, para uso nos testes. */
 export class UserRepositoryMock implements UserRepository {
@@ -28,7 +28,9 @@ export class UserRepositoryMock implements UserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return [...this.users.values()].find((user) => user.email === email) ?? null;
+    return (
+      [...this.users.values()].find((user) => user.email === email) ?? null
+    );
   }
 
   async list(filters: UserSearchFilters): Promise<UserPage> {

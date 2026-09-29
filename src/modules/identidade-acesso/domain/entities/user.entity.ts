@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
-import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
+import { BusinessRuleError } from '@/shared/domain/errors/domain.error.ts';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.ts';
 
 const MIN_NAME_LENGTH = 3;
 const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -152,7 +152,9 @@ export class User {
 
   unblock(): void {
     if (this.#status !== UserStatus.BLOCKED) {
-      throw new BusinessRuleError('Apenas um usuário bloqueado pode ser desbloqueado.');
+      throw new BusinessRuleError(
+        'Apenas um usuário bloqueado pode ser desbloqueado.',
+      );
     }
 
     this.changeStatus(UserStatus.ACTIVE);
@@ -225,7 +227,9 @@ export class User {
 
   private static validatePasswordHash(passwordHash: string): string {
     if (passwordHash.trim().length === 0) {
-      throw new BusinessRuleError('O hash da senha do usuário não pode ser vazio.');
+      throw new BusinessRuleError(
+        'O hash da senha do usuário não pode ser vazio.',
+      );
     }
 
     return passwordHash;

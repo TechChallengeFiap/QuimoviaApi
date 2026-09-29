@@ -1,7 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.ts';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'Maria Silva', minLength: 3 })
@@ -22,7 +28,11 @@ export class CreateUserDto {
   @IsEnum(UserRole)
   role!: UserRole;
 
-  @ApiProperty({ enum: UserStatus, required: false, example: UserStatus.ACTIVE })
+  @ApiProperty({
+    enum: UserStatus,
+    required: false,
+    example: UserStatus.ACTIVE,
+  })
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;

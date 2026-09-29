@@ -1,15 +1,17 @@
-import { FindUserByIdUseCase } from '@/modules/identidade-acesso/application/use-cases/users/find-user-by-id.use-case.js';
-import { ListUsersUseCase } from '@/modules/identidade-acesso/application/use-cases/users/list-users.use-case.js';
-import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { FindUserByIdUseCase } from '@/modules/identidade-acesso/application/use-cases/users/find-user-by-id.use-case.ts';
+import { ListUsersUseCase } from '@/modules/identidade-acesso/application/use-cases/users/list-users.use-case.ts';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.ts';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
 
 describe('FindUserByIdUseCase', () => {
   it('lança erro quando o usuário não existe', async () => {
     const useCase = new FindUserByIdUseCase(new UserRepositoryMock());
 
-    await expect(useCase.execute('id-inexistente')).rejects.toThrow(ResourceNotFoundError);
+    await expect(useCase.execute('id-inexistente')).rejects.toThrow(
+      ResourceNotFoundError,
+    );
   });
 
   it('retorna o usuário quando ele existe', async () => {
