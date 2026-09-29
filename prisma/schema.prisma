@@ -37,3 +37,51 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
+
+enum CargoDocumentStatus {
+  PENDING
+  UNDER_REVIEW
+  COMPLIANT
+  NON_COMPLIANT
+}
+
+enum DocumentType {
+  SAFETY_DATA_SHEET
+  CERTIFICATE
+  LICENSE
+  DECLARATION
+  OTHER
+}
+
+model CargoDocument {
+  id                 String                    @id @default(uuid())
+  cargoId            String                    @unique
+  shipperId          String
+  compositionVersion Int
+  status             CargoDocumentStatus       @default(PENDING)
+  submittedAt        DateTime?
+  revision           Int                       @default(0)
+  attachments        CargoDocumentAttachment[]
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  @@index([shipperId, status])
+}
+
+model CargoDocumentAttachment {
+  id                   String        @id @default(uuid())
+  cargoDocumentId      String
+  cargoDocument        CargoDocument @relation(fields: [cargoDocumentId], references: [id], onDelete: Cascade)
+  name                 String        @db.VarChar(180)
+  type                 DocumentType
+  fileReference        String        @db.VarChar(1024)
+  scopes               Json
+  issuedAt             DateTime
+  expiresAt            DateTime?
+  replacesAttachmentId String?
+  removedAt            DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([cargoDocumentId])
+}
