@@ -3,7 +3,9 @@ import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
 
-function createValidUser(override: Partial<Parameters<typeof User.create>[0]> = {}) {
+function createValidUser(
+  override: Partial<Parameters<typeof User.create>[0]> = {},
+) {
   return User.create({
     name: 'Maria Silva',
     email: 'MARIA.silva@quimovia.com',
@@ -27,7 +29,9 @@ describe('User', () => {
   });
 
   it('rejeita e-mail em formato inválido', () => {
-    expect(() => createValidUser({ email: 'invalido' })).toThrow(BusinessRuleError);
+    expect(() => createValidUser({ email: 'invalido' })).toThrow(
+      BusinessRuleError,
+    );
   });
 
   it('não permite ativar um usuário bloqueado diretamente', () => {

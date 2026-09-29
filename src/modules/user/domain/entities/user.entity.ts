@@ -152,7 +152,9 @@ export class User {
 
   unblock(): void {
     if (this.#status !== UserStatus.BLOCKED) {
-      throw new BusinessRuleError('Apenas um usuário bloqueado pode ser desbloqueado.');
+      throw new BusinessRuleError(
+        'Apenas um usuário bloqueado pode ser desbloqueado.',
+      );
     }
 
     this.changeStatus(UserStatus.ACTIVE);
@@ -225,7 +227,9 @@ export class User {
 
   private static validatePasswordHash(passwordHash: string): string {
     if (passwordHash.trim().length === 0) {
-      throw new BusinessRuleError('O hash da senha do usuário não pode ser vazio.');
+      throw new BusinessRuleError(
+        'O hash da senha do usuário não pode ser vazio.',
+      );
     }
 
     return passwordHash;

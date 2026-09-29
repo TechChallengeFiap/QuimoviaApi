@@ -20,10 +20,14 @@
     "strictPropertyInitialization": false,
     "types": ["jest", "node"],
     "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
+    "noEmit": true,
     "paths": {
       "@/*": ["./src/*"]
     },
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "plugins": [
+      { "transform": "typescript-transform-paths" },
+      { "transform": "typescript-transform-paths", "afterDeclarations": true }
+    ]
   }
 }

@@ -13,11 +13,17 @@ describe('ScryptPasswordHasher', () => {
   it('verifica corretamente a senha correta e rejeita a incorreta', async () => {
     const hash = await passwordHasher.hash('S3nhaForte!');
 
-    await expect(passwordHasher.verify('S3nhaForte!', hash)).resolves.toBe(true);
-    await expect(passwordHasher.verify('outraSenha', hash)).resolves.toBe(false);
+    await expect(passwordHasher.verify('S3nhaForte!', hash)).resolves.toBe(
+      true,
+    );
+    await expect(passwordHasher.verify('outraSenha', hash)).resolves.toBe(
+      false,
+    );
   });
 
   it('rejeita um hash em formato inválido', async () => {
-    await expect(passwordHasher.verify('qualquer', 'formato-invalido')).resolves.toBe(false);
+    await expect(
+      passwordHasher.verify('qualquer', 'formato-invalido'),
+    ).resolves.toBe(false);
   });
 });
