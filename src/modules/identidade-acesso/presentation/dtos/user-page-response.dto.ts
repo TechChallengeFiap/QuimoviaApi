@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserPage } from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
+import { UserPage } from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
 import { UserResponseDto } from './user-response.dto.js';
 
 export class UserPageResponseDto {
   @ApiProperty({ type: [UserResponseDto] })
   items: UserResponseDto[];
 
-  @ApiProperty() total: number;
-  @ApiProperty() page: number;
-  @ApiProperty() pageSize: number;
+  @ApiProperty({ type: Number }) total: number;
+  @ApiProperty({ type: Number }) page: number;
+  @ApiProperty({ type: Number }) pageSize: number;
 
   private constructor(data: UserPageResponseDto) {
     Object.assign(this, data);

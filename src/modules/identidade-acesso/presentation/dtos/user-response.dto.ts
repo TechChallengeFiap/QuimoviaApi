@@ -1,24 +1,35 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.js';
+import { User } from '@/modules/identidade-acesso/domain/entities/user.entity.ts';
+import { UserRole } from '@/modules/identidade-acesso/domain/enums/user-role.enum.ts';
+import { UserStatus } from '@/modules/identidade-acesso/domain/enums/user-status.enum.ts';
 
 /**
  * Representação de um usuário exposta pela API.
  *
  * Deliberadamente não inclui o hash da senha.
  */
+interface UserResponseDtoData {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class UserResponseDto {
-  @ApiProperty() id: string;
-  @ApiProperty() name: string;
-  @ApiProperty() email: string;
+  @ApiProperty({ type: String }) id: string;
+  @ApiProperty({ type: String }) name: string;
+  @ApiProperty({ type: String }) email: string;
   @ApiProperty({ enum: UserRole }) role: UserRole;
   @ApiProperty({ enum: UserStatus }) status: UserStatus;
   @ApiProperty({ nullable: true, type: String }) lastLoginAt: Date | null;
-  @ApiProperty() createdAt: Date;
-  @ApiProperty() updatedAt: Date;
+  @ApiProperty({ type: Date }) createdAt: Date;
+  @ApiProperty({ type: Date }) updatedAt: Date;
 
-  private constructor(data: UserResponseDto) {
+  private constructor(data: UserResponseDtoData) {
     Object.assign(this, data);
   }
 
