@@ -10,7 +10,9 @@ import {
   Patch,
   Post,
   Query,
+  Type,
   UseFilters,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -60,6 +62,20 @@ const BUSINESS_RULE_EXAMPLE = {
   error: 'Unprocessable Entity',
   statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
 };
+
+/**
+ * Informa ao ValidationPipe o DTO esperado. Sem a metadata `design:paramtypes`
+ * (não emitida pelo tsx), o pipe global não sabe o tipo do parâmetro e deixa
+ * de validar e de converter os dados.
+ */
+function validationPipeFor(expectedType: Type<unknown>): ValidationPipe {
+  return new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    expectedType,
+  });
+}
 
 @ApiTags('Operações dos usuários')
 @Controller('usuarios')
@@ -139,7 +155,7 @@ export class UsersController {
     schema: { example: BUSINESS_RULE_EXAMPLE },
   })
   async createUser(
-    @Body() createUserDto: CreateUserDto,
+    @Body(validationPipeFor(CreateUserDto)) createUserDto: CreateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.createUserUseCase.execute(createUserDto);
     return UserResponseDto.fromEntity(user);
@@ -204,7 +220,7 @@ export class UsersController {
     },
   })
   async listUsers(
-    @Query() query: ListUsersQueryDto,
+    @Query(validationPipeFor(ListUsersQueryDto)) query: ListUsersQueryDto,
   ): Promise<UserPageResponseDto> {
     const page = await this.listUsersUseCase.execute(query);
     return UserPageResponseDto.fromPage(page);
@@ -304,7 +320,7 @@ export class UsersController {
   })
   async updateUser(
     @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
+    @Body(validationPipeFor(UpdateUserDto)) updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.updateUserUseCase.execute(id, updateUserDto);
     return UserResponseDto.fromEntity(user);

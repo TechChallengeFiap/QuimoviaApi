@@ -6,8 +6,9 @@ import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
 
 /**
  * Executa os endpoints como no `npm run start:dev` com tsx, que não emite a
- * metadata `design:*`: a injeção de dependências, inclusive a do filtro de
- * erros, passa a depender só do que está declarado com @Inject.
+ * metadata `design:*`: a injeção de dependências, o filtro de erros e a
+ * validação passam a depender só do que está declarado explicitamente
+ * (@Inject e o DTO esperado pelo ValidationPipe).
  *
  * Assim como no main.ts, apenas o ValidationPipe é global; os erros de domínio
  * são tratados pelo filtro declarado no controller.
@@ -94,5 +95,36 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       .post('/usuarios')
       .send(duplicated)
       .expect(409);
+  });
+
+  it('valida o corpo do cadastro e da atualização com o DTO esperado', async () => {
+    await request(app.getHttpServer())
+      .post('/usuarios')
+      .send({ ...payload, password: '123' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post('/usuarios')
+      .send({ ...payload, email: 'extra@quimovia.com', admin: true })
+      .expect(400);
+
+    const created = await request(app.getHttpServer())
+      .post('/usuarios')
+      .send({ ...payload, email: 'status@quimovia.com' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/usuarios/${created.body.id}`)
+      .send({ status: 'XPTO' })
+      .expect(400);
+  });
+
+  it('valida e converte os parâmetros da listagem', async () => {
+    await request(app.getHttpServer()).get('/usuarios?page=0').expect(400);
+
+    const response = await request(app.getHttpServer())
+      .get('/usuarios?role=PORT_OPERATOR&status=ACTIVE&page=1&pageSize=20')
+      .expect(200);
+
+    expect(response.body).toMatchObject({ page: 1, pageSize: 20 });
   });
 });
