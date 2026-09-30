@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   HttpStatus,
   Inject,
   Param,
@@ -14,6 +16,7 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -23,6 +26,7 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { CreateInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/create-inspection.use-case.js';
+import { DeleteInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/delete-inspection.use-case.js';
 import { FindInspectionByIdUseCase } from '@/modules/inspection/application/use-cases/inspections/find-inspection-by-id.use-case.js';
 import { ListInspectionsUseCase } from '@/modules/inspection/application/use-cases/inspections/list-inspections.use-case.js';
 import { UpdateInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/update-inspection.use-case.js';
@@ -62,6 +66,8 @@ export class InspectionsController {
     private readonly findInspectionByIdUseCase: FindInspectionByIdUseCase,
     @Inject(UpdateInspectionUseCase)
     private readonly updateInspectionUseCase: UpdateInspectionUseCase,
+    @Inject(DeleteInspectionUseCase)
+    private readonly deleteInspectionUseCase: DeleteInspectionUseCase,
   ) {}
 
   @Post()
@@ -339,5 +345,38 @@ export class InspectionsController {
       updateInspectionDto,
     );
     return InspectionResponseDto.fromEntity(inspection);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Remove uma inspeção pendente',
+    description:
+      'Remove uma inspeção que ainda não foi iniciada. Inspeções em andamento ou concluídas fazem parte do histórico da carga e não podem ser removidas.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Identificador da inspeção',
+    example: INSPECTION_ID_EXAMPLE,
+  })
+  @ApiNoContentResponse({ description: 'Inspeção removida com sucesso.' })
+  @ApiNotFoundResponse({
+    description: 'Inspeção não encontrada.',
+    schema: { example: INSPECTION_NOT_FOUND_EXAMPLE },
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'A inspeção já foi iniciada e não pode ser removida.',
+    schema: {
+      example: {
+        message:
+          'Somente inspeções pendentes podem ser removidas; as demais fazem parte do histórico da carga.',
+        error: 'Unprocessable Entity',
+        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      },
+    },
+  })
+  async deleteInspection(@Param('id') id: string): Promise<void> {
+    await this.deleteInspectionUseCase.execute(id);
   }
 }

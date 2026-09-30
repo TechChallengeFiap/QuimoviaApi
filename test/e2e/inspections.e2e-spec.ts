@@ -255,4 +255,35 @@ describe('InspectionsController (e2e)', () => {
       .send({ status: 'IN_PROGRESS' })
       .expect(404);
   });
+
+  it('remove uma inspeção pendente e passa a retornar 404 nas buscas', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/inspecoes')
+      .send(payload);
+    const id = created.body.id as string;
+
+    await request(app.getHttpServer()).delete(`/inspecoes/${id}`).expect(204);
+    await request(app.getHttpServer()).get(`/inspecoes/${id}`).expect(404);
+  });
+
+  it('não remove uma inspeção já iniciada', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/inspecoes')
+      .send(payload);
+    const id = created.body.id as string;
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${id}`)
+      .send({ status: 'IN_PROGRESS' })
+      .expect(200);
+
+    await request(app.getHttpServer()).delete(`/inspecoes/${id}`).expect(422);
+    await request(app.getHttpServer()).get(`/inspecoes/${id}`).expect(200);
+  });
+
+  it('retorna 404 ao remover uma inspeção inexistente', async () => {
+    await request(app.getHttpServer())
+      .delete('/inspecoes/id-inexistente')
+      .expect(404);
+  });
 });
