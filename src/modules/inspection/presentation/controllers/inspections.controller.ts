@@ -1,30 +1,49 @@
 import {
   Body,
   Controller,
+  Get,
   HttpStatus,
   Inject,
+  Param,
   Post,
+  Query,
   UseFilters,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiTags,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { CreateInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/create-inspection.use-case.js';
+import { FindInspectionByIdUseCase } from '@/modules/inspection/application/use-cases/inspections/find-inspection-by-id.use-case.js';
+import { ListInspectionsUseCase } from '@/modules/inspection/application/use-cases/inspections/list-inspections.use-case.js';
 import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
+import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { CreateInspectionDto } from '@/modules/inspection/presentation/dtos/create-inspection.dto.js';
+import { InspectionPageResponseDto } from '@/modules/inspection/presentation/dtos/inspection-page-response.dto.js';
 import { InspectionResponseDto } from '@/modules/inspection/presentation/dtos/inspection-response.dto.js';
+import { ListInspectionsQueryDto } from '@/modules/inspection/presentation/dtos/list-inspections-query.dto.js';
 
+const INSPECTION_ID_EXAMPLE = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 const CARGO_ID_EXAMPLE = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 const CARGO_ITEM_ID_EXAMPLE = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
 const INSPECTOR_ID_EXAMPLE = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
+
+const INSPECTION_NOT_FOUND_EXAMPLE = {
+  message: `Inspeção não encontrado(a) para o identificador "${INSPECTION_ID_EXAMPLE}".`,
+  error: 'Not Found',
+  statusCode: HttpStatus.NOT_FOUND,
+};
 
 @ApiTags('Inspeções')
 @Controller('inspecoes')
@@ -33,6 +52,10 @@ export class InspectionsController {
   constructor(
     @Inject(CreateInspectionUseCase)
     private readonly createInspectionUseCase: CreateInspectionUseCase,
+    @Inject(ListInspectionsUseCase)
+    private readonly listInspectionsUseCase: ListInspectionsUseCase,
+    @Inject(FindInspectionByIdUseCase)
+    private readonly findInspectionByIdUseCase: FindInspectionByIdUseCase,
   ) {}
 
   @Post()
@@ -113,6 +136,107 @@ export class InspectionsController {
   ): Promise<InspectionResponseDto> {
     const inspection =
       await this.createInspectionUseCase.execute(createInspectionDto);
+    return InspectionResponseDto.fromEntity(inspection);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Lista inspeções, com filtro por carga, Fiscal e status',
+    description:
+      'Retorna uma lista paginada de inspeções, ordenada do cadastro mais recente para o mais antigo.',
+  })
+  @ApiQuery({
+    name: 'cargoId',
+    required: false,
+    type: String,
+    format: 'uuid',
+    description: 'Filtra as inspeções de uma carga',
+    example: CARGO_ID_EXAMPLE,
+  })
+  @ApiQuery({
+    name: 'inspectorId',
+    required: false,
+    type: String,
+    format: 'uuid',
+    description: 'Filtra as inspeções de um Fiscal',
+    example: INSPECTOR_ID_EXAMPLE,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: InspectionStatus,
+    enumName: 'InspectionStatus',
+    description: 'Filtra as inspeções pela situação atual',
+    example: InspectionStatus.PENDING,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    minimum: 1,
+    default: 1,
+    description: 'Número da página desejada',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+    description: 'Quantidade de inspeções por página (máximo 100)',
+    example: 20,
+  })
+  @ApiOkResponse({
+    description: 'Lista de inspeções retornada com sucesso.',
+    type: InspectionPageResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Filtros ou parâmetros de paginação inválidos.',
+    schema: {
+      example: {
+        message: [
+          'cargoId must be a UUID',
+          'pageSize must not be greater than 100',
+        ],
+        error: 'Bad Request',
+        statusCode: HttpStatus.BAD_REQUEST,
+      },
+    },
+  })
+  async listInspections(
+    @Query(validationPipeFor(ListInspectionsQueryDto))
+    query: ListInspectionsQueryDto,
+  ): Promise<InspectionPageResponseDto> {
+    const page = await this.listInspectionsUseCase.execute(query);
+    return InspectionPageResponseDto.fromPage(page);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Busca uma inspeção pelo id',
+    description:
+      'Retorna os dados de uma inspeção, com as verificações previstas e seus resultados.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Identificador da inspeção',
+    example: INSPECTION_ID_EXAMPLE,
+  })
+  @ApiOkResponse({
+    description: 'Inspeção encontrada com sucesso.',
+    type: InspectionResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Inspeção não encontrada.',
+    schema: { example: INSPECTION_NOT_FOUND_EXAMPLE },
+  })
+  async findInspectionById(
+    @Param('id') id: string,
+  ): Promise<InspectionResponseDto> {
+    const inspection = await this.findInspectionByIdUseCase.execute(id);
     return InspectionResponseDto.fromEntity(inspection);
   }
 }

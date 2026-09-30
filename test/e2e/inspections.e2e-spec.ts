@@ -109,4 +109,43 @@ describe('InspectionsController (e2e)', () => {
       .send({ ...payload, scope: 'CARGO_ITEM' })
       .expect(422);
   });
+
+  it('busca uma inspeção pelo id e retorna 404 para id inexistente', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/inspecoes')
+      .send(payload);
+
+    await request(app.getHttpServer())
+      .get(`/inspecoes/${created.body.id}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.id).toBe(created.body.id);
+        expect(body.items).toHaveLength(2);
+      });
+
+    await request(app.getHttpServer())
+      .get('/inspecoes/id-inexistente')
+      .expect(404);
+  });
+
+  it('lista as inspeções paginadas e filtradas pela carga', async () => {
+    const otherCargoId = '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b';
+    await request(app.getHttpServer()).post('/inspecoes').send(payload);
+    await request(app.getHttpServer())
+      .post('/inspecoes')
+      .send({ ...payload, cargoId: otherCargoId });
+
+    const response = await request(app.getHttpServer())
+      .get(`/inspecoes?cargoId=${otherCargoId}&page=1&pageSize=10`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({ total: 1, page: 1, pageSize: 10 });
+    expect(response.body.items[0].cargoId).toBe(otherCargoId);
+  });
+
+  it('rejeita filtros inválidos na listagem', async () => {
+    await request(app.getHttpServer())
+      .get('/inspecoes?cargoId=nao-e-uuid&pageSize=500')
+      .expect(400);
+  });
 });
