@@ -10,9 +10,7 @@ import {
   Patch,
   Post,
   Query,
-  Type,
   UseFilters,
-  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -36,6 +34,7 @@ import { UpdateUserUseCase } from '@/modules/user/application/use-cases/users/up
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
+import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { CreateUserDto } from '@/modules/user/presentation/dtos/create-user.dto.js';
 import { ListUsersQueryDto } from '@/modules/user/presentation/dtos/list-users-query.dto.js';
 import { UpdateUserDto } from '@/modules/user/presentation/dtos/update-user.dto.js';
@@ -62,20 +61,6 @@ const BUSINESS_RULE_EXAMPLE = {
   error: 'Unprocessable Entity',
   statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
 };
-
-/**
- * Informa ao ValidationPipe o DTO esperado. Sem a metadata `design:paramtypes`
- * (não emitida pelo tsx), o pipe global não sabe o tipo do parâmetro e deixa
- * de validar e de converter os dados.
- */
-function validationPipeFor(expectedType: Type<unknown>): ValidationPipe {
-  return new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-    expectedType,
-  });
-}
 
 @ApiTags('Operações dos usuários')
 @Controller('usuarios')
