@@ -6,6 +6,7 @@ import { ClassConstructor, plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { USER_ROLES } from '@/modules/user/domain/enums/user-role.enum.js';
 import { USER_STATUSES } from '@/modules/user/domain/enums/user-status.enum.js';
+import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
 
 /**
  * Runtimes que transpilam o TypeScript com esbuild (como o tsx) não emitem a
@@ -23,14 +24,7 @@ describe('Swagger do módulo user (e2e)', () => {
   let document: OpenAPIObject;
 
   beforeAll(async () => {
-    const getMetadata = Reflect.getMetadata.bind(Reflect);
-    jest
-      .spyOn(Reflect, 'getMetadata')
-      .mockImplementation((metadataKey, target, propertyKey) =>
-        String(metadataKey).startsWith('design:')
-          ? undefined
-          : getMetadata(metadataKey, target, propertyKey),
-      );
+    disableDesignMetadata();
 
     const { UserModule } = await import('@/modules/user/user.module.js');
     const { USER_REPOSITORY } =

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   Patch,
   Post,
@@ -65,10 +66,15 @@ const BUSINESS_RULE_EXAMPLE = {
 @UseFilters(DomainExceptionFilter)
 export class UsersController {
   constructor(
+    @Inject(CreateUserUseCase)
     private readonly createUserUseCase: CreateUserUseCase,
+    @Inject(ListUsersUseCase)
     private readonly listUsersUseCase: ListUsersUseCase,
+    @Inject(FindUserByIdUseCase)
     private readonly findUserByIdUseCase: FindUserByIdUseCase,
+    @Inject(UpdateUserUseCase)
     private readonly updateUserUseCase: UpdateUserUseCase,
+    @Inject(DeleteUserUseCase)
     private readonly deleteUserUseCase: DeleteUserUseCase,
   ) {}
 
