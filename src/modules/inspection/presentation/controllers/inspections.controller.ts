@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Inject,
   Param,
+  Patch,
   Post,
   Query,
   UseFilters,
@@ -24,6 +25,8 @@ import {
 import { CreateInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/create-inspection.use-case.js';
 import { FindInspectionByIdUseCase } from '@/modules/inspection/application/use-cases/inspections/find-inspection-by-id.use-case.js';
 import { ListInspectionsUseCase } from '@/modules/inspection/application/use-cases/inspections/list-inspections.use-case.js';
+import { UpdateInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/update-inspection.use-case.js';
+import { InspectionItemResult } from '@/modules/inspection/domain/enums/inspection-item-result.enum.js';
 import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
@@ -33,6 +36,7 @@ import { CreateInspectionDto } from '@/modules/inspection/presentation/dtos/crea
 import { InspectionPageResponseDto } from '@/modules/inspection/presentation/dtos/inspection-page-response.dto.js';
 import { InspectionResponseDto } from '@/modules/inspection/presentation/dtos/inspection-response.dto.js';
 import { ListInspectionsQueryDto } from '@/modules/inspection/presentation/dtos/list-inspections-query.dto.js';
+import { UpdateInspectionDto } from '@/modules/inspection/presentation/dtos/update-inspection.dto.js';
 
 const INSPECTION_ID_EXAMPLE = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 const CARGO_ID_EXAMPLE = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
@@ -56,6 +60,8 @@ export class InspectionsController {
     private readonly listInspectionsUseCase: ListInspectionsUseCase,
     @Inject(FindInspectionByIdUseCase)
     private readonly findInspectionByIdUseCase: FindInspectionByIdUseCase,
+    @Inject(UpdateInspectionUseCase)
+    private readonly updateInspectionUseCase: UpdateInspectionUseCase,
   ) {}
 
   @Post()
@@ -237,6 +243,101 @@ export class InspectionsController {
     @Param('id') id: string,
   ): Promise<InspectionResponseDto> {
     const inspection = await this.findInspectionByIdUseCase.execute(id);
+    return InspectionResponseDto.fromEntity(inspection);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Atualiza uma inspeção',
+    description:
+      'Reatribui o Fiscal, registra os resultados das verificações e avança o status: IN_PROGRESS inicia a inspeção e COMPLETED a conclui, o que exige resultado em todas as verificações. Uma inspeção concluída não pode mais ser alterada.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Identificador da inspeção',
+    example: INSPECTION_ID_EXAMPLE,
+  })
+  @ApiBody({
+    type: UpdateInspectionDto,
+    description: 'Alterações a aplicar; todos os campos são opcionais.',
+    examples: {
+      iniciar: {
+        summary: 'Inicia a inspeção',
+        description: 'A inspeção passa de PENDING para IN_PROGRESS.',
+        value: { status: InspectionStatus.IN_PROGRESS },
+      },
+      registrarResultados: {
+        summary: 'Registra resultados',
+        description:
+          'Uma não conformidade exige a descrição da irregularidade na observação.',
+        value: {
+          results: [
+            {
+              requirement: InspectionRequirement.PACKAGING_INTEGRITY,
+              result: InspectionItemResult.COMPLIANT,
+            },
+            {
+              requirement: InspectionRequirement.NO_LEAKAGE,
+              result: InspectionItemResult.NON_COMPLIANT,
+              observation: 'Vazamento na válvula do tambor 3.',
+            },
+          ],
+        },
+      },
+      concluir: {
+        summary: 'Conclui a inspeção',
+        description: 'Exige o resultado de todas as verificações previstas.',
+        value: { status: InspectionStatus.COMPLETED },
+      },
+      reatribuirFiscal: {
+        summary: 'Reatribui o Fiscal',
+        description: 'Permitido enquanto a inspeção não estiver concluída.',
+        value: { inspectorId: INSPECTOR_ID_EXAMPLE },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description: 'Inspeção atualizada com sucesso.',
+    type: InspectionResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos no corpo da requisição.',
+    schema: {
+      example: {
+        message: [
+          'status must be one of the following values: PENDING, IN_PROGRESS, COMPLETED',
+        ],
+        error: 'Bad Request',
+        statusCode: HttpStatus.BAD_REQUEST,
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Inspeção não encontrada.',
+    schema: { example: INSPECTION_NOT_FOUND_EXAMPLE },
+  })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'A alteração viola uma regra da inspeção, como concluir com verificações pendentes ou alterar uma inspeção concluída.',
+    schema: {
+      example: {
+        message:
+          'A inspeção só pode ser concluída com o resultado de todas as verificações. Pendentes: NO_LEAKAGE.',
+        error: 'Unprocessable Entity',
+        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      },
+    },
+  })
+  async updateInspection(
+    @Param('id') id: string,
+    @Body(validationPipeFor(UpdateInspectionDto))
+    updateInspectionDto: UpdateInspectionDto,
+  ): Promise<InspectionResponseDto> {
+    const inspection = await this.updateInspectionUseCase.execute(
+      id,
+      updateInspectionDto,
+    );
     return InspectionResponseDto.fromEntity(inspection);
   }
 }

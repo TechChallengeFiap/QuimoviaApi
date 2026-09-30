@@ -148,4 +148,111 @@ describe('InspectionsController (e2e)', () => {
       .get('/inspecoes?cargoId=nao-e-uuid&pageSize=500')
       .expect(400);
   });
+
+  it('inicia, registra os resultados e conclui uma inspeção', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/inspecoes')
+      .send(payload);
+    const id = created.body.id as string;
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${id}`)
+      .send({ status: 'IN_PROGRESS' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.status).toBe('IN_PROGRESS');
+        expect(body.startedAt).not.toBeNull();
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${id}`)
+      .send({
+        results: [
+          { requirement: 'PACKAGING_INTEGRITY', result: 'COMPLIANT' },
+          {
+            requirement: 'NO_LEAKAGE',
+            result: 'NON_COMPLIANT',
+            observation: 'Vazamento na válvula do tambor 3',
+          },
+        ],
+        status: 'COMPLETED',
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.status).toBe('COMPLETED');
+        expect(body.completedAt).not.toBeNull();
+        expect(body.items).toEqual([
+          {
+            requirement: 'PACKAGING_INTEGRITY',
+            result: 'COMPLIANT',
+            observation: null,
+          },
+          {
+            requirement: 'NO_LEAKAGE',
+            result: 'NON_COMPLIANT',
+            observation: 'Vazamento na válvula do tambor 3',
+          },
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${id}`)
+      .send({ inspectorId: INSPECTOR_ID })
+      .expect(422);
+  });
+
+  it('aplica as regras de negócio na atualização', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/inspecoes')
+      .send(payload);
+    const id = created.body.id as string;
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${id}`)
+      .send({
+        results: [{ requirement: 'NO_LEAKAGE', result: 'COMPLIANT' }],
+      })
+      .expect(422);
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${id}`)
+      .send({
+        status: 'IN_PROGRESS',
+        results: [{ requirement: 'NO_LEAKAGE', result: 'NON_COMPLIANT' }],
+      })
+      .expect(422);
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${id}`)
+      .send({ status: 'COMPLETED' })
+      .expect(422);
+  });
+
+  it('rejeita payload inválido na atualização', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/inspecoes')
+      .send(payload);
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${created.body.id}`)
+      .send({ status: 'XPTO' })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .patch(`/inspecoes/${created.body.id}`)
+      .send({
+        results: [
+          { requirement: 'NO_LEAKAGE', result: 'COMPLIANT' },
+          { requirement: 'NO_LEAKAGE', result: 'COMPLIANT' },
+        ],
+      })
+      .expect(400);
+  });
+
+  it('retorna 404 ao atualizar uma inspeção inexistente', async () => {
+    await request(app.getHttpServer())
+      .patch('/inspecoes/id-inexistente')
+      .send({ status: 'IN_PROGRESS' })
+      .expect(404);
+  });
 });
