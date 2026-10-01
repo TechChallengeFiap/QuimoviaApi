@@ -2,8 +2,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/produtos-quimicos/domain/repositories/chemical-product.repository.js';
-import { ProdutosQuimicosModule } from '@/modules/produtos-quimicos/produtos-quimicos.module.js';
+import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
+import { ChemicalProductsModule } from '@/modules/chemical-products/chemical-products.module.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { ChemicalProductRepositoryMock } from '../mocks/chemical-product-repository.mock.js';
 
@@ -28,7 +28,7 @@ describe('ChemicalProductsController (e2e)', () => {
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ProdutosQuimicosModule],
+      imports: [ChemicalProductsModule],
     })
       .overrideProvider(CHEMICAL_PRODUCT_REPOSITORY)
       .useClass(ChemicalProductRepositoryMock)

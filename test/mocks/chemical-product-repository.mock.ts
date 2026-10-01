@@ -2,8 +2,8 @@ import type {
   ChemicalProductRepository,
   ChemicalProductSearchFilters,
   ChemicalProductPage,
-} from '@/modules/produtos-quimicos/domain/repositories/chemical-product.repository.js';
-import type { ChemicalProduct } from '@/modules/produtos-quimicos/domain/entities/chemical-product.entity.js';
+} from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
+import type { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
 
 /** Implementação em memória de ChemicalProductRepository, para uso nos testes. */
 export class ChemicalProductRepositoryMock implements ChemicalProductRepository {
