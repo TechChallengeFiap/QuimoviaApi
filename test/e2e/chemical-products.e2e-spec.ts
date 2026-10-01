@@ -48,7 +48,7 @@ describe('ChemicalProductsController (e2e)', () => {
 
   async function createProduct(override: Record<string, unknown> = {}) {
     const response = await request(app.getHttpServer())
-      .post('/produtos-quimicos')
+      .post('/chemical-products')
       .send({ ...validProduct, ...override })
       .expect(201);
 
@@ -57,7 +57,7 @@ describe('ChemicalProductsController (e2e)', () => {
 
   it('cadastra um produto químico em análise, com o código normalizado', async () => {
     const response = await request(app.getHttpServer())
-      .post('/produtos-quimicos')
+      .post('/chemical-products')
       .send({ ...validProduct, code: 'h2so4-98', documents: [validDocument] })
       .expect(201);
 
@@ -81,19 +81,19 @@ describe('ChemicalProductsController (e2e)', () => {
   it('rejeita a criação de um produto com código duplicado', async () => {
     await createProduct();
     await request(app.getHttpServer())
-      .post('/produtos-quimicos')
+      .post('/chemical-products')
       .send({ ...validProduct, technicalName: 'Outro produto' })
       .expect(409);
   });
 
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
-      .post('/produtos-quimicos')
+      .post('/chemical-products')
       .send({ ...validProduct, unNumber: '12', riskClass: 'INEXISTENTE' })
       .expect(400);
 
     await request(app.getHttpServer())
-      .post('/produtos-quimicos')
+      .post('/chemical-products')
       .send({ ...validProduct, documents: [{ type: 'SAFETY_DATA_SHEET' }] })
       .expect(400);
   });
@@ -102,24 +102,24 @@ describe('ChemicalProductsController (e2e)', () => {
     const created = await createProduct();
 
     await request(app.getHttpServer())
-      .get(`/produtos-quimicos/${created.id}`)
+      .get(`/chemical-products/${created.id}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body.code).toBe('H2SO4-98');
       });
 
-    await request(app.getHttpServer()).get('/produtos-quimicos/id-inexistente').expect(404);
+    await request(app.getHttpServer()).get('/chemical-products/id-inexistente').expect(404);
   });
 
   it('lista produtos paginados, com filtro por status', async () => {
     await createProduct();
     await createProduct({ code: 'NH3-01', unNumber: '1005', status: 'ACTIVE' });
 
-    const all = await request(app.getHttpServer()).get('/produtos-quimicos').expect(200);
+    const all = await request(app.getHttpServer()).get('/chemical-products').expect(200);
     expect(all.body).toMatchObject({ total: 2, page: 1, pageSize: 20 });
 
     const active = await request(app.getHttpServer())
-      .get('/produtos-quimicos')
+      .get('/chemical-products')
       .query({ status: 'ACTIVE' })
       .expect(200);
     expect(active.body.total).toBe(1);
@@ -130,7 +130,7 @@ describe('ChemicalProductsController (e2e)', () => {
     const created = await createProduct();
 
     await request(app.getHttpServer())
-      .patch(`/produtos-quimicos/${created.id}`)
+      .patch(`/chemical-products/${created.id}`)
       .send({ technicalName: 'Ácido sulfúrico concentrado', tradeName: null, unNumber: '1831' })
       .expect(200)
       .expect(({ body }) => {
@@ -144,7 +144,7 @@ describe('ChemicalProductsController (e2e)', () => {
     const created = await createProduct();
 
     await request(app.getHttpServer())
-      .patch(`/produtos-quimicos/${created.id}`)
+      .patch(`/chemical-products/${created.id}`)
       .send({ status: 'ACTIVE' })
       .expect(400);
   });
@@ -154,7 +154,7 @@ describe('ChemicalProductsController (e2e)', () => {
 
     for (const status of ['ACTIVE', 'INACTIVE', 'BLOCKED']) {
       await request(app.getHttpServer())
-        .patch(`/produtos-quimicos/${created.id}/status`)
+        .patch(`/chemical-products/${created.id}/status`)
         .send({ status })
         .expect(200)
         .expect(({ body }) => {
@@ -167,7 +167,7 @@ describe('ChemicalProductsController (e2e)', () => {
     const created = await createProduct();
 
     await request(app.getHttpServer())
-      .patch(`/produtos-quimicos/${created.id}/status`)
+      .patch(`/chemical-products/${created.id}/status`)
       .send({ status: 'UNDER_ANALYSIS' })
       .expect(400);
   });
@@ -176,7 +176,7 @@ describe('ChemicalProductsController (e2e)', () => {
     const created = await createProduct();
 
     const withDocument = await request(app.getHttpServer())
-      .post(`/produtos-quimicos/${created.id}/documentos`)
+      .post(`/chemical-products/${created.id}/documents`)
       .send(validDocument)
       .expect(201);
 
@@ -184,25 +184,25 @@ describe('ChemicalProductsController (e2e)', () => {
     const documentId = withDocument.body.documents[0].id as string;
 
     await request(app.getHttpServer())
-      .delete(`/produtos-quimicos/${created.id}/documentos/${documentId}`)
+      .delete(`/chemical-products/${created.id}/documents/${documentId}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body.documents).toHaveLength(0);
       });
 
     await request(app.getHttpServer())
-      .delete(`/produtos-quimicos/${created.id}/documentos/${documentId}`)
+      .delete(`/chemical-products/${created.id}/documents/${documentId}`)
       .expect(404);
   });
 
   it('remove um produto e passa a retornar 404 nas buscas seguintes', async () => {
     const created = await createProduct();
 
-    await request(app.getHttpServer()).delete(`/produtos-quimicos/${created.id}`).expect(204);
-    await request(app.getHttpServer()).get(`/produtos-quimicos/${created.id}`).expect(404);
+    await request(app.getHttpServer()).delete(`/chemical-products/${created.id}`).expect(204);
+    await request(app.getHttpServer()).get(`/chemical-products/${created.id}`).expect(404);
   });
 
   it('retorna 404 ao remover um produto inexistente', async () => {
-    await request(app.getHttpServer()).delete('/produtos-quimicos/id-inexistente').expect(404);
+    await request(app.getHttpServer()).delete('/chemical-products/id-inexistente').expect(404);
   });
 });
