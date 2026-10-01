@@ -3,12 +3,12 @@ import { ProductDocument } from '@/modules/chemical-products/domain/entities/pro
 import { ProductDocumentType } from '@/modules/chemical-products/domain/enums/product-document-type.enum.js';
 
 export class ProductDocumentResponseDto {
-  @ApiProperty() id: string;
-  @ApiProperty({ enum: ProductDocumentType }) type: ProductDocumentType;
-  @ApiProperty() number: string;
-  @ApiProperty({ nullable: true, type: String }) expiresAt: Date | null;
-  @ApiProperty() filePath: string;
-  @ApiProperty() createdAt: Date;
+  @ApiProperty({ type: String }) id: string;
+  @ApiProperty({ enum: ProductDocumentType, type: String }) type: ProductDocumentType;
+  @ApiProperty({ type: String }) number: string;
+  @ApiProperty({ nullable: true, type: Date }) expiresAt: Date | null;
+  @ApiProperty({ type: String }) filePath: string;
+  @ApiProperty({ type: Date }) createdAt: Date;
 
   private constructor(data: ProductDocumentResponseDto) {
     Object.assign(this, data);

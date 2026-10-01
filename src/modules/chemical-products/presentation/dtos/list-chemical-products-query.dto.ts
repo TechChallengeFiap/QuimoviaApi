@@ -6,29 +6,57 @@ import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/produ
 import { ProductStatus } from '@/modules/chemical-products/domain/enums/product-status.enum.js';
 
 export class ListChemicalProductsQueryDto {
-  @ApiPropertyOptional({ enum: ProductRiskClass })
+  @ApiPropertyOptional({
+    description: 'Filtra os produtos químicos pela classe de risco',
+    enum: ProductRiskClass,
+    enumName: 'ProductRiskClass',
+    example: ProductRiskClass.CORROSIVE_SUBSTANCES,
+  })
   @IsOptional()
   @IsEnum(ProductRiskClass)
   riskClass?: ProductRiskClass;
 
-  @ApiPropertyOptional({ enum: ProductPhysicalState })
+  @ApiPropertyOptional({
+    description: 'Filtra os produtos químicos pelo estado físico',
+    enum: ProductPhysicalState,
+    enumName: 'ProductPhysicalState',
+    example: ProductPhysicalState.LIQUID,
+  })
   @IsOptional()
   @IsEnum(ProductPhysicalState)
   physicalState?: ProductPhysicalState;
 
-  @ApiPropertyOptional({ enum: ProductStatus })
+  @ApiPropertyOptional({
+    description: 'Filtra os produtos químicos pelo status atual',
+    enum: ProductStatus,
+    enumName: 'ProductStatus',
+    example: ProductStatus.ACTIVE,
+  })
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
 
-  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @ApiPropertyOptional({
+    description: 'Número da página desejada',
+    type: Number,
+    minimum: 1,
+    default: 1,
+    example: 1,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
+  @ApiPropertyOptional({
+    description: 'Quantidade de registros por página (máximo 100)',
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+    example: 20,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

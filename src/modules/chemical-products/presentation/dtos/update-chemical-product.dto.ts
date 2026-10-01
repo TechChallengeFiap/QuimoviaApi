@@ -1,4 +1,4 @@
-import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { CreateChemicalProductDto } from './create-chemical-product.dto.js';
 
 /**
@@ -9,15 +9,35 @@ import { CreateChemicalProductDto } from './create-chemical-product.dto.js';
 export class UpdateChemicalProductDto extends PartialType(
   OmitType(CreateChemicalProductDto, ['status', 'documents'] as const),
 ) {
-  @ApiProperty({ required: false, maxLength: 40 })
+  @ApiPropertyOptional({
+    type: String,
+    maxLength: 40,
+    example: 'H2SO4-98',
+    description: 'Código interno único do produto. É normalizado para maiúsculas.',
+  })
   declare code?: string;
 
-  @ApiProperty({ required: false, minLength: 3, maxLength: 180 })
+  @ApiPropertyOptional({
+    type: String,
+    minLength: 3,
+    maxLength: 180,
+    example: 'Ácido sulfúrico concentrado',
+  })
   declare technicalName?: string;
 
-  @ApiProperty({ required: false, maxLength: 180, nullable: true })
+  @ApiPropertyOptional({
+    type: String,
+    maxLength: 180,
+    nullable: true,
+    example: 'Sulfurax 98',
+    description: 'Envie null para remover o nome comercial.',
+  })
   declare tradeName?: string | null;
 
-  @ApiProperty({ required: false, description: 'Número ONU: exatamente 4 dígitos.' })
+  @ApiPropertyOptional({
+    type: String,
+    example: '1831',
+    description: 'Número ONU: exatamente 4 dígitos.',
+  })
   declare unNumber?: string;
 }

@@ -6,9 +6,14 @@ export class ChemicalProductPageResponseDto {
   @ApiProperty({ type: [ChemicalProductResponseDto] })
   items: ChemicalProductResponseDto[];
 
-  @ApiProperty() total: number;
-  @ApiProperty() page: number;
-  @ApiProperty() pageSize: number;
+  @ApiProperty({ type: Number, example: 42 })
+  total: number;
+
+  @ApiProperty({ type: Number, example: 1 })
+  page: number;
+
+  @ApiProperty({ type: Number, example: 20 })
+  pageSize: number;
 
   private constructor(data: ChemicalProductPageResponseDto) {
     Object.assign(this, data);

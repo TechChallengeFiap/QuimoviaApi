@@ -7,17 +7,17 @@ import { ProductDocumentResponseDto } from './product-document-response.dto.js';
 
 /** Representação de um produto químico exposta pela API. */
 export class ChemicalProductResponseDto {
-  @ApiProperty() id: string;
-  @ApiProperty() code: string;
-  @ApiProperty() technicalName: string;
+  @ApiProperty({type: String}) id: string;
+  @ApiProperty({type: String}) code: string;
+  @ApiProperty({type: String}) technicalName: string;
   @ApiProperty({ nullable: true, type: String }) tradeName: string | null;
-  @ApiProperty({ description: 'Número ONU' }) unNumber: string;
-  @ApiProperty({ enum: ProductRiskClass }) riskClass: ProductRiskClass;
-  @ApiProperty({ enum: ProductPhysicalState }) physicalState: ProductPhysicalState;
-  @ApiProperty({ enum: ProductStatus }) status: ProductStatus;
+  @ApiProperty({ type: String, description: 'Número ONU' }) unNumber: string;
+  @ApiProperty({ enum: ProductRiskClass, type: String }) riskClass: ProductRiskClass;
+  @ApiProperty({ enum: ProductPhysicalState, type: String }) physicalState: ProductPhysicalState;
+  @ApiProperty({ enum: ProductStatus, type: String }) status: ProductStatus;
   @ApiProperty({ type: [ProductDocumentResponseDto] }) documents: ProductDocumentResponseDto[];
-  @ApiProperty() createdAt: Date;
-  @ApiProperty() updatedAt: Date;
+  @ApiProperty({ type: Date }) createdAt: Date;
+  @ApiProperty({ type: Date }) updatedAt: Date;
 
   private constructor(data: ChemicalProductResponseDto) {
     Object.assign(this, data);

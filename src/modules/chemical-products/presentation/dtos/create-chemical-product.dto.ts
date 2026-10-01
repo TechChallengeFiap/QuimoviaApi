@@ -17,6 +17,7 @@ import { CreateProductDocumentDto } from './create-product-document.dto.js';
 
 export class CreateChemicalProductDto {
   @ApiProperty({
+    type: String,
     example: 'H2SO4-98',
     maxLength: 40,
     description: 'Código interno único do produto. É normalizado para maiúsculas.',
@@ -26,28 +27,34 @@ export class CreateChemicalProductDto {
   @MaxLength(40)
   code!: string;
 
-  @ApiProperty({ example: 'Ácido sulfúrico', minLength: 3, maxLength: 180 })
+  @ApiProperty({ type: String, example: 'Ácido sulfúrico', minLength: 3, maxLength: 180 })
   @IsString()
   @MinLength(3)
   @MaxLength(180)
   technicalName!: string;
 
-  @ApiPropertyOptional({ example: 'Sulfurax 98', maxLength: 180, nullable: true })
+  @ApiPropertyOptional({ type: String, example: 'Sulfurax 98', maxLength: 180, nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(180)
   tradeName?: string | null;
 
-  @ApiProperty({ example: '1830', description: 'Número ONU: exatamente 4 dígitos.' })
+  @ApiProperty({ type: String, example: '1830', description: 'Número ONU: exatamente 4 dígitos.' })
   @IsString()
   @Matches(/^\d{4}$/, { message: 'unNumber deve conter exatamente 4 dígitos' })
   unNumber!: string;
 
-  @ApiProperty({ enum: ProductRiskClass, example: ProductRiskClass.CORROSIVE_SUBSTANCES })
+  @ApiProperty({
+    enum: ProductRiskClass,
+    example: ProductRiskClass.CORROSIVE_SUBSTANCES,
+  })
   @IsEnum(ProductRiskClass)
   riskClass!: ProductRiskClass;
 
-  @ApiProperty({ enum: ProductPhysicalState, example: ProductPhysicalState.LIQUID })
+  @ApiProperty({
+    enum: ProductPhysicalState,
+    example: ProductPhysicalState.LIQUID,
+  })
   @IsEnum(ProductPhysicalState)
   physicalState!: ProductPhysicalState;
 
