@@ -2,8 +2,8 @@ import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '@/app.module.js';
-import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import { AppModule } from '@/app.module.ts';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;

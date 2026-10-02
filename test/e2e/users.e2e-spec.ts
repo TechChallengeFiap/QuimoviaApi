@@ -1,10 +1,11 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { jest } from '@jest/globals';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { PASSWORD_HASHER } from '@/modules/identidade-acesso/application/contracts/password-hasher.contract.js';
-import { USER_REPOSITORY } from '@/modules/identidade-acesso/domain/repositories/user.repository.js';
-import { IdentidadeAcessoModule } from '@/modules/identidade-acesso/identidade-acesso.module.js';
+import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
+import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { UserModule } from '@/modules/user/user.module.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
@@ -13,8 +14,11 @@ describe('UsersController (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
+    // Os casos de uso registram os erros esperados (404, 409) no log.
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [IdentidadeAcessoModule],
+      imports: [UserModule],
     })
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
@@ -24,13 +28,18 @@ describe('UsersController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
     );
     app.useGlobalFilters(new DomainExceptionFilter(app.get(HttpAdapterHost)));
     await app.init();
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await app.close();
   });
 
@@ -69,7 +78,12 @@ describe('UsersController (e2e)', () => {
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
       .post('/usuarios')
-      .send({ name: 'Ok', email: 'invalido', password: '123', role: 'INEXISTENTE' })
+      .send({
+        name: 'Ok',
+        email: 'invalido',
+        password: '123',
+        role: 'INEXISTENTE',
+      })
       .expect(400);
   });
 
@@ -88,7 +102,9 @@ describe('UsersController (e2e)', () => {
         expect(body.email).toBe('maria.find@quimovia.com');
       });
 
-    await request(app.getHttpServer()).get('/usuarios/id-inexistente').expect(404);
+    await request(app.getHttpServer())
+      .get('/usuarios/id-inexistente')
+      .expect(404);
   });
 
   it('lista usuários paginados', async () => {
@@ -99,7 +115,9 @@ describe('UsersController (e2e)', () => {
       role: 'PORT_OPERATOR',
     });
 
-    const response = await request(app.getHttpServer()).get('/usuarios').expect(200);
+    const response = await request(app.getHttpServer())
+      .get('/usuarios')
+      .expect(200);
 
     expect(response.body).toMatchObject({ page: 1, pageSize: 20 });
     expect(response.body.items.length).toBeGreaterThanOrEqual(1);
@@ -148,6 +166,8 @@ describe('UsersController (e2e)', () => {
   });
 
   it('retorna 404 ao remover um usuário inexistente', async () => {
-    await request(app.getHttpServer()).delete('/usuarios/id-inexistente').expect(404);
+    await request(app.getHttpServer())
+      .delete('/usuarios/id-inexistente')
+      .expect(404);
   });
 });
