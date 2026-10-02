@@ -64,6 +64,7 @@ O projeto possui um fluxo automatizado de Integração Contínua (CI) configurad
 O pipeline é disparado automaticamente a cada `push` ou `pull_request` direcionado às branches `main`, `master` e `develop`, além de permitir disparo manual (`workflow_dispatch`).
 
 ### Etapas do Pipeline:
+
 1. **Instalação de Dependências**: Execução de `npm ci` em ambiente Node.js 24 com cache de dependências.
 2. **Validação Básica do Projeto**: Análise estática e linting com `npm run lint` (Oxlint).
 3. **Geração do Cliente Prisma**: Execução de `npx prisma generate` para criação dos artefatos de acesso a dados.
@@ -128,3 +129,42 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Como Executar o Projeto
+
+Siga os passos abaixo para subir o ambiente e executar a aplicação:
+
+### 1. Subir os containers (Banco de Dados)
+
+Certifique-se de ter configurado o seu arquivo `.env` (baseado no `.env.example`) e inicie o banco de dados MySQL via Docker Compose em segundo plano:
+
+```bash
+docker compose up -d
+```
+
+### 2. Gerar o Prisma Client
+
+Para gerar os tipos e clientes do Prisma baseados no schema:
+
+```bash
+npm run migrate:generate
+```
+
+### 3. Rodar as Migrations do Banco
+
+Para aplicar as migrações no banco de dados:
+
+```bash
+# Ambiente de desenvolvimento (cria e aplica novas migrações)
+npm run migrate:dev
+
+# Ou para deploy em produção/CI
+npm run migrate:deploy
+```
+
+### 4. Iniciar a Aplicação
+
+```bash
+# Modo de desenvolvimento
+npm run start:dev
+```
