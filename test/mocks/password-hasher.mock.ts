@@ -1,4 +1,4 @@
-import type { PasswordHasher } from '@/modules/identidade-acesso/application/contracts/password-hasher.contract.ts';
+import type { PasswordHasher } from '@/modules/user/application/contracts/password-hasher.contract.js';
 
 /** Hash falso e reversível, apenas para tornar os testes determinísticos. */
 export class PasswordHasherMock implements PasswordHasher {

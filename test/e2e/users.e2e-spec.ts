@@ -1,11 +1,12 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { jest } from '@jest/globals';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { PASSWORD_HASHER } from '@/modules/identidade-acesso/application/contracts/password-hasher.contract.ts';
-import { USER_REPOSITORY } from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
-import { IdentidadeAcessoModule } from '@/modules/identidade-acesso/identidade-acesso.module.ts';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.ts';
+import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
+import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { UserModule } from '@/modules/user/user.module.js';
+import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 
@@ -13,8 +14,11 @@ describe('UsersController (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
+    // Os casos de uso registram os erros esperados (404, 409) no log.
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [IdentidadeAcessoModule],
+      imports: [UserModule],
     })
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
@@ -35,6 +39,7 @@ describe('UsersController (e2e)', () => {
   });
 
   afterEach(async () => {
+    jest.restoreAllMocks();
     await app.close();
   });
 
