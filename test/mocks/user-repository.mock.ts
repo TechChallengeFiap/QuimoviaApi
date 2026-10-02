@@ -2,8 +2,8 @@ import type {
   UserRepository,
   UserSearchFilters,
   UserPage,
-} from '@/modules/identidade-acesso/domain/repositories/user.repository.ts';
-import type { User } from '@/modules/identidade-acesso/domain/entities/user.entity.ts';
+} from '@/modules/user/domain/repositories/user.repository.js';
+import type { User } from '@/modules/user/domain/entities/user.entity.js';
 
 /** Implementação em memória de UserRepository, para uso nos testes. */
 export class UserRepositoryMock implements UserRepository {

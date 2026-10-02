@@ -115,7 +115,7 @@ src/
 │   ├── produtos-quimicos/
 │   ├── conformidade-documental/
 │   ├── inspecoes/
-│   └── identidade-acesso/
+│   └── user/
 ├── shared/
 ├── app.module.ts
 └── main.ts
@@ -214,7 +214,7 @@ Pode conter futuramente:
 
 Aggregate Root principal previsto: `Inspecao`.
 
-### `identidade-acesso`
+### `user`
 
 Responsável por identidade, autenticação e autorização.
 
@@ -257,10 +257,10 @@ src/modules/<modulo>/
 └── ...
 ```
 
-O módulo `identidade-acesso` também possui:
+O módulo `user` também possui:
 
 ```text
-src/modules/identidade-acesso/infrastructure/auth/
+src/modules/user/infrastructure/auth/
 ```
 
 ## 6. Domain
@@ -600,12 +600,12 @@ Use para clients, gateways e adapters externos.
 Existe em:
 
 ```text
-src/modules/identidade-acesso/infrastructure/auth/
+src/modules/user/infrastructure/auth/
 ```
 
 Use para guards, strategies e adapters técnicos de autenticação.
 
-Regras de usuário, perfil e permissão pertencem ao domínio ou aplicação de `identidade-acesso`.
+Regras de usuário, perfil e permissão pertencem ao domínio ou aplicação de `user`.
 
 ## 9. Presentation
 
