@@ -130,6 +130,9 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
           },
+          include: {
+            responsibleUser: true,
+          },
         });
 
       return PrismaChemicalShipmentRepository.toDomain(updatedChemicalShipment);
