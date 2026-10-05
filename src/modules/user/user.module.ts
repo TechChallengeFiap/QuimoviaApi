@@ -21,5 +21,6 @@ import { UsersController } from '@/modules/user/presentation/controllers/users.c
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
     { provide: PASSWORD_HASHER, useClass: ScryptPasswordHasher },
   ],
+  exports: [USER_REPOSITORY],
 })
 export class UserModule {}

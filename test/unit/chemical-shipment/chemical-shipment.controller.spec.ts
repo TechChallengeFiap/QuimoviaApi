@@ -92,6 +92,20 @@ describe('ChemicalShipmentController', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('deve repassar ResourceNotFoundError para ser tratado pelo filtro de domínio quando o usuário não existir', async () => {
+      createUseCase.execute.mockRejectedValue(
+        new ResourceNotFoundError('Usuário', 'user-inexistente'),
+      );
+
+      await expect(
+        controller.createChemicalShipment({
+          productId: 'prod-001',
+          responsibleUserId: 'user-inexistente',
+          documentsIds: 'doc-001',
+        }),
+      ).rejects.toThrow(ResourceNotFoundError);
+    });
+
     it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
       createUseCase.execute.mockRejectedValue(
         new Error('Falha de conexão com banco'),
@@ -186,6 +200,18 @@ describe('ChemicalShipmentController', () => {
           documentsIds: 'doc-001',
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve repassar ResourceNotFoundError para ser tratado pelo filtro de domínio quando usuário ou carga não existirem', async () => {
+      updateUseCase.execute.mockRejectedValue(
+        new ResourceNotFoundError('Usuário', 'user-inexistente'),
+      );
+
+      await expect(
+        controller.updateChemicalShipment(mockShipment.id, {
+          responsibleUserId: 'user-inexistente',
+        }),
+      ).rejects.toThrow(ResourceNotFoundError);
     });
 
     it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
