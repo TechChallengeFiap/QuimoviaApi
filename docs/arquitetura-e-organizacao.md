@@ -114,7 +114,7 @@ src/
 │   ├── gestao-de-cargas/
 │   ├── produtos-quimicos/
 │   ├── conformidade-documental/
-│   ├── inspecoes/
+│   ├── inspection/
 │   └── user/
 ├── shared/
 ├── app.module.ts
@@ -199,7 +199,7 @@ Pode conter futuramente:
 
 Aggregate Root principal previsto: `DocumentacaoCarga` ou o nome definido pela linguagem do domínio durante a implementação.
 
-### `inspecoes`
+### `inspection`
 
 Responsável pelo processo de inspeção.
 
