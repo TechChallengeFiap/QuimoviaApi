@@ -4,6 +4,11 @@ import {
 } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
 import {
+  USER_REPOSITORY,
+  type UserRepository,
+} from '@/modules/user/domain/repositories/user.repository.js';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
+import {
   BadRequestException,
   Inject,
   Injectable,
@@ -18,11 +23,19 @@ export class CreateChemicalShipmentUseCase {
   constructor(
     @Inject(CHEMICAL_SHIPMENT_REPOSITORY)
     private readonly chemicalShipments: ChemicalShipmentRepository,
+    @Inject(USER_REPOSITORY)
+    private readonly users: UserRepository,
   ) {}
 
   async execute(input: CreateChemicalShipmentData): Promise<ChemicalShipment> {
     try {
       this.validateInput(input);
+
+      const user = await this.users.findById(input.responsibleUserId);
+      if (!user) {
+        throw new ResourceNotFoundError('Usuário', input.responsibleUserId);
+      }
+
       const chemicalShipment = ChemicalShipment.create(input);
       return await this.chemicalShipments.create(chemicalShipment);
     } catch (error) {
