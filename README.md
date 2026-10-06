@@ -336,12 +336,12 @@ O pipeline é disparado automaticamente a cada `push` ou `pull_request` nas bran
 
 Projeto desenvolvido para a **Pós-Graduação em Full Stack Development — FIAP**:
 
-| Nome             | RM      | LinkedIn / GitHub |
+| Nome             | RM      |  GitHub |
 | :--------------- | :------ | :---------------- |
-| **Ygor Takashi Nishi** | RM: 375939 | [Perfil](#)       |
-| **Matheus Felicio Brazolin** | RM: 375006 | [Perfil](#)       |
-| **Paulo Henrique dos Santos Miliano** | RM375284 | [Perfil](#)       |
-| **Letícia Gabrielle Videira dos Santos** | RM: 376263 | [Perfil](#)       |
+| **Ygor Takashi Nishi** | RM: 375939 | [Perfil](https://github.com/TakashiNishii)       |
+| **Matheus Felicio Brazolin** | RM: 375006 | [Perfil](https://github.com/MatheusBrazolin)       |
+| **Paulo Henrique dos Santos Miliano** | RM375284 | [Perfil](https://github.com/PauloMiliano)       |
+| **Letícia Gabrielle Videira dos Santos** | RM: 376263 | [Perfil](https://github.com/SantosLet)       |
 
 ---
 
