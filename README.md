@@ -338,11 +338,10 @@ Projeto desenvolvido para a **Pós-Graduação em Full Stack Development — FIA
 
 | Nome             | RM      | LinkedIn / GitHub |
 | :--------------- | :------ | :---------------- |
-| **Integrante 1** | RMxxxxx | [Perfil](#)       |
-| **Integrante 2** | RMxxxxx | [Perfil](#)       |
-| **Integrante 3** | RMxxxxx | [Perfil](#)       |
-| **Integrante 4** | RMxxxxx | [Perfil](#)       |
-| **Integrante 5** | RMxxxxx | [Perfil](#)       |
+| **Ygor Takashi Nishi** | RM: 375939 | [Perfil](#)       |
+| **Matheus Felicio Brazolin** | RM: 375006 | [Perfil](#)       |
+| **Paulo Henrique dos Santos Miliano** | RM375284 | [Perfil](#)       |
+| **Letícia Gabrielle Videira dos Santos** | RM: 376263 | [Perfil](#)       |
 
 ---
 
