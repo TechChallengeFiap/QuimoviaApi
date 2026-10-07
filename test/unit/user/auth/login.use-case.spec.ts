@@ -141,6 +141,40 @@ describe('LoginUseCase', () => {
     },
   );
 
+  it('grava só o horário do login, sem regravar os outros dados do usuário', async () => {
+    await registerUser();
+    const update = jest.spyOn(users, 'update');
+    const registerLogin = jest.spyOn(users, 'registerLogin');
+
+    await useCase.execute({
+      email: 'maria@quimovia.com',
+      password: 'S3nhaForte!',
+    });
+
+    expect(update).not.toHaveBeenCalled();
+    expect(registerLogin).toHaveBeenCalledTimes(1);
+  });
+
+  it('não desfaz um bloqueio feito enquanto a senha era conferida', async () => {
+    await registerUser();
+    // O repositório não grava o login porque a conta já não está ativa.
+    jest.spyOn(users, 'registerLogin').mockResolvedValueOnce(false);
+    const createSession = jest.spyOn(sessions, 'create');
+    const update = jest.spyOn(users, 'update');
+
+    const attempt = useCase.execute({
+      email: 'maria@quimovia.com',
+      password: 'S3nhaForte!',
+    });
+
+    await expect(attempt).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(attempt).rejects.toThrow(
+      'A conta do usuário deixou de estar ativa durante o login; não é possível autenticar-se no sistema.',
+    );
+    expect(createSession).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('não revela o status de uma conta bloqueada para quem erra a senha', async () => {
     await registerUser(UserStatus.BLOCKED);
 

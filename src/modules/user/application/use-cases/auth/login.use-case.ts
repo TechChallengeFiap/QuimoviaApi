@@ -20,6 +20,9 @@ import type { UserRepository } from '@/modules/user/domain/repositories/user.rep
 /** A mesma mensagem para e-mail inexistente e senha errada (RN-ACE-02). */
 export const INVALID_CREDENTIALS_MESSAGE = 'E-mail ou senha inválidos.';
 
+export const ACCOUNT_CHANGED_DURING_LOGIN_MESSAGE =
+  'A conta do usuário deixou de estar ativa durante o login; não é possível autenticar-se no sistema.';
+
 export interface LoginInput {
   email: string;
   password: string;
@@ -72,15 +75,20 @@ export class LoginUseCase {
       }
 
       const now = new Date();
+      user.registerLogin(now);
+
+      // Grava só o horário do login, e só se a conta continuar ativa: um
+      // bloqueio feito enquanto a senha era conferida não é desfeito aqui.
+      if (!(await this.users.registerLogin(user))) {
+        throw new AccessDeniedError(ACCOUNT_CHANGED_DURING_LOGIN_MESSAGE);
+      }
+
       const session = Session.start({
         userId: user.id,
         durationInSeconds: this.sessionSettings.durationInSeconds,
         startedAt: now,
       });
-
-      user.registerLogin(now);
       await this.sessions.create(session);
-      const authenticatedUser = await this.users.update(user);
 
       return {
         accessToken: await this.accessTokens.issue(
@@ -88,7 +96,7 @@ export class LoginUseCase {
           session.expiresAt,
         ),
         expiresAt: session.expiresAt,
-        user: authenticatedUser,
+        user,
       };
     } catch (error) {
       this.logger.error(

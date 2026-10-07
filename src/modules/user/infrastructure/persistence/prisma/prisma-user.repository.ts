@@ -62,6 +62,15 @@ export class PrismaUserRepository implements UserRepository {
     return record ? PrismaUserRepository.toDomain(record) : null;
   }
 
+  async registerLogin(user: User): Promise<boolean> {
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: user.id, status: UserStatus.ACTIVE },
+      data: { lastLoginAt: user.lastLoginAt },
+    });
+
+    return count === 1;
+  }
+
   async list(filters: UserSearchFilters): Promise<UserPage> {
     const where = {
       ...(filters.role ? { role: filters.role } : {}),
