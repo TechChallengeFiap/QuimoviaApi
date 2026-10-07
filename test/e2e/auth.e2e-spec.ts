@@ -76,6 +76,13 @@ describe('AuthController (e2e)', () => {
     );
   }
 
+  /** Lê o id da sessão (claim sid) de um token de acesso. */
+  function sessionIdOf(accessToken: string): string {
+    const [, payload] = accessToken.split('.');
+
+    return JSON.parse(Buffer.from(payload, 'base64url').toString()).sid;
+  }
+
   function login(email: string, password = PASSWORD) {
     return request(app.getHttpServer())
       .post('/autenticacao/login')
@@ -204,10 +211,11 @@ describe('AuthController (e2e)', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .send({ status })
           .expect(200);
-        await request(app.getHttpServer())
-          .get('/usuarios')
-          .set('Authorization', `Bearer ${mariaToken}`)
-          .expect(401);
+        // Sem nenhuma requisição com o token no meio: quem encerra a sessão é
+        // a atualização do usuário, não o guard.
+        expect(
+          (await sessions.findById(sessionIdOf(mariaToken)))?.endedAt,
+        ).toEqual(expect.any(Date));
         await login('maria@quimovia.com').expect(403);
 
         await request(app.getHttpServer())

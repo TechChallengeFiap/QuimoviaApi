@@ -139,7 +139,7 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
       .expect(400);
   });
 
-  it('encerra as sessões de um usuário bloqueado pelo PATCH /usuarios/:id', async () => {
+  it('encerra as sessões de um usuário bloqueado pelo PATCH /usuarios/:id, sem reativá-las no desbloqueio', async () => {
     await registerUser('admin@quimovia.com');
     const joao = await registerUser('joao@quimovia.com');
     const adminToken = await accessTokenOf('admin@quimovia.com');
@@ -149,6 +149,13 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
       .patch(`/usuarios/${joao.id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'BLOCKED' })
+      .expect(200);
+    // Desbloqueia antes de usar o token: ele só é recusado se o bloqueio já
+    // tiver encerrado a sessão.
+    await request(app.getHttpServer())
+      .patch(`/usuarios/${joao.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'ACTIVE' })
       .expect(200);
     await request(app.getHttpServer())
       .get('/usuarios')
