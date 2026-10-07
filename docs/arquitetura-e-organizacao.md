@@ -44,7 +44,7 @@ O estado real do repositório é a fonte de verdade.
 Hoje o projeto possui:
 
 - aplicação NestJS com `src/main.ts` e `src/app.module.ts`;
-- Swagger configurado em `src/main.ts`;
+- Swagger configurado em `src/main.ts`, a partir de `src/shared/infrastructure/config/swagger.config.ts`;
 - cinco módulos principais em `src/modules/`;
 - estrutura interna de pastas criada dentro dos módulos;
 - Prisma schema em `prisma/schema.prisma`;
@@ -547,7 +547,7 @@ Use para:
 
 - repositories Prisma;
 - mappers Prisma;
-- componentes específicos de banco.
+- componentes específicos de banco, como o seed do administrador inicial (`seed/initial-admin.seed.ts`, executado por `prisma/seed.ts`).
 
 **Nomenclatura**
 

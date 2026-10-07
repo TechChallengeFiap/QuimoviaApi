@@ -143,11 +143,11 @@ O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e cone
 | `MYSQL_DATABASE`         | Nome do banco de dados                                                                                   | `quimovia_db`                                                                                              |
 | `DATABASE_URL`           | URL de conexão utilizada pelo Prisma ORM                                                                 | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
 | `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
-| `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | um texto aleatório e longo                                                                                 |
+| `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48`                                                                       |
 | `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `3600`                                                                                                     |
 | `ADMIN_NAME`             | Nome do administrador inicial criado pelo seed (opcional)                                                | `Administrador do Sistema`                                                                                 |
 | `ADMIN_EMAIL`            | E-mail do administrador inicial criado pelo seed                                                         | `admin@quimovia.com`                                                                                       |
-| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | uma senha forte                                                                                            |
+| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | definida por você                                                                                          |
 
 ### 5.3. Executando com Docker e Localmente
 
@@ -174,6 +174,8 @@ copy .env.example .env
 ```
 
 > **Importante:** O `docker-compose.yml` utiliza essas variáveis para inicializar o MySQL. Verifique se as credenciais de `MYSQL_*` e a string de conexão em `DATABASE_URL` estão configuradas corretamente.
+
+> **Autenticação:** o `JWT_SECRET` e o `ADMIN_PASSWORD` vêm em branco no exemplo e precisam ser preenchidos. Sem um `JWT_SECRET` válido a API não sobe, e sem o `ADMIN_PASSWORD` o seed não cria o administrador. Para gerar o segredo, use por exemplo `openssl rand -base64 48`.
 
 #### 3. Subir o container do banco de dados (MySQL)
 
@@ -207,7 +209,7 @@ npm run migrate:deploy
 
 #### 6. Criar o administrador inicial
 
-Todas as rotas exigem login, e só o Administrador do Sistema cadastra usuários. Por isso, um banco novo precisa de um primeiro administrador, criado com os dados de `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME`:
+Todas as rotas exigem login, inclusive o cadastro de usuários. Por isso, um banco novo precisa de um primeiro usuário, o Administrador do Sistema, criado com os dados de `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME`:
 
 ```bash
 npm run migrate:seed
@@ -267,6 +269,8 @@ Com exceção do login e da rota raiz (`GET /`), todas as rotas exigem o cabeça
 - `POST /autenticacao/logout` — Encerra a sessão do token enviado, que deixa de valer na hora.
 
 Bloquear ou inativar um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
+
+Por enquanto, a autorização por perfil (RN-ACE-04) ainda não é aplicada: qualquer usuário autenticado acessa todas as rotas.
 
 #### Cargas Químicas (`/chemical-shipment`)
 

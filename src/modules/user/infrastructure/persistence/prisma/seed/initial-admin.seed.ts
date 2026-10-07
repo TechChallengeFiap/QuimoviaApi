@@ -48,8 +48,8 @@ export function loadInitialAdminConfig(
 
 /**
  * Garante o primeiro Administrador do Sistema. Como todas as rotas exigem
- * login e só o administrador cadastra usuários (RN-ACE-04), sem ele um banco
- * novo não teria como receber o primeiro acesso.
+ * login, inclusive o cadastro de usuários, sem ele um banco novo não teria
+ * como receber o primeiro acesso.
  *
  * Pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, o
  * usuário existente é mantido como está.
