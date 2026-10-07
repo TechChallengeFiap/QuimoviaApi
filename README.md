@@ -135,14 +135,19 @@ Antes de iniciar, certifique-se de ter instalado em sua máquina:
 
 O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e conexão com o banco de dados. As configurações disponíveis são:
 
-| Variável              | Descrição                                   | Exemplo Padrão                                                                                             |
-| :-------------------- | :------------------------------------------ | :--------------------------------------------------------------------------------------------------------- |
-| `MYSQL_ROOT_PASSWORD` | Senha do usuário root do container MySQL    | `root_secret`                                                                                              |
-| `MYSQL_USER`          | Usuário da aplicação no banco               | `quimovia_user`                                                                                            |
-| `MYSQL_PASSWORD`      | Senha do usuário da aplicação               | `quimovia_pass`                                                                                            |
-| `MYSQL_DATABASE`      | Nome do banco de dados                      | `quimovia_db`                                                                                              |
-| `DATABASE_URL`        | URL de conexão utilizada pelo Prisma ORM    | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
-| `PORT`                | Porta HTTP da API (opcional, padrão `3000`) | `3000`                                                                                                     |
+| Variável                 | Descrição                                                                                                | Exemplo Padrão                                                                                             |
+| :----------------------- | :------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| `MYSQL_ROOT_PASSWORD`    | Senha do usuário root do container MySQL                                                                 | `root_secret`                                                                                              |
+| `MYSQL_USER`             | Usuário da aplicação no banco                                                                            | `quimovia_user`                                                                                            |
+| `MYSQL_PASSWORD`         | Senha do usuário da aplicação                                                                            | `quimovia_pass`                                                                                            |
+| `MYSQL_DATABASE`         | Nome do banco de dados                                                                                   | `quimovia_db`                                                                                              |
+| `DATABASE_URL`           | URL de conexão utilizada pelo Prisma ORM                                                                 | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
+| `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
+| `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | um texto aleatório e longo                                                                                 |
+| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `3600`                                                                                                     |
+| `ADMIN_NAME`             | Nome do administrador inicial criado pelo seed (opcional)                                                | `Administrador do Sistema`                                                                                 |
+| `ADMIN_EMAIL`            | E-mail do administrador inicial criado pelo seed                                                         | `admin@quimovia.com`                                                                                       |
+| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | uma senha forte                                                                                            |
 
 ### 5.3. Executando com Docker e Localmente
 
@@ -200,7 +205,17 @@ npm run migrate:dev
 npm run migrate:deploy
 ```
 
-#### 6. Iniciar a API em Desenvolvimento
+#### 6. Criar o administrador inicial
+
+Todas as rotas exigem login, e só o Administrador do Sistema cadastra usuários. Por isso, um banco novo precisa de um primeiro administrador, criado com os dados de `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME`:
+
+```bash
+npm run migrate:seed
+```
+
+> O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado.
+
+#### 7. Iniciar a API em Desenvolvimento
 
 ```bash
 npm run start:dev
@@ -208,6 +223,8 @@ npm run start:dev
 
 A aplicação estará acessível em: `http://localhost:3000`  
 A documentação Swagger estará disponível em: `http://localhost:3000/api`
+
+> A API não sobe sem um `JWT_SECRET` válido no `.env`.
 
 ---
 
@@ -224,6 +241,7 @@ A documentação Swagger estará disponível em: `http://localhost:3000/api`
 | `npm run migrate:generate` | Gera o cliente Prisma tipado                                |
 | `npm run migrate:dev`      | Executa migrations em modo desenvolvimento                  |
 | `npm run migrate:deploy`   | Aplica migrations pendentes no banco                        |
+| `npm run migrate:seed`     | Cria o administrador inicial (também via `prisma db seed`)  |
 
 ---
 
@@ -235,9 +253,20 @@ A API possui documentação interativa completa via Swagger. Com a aplicação e
 
 📍 **URL do Swagger:** [http://localhost:3000/api](http://localhost:3000/api)
 
-A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `403`, `404`, `422`).
+A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `401`, `403`, `404`, `422`).
+
+Para testar as rotas protegidas pelo Swagger, faça login em `POST /autenticacao/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**.
 
 ### 6.2. Principais Endpoints
+
+Com exceção do login e da rota raiz (`GET /`), todas as rotas exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa. Sem ele, a API responde `401`.
+
+#### Autenticação (`/autenticacao`)
+
+- `POST /autenticacao/login` — Confere e-mail e senha, inicia uma sessão e devolve o token de acesso (`401` para credenciais inválidas e `403` para conta inativa ou bloqueada).
+- `POST /autenticacao/logout` — Encerra a sessão do token enviado, que deixa de valer na hora.
+
+Bloquear ou inativar um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
 
 #### Cargas Químicas (`/chemical-shipment`)
 
@@ -289,6 +318,7 @@ Os testes automatizados validam cenários críticos exigidos no Tech Challenge, 
 - Impedimento de transições ilegais na máquina de estados;
 - Bloqueio de movimentação de cargas marcadas como `BLOCKED`;
 - Validação e hash criptográfico de senhas;
+- Login, sessões com expiração e encerramento, e exigência do token de acesso em todas as rotas protegidas;
 - Tratamento de exceções e mapeamento padronizado de erros de domínio.
 
 ---
