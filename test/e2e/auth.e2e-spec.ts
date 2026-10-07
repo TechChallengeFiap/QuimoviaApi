@@ -150,4 +150,75 @@ describe('AuthController (e2e)', () => {
         .expect(400);
     });
   });
+
+  describe('rotas protegidas pelo guard global', () => {
+    async function accessTokenOf(email: string): Promise<string> {
+      await registerUser(email);
+      const response = await login(email).expect(200);
+
+      return response.body.accessToken as string;
+    }
+
+    it('exige o token de acesso', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/usuarios')
+        .expect(401);
+
+      expect(response.body).toEqual({
+        message:
+          'Token de acesso não informado. Envie o cabeçalho Authorization: Bearer <token>.',
+        error: 'Unauthorized',
+        statusCode: 401,
+      });
+    });
+
+    it('libera a rota com o token de uma sessão ativa', async () => {
+      const token = await accessTokenOf('maria@quimovia.com');
+
+      await request(app.getHttpServer())
+        .get('/usuarios')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+    });
+
+    it('recusa um token inválido ou de outro esquema', async () => {
+      const token = await accessTokenOf('maria@quimovia.com');
+
+      await request(app.getHttpServer())
+        .get('/usuarios')
+        .set('Authorization', `Bearer ${token}x`)
+        .expect(401)
+        .expect(({ body }) => {
+          expect(body.message).toBe(
+            'Token de acesso inválido ou expirado; faça login novamente.',
+          );
+        });
+      await request(app.getHttpServer())
+        .get('/usuarios')
+        .set('Authorization', `Basic ${token}`)
+        .expect(401);
+    });
+
+    it('recusa o token quando a conta perde o acesso fora da API, encerrando a sessão', async () => {
+      const token = await accessTokenOf('maria@quimovia.com');
+      const user = await users.findByEmail('maria@quimovia.com');
+      user?.block();
+
+      await request(app.getHttpServer())
+        .get('/usuarios')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(401)
+        .expect(({ body }) => {
+          expect(body.message).toBe(
+            'Sessão expirada ou encerrada; faça login novamente.',
+          );
+        });
+
+      user?.unblock();
+      await request(app.getHttpServer())
+        .get('/usuarios')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(401);
+    });
+  });
 });

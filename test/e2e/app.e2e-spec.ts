@@ -27,11 +27,17 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
+  it('/ (GET) continua público', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
       .expect('Hello World!');
+  });
+
+  it('exige o token de acesso nas rotas dos módulos', async () => {
+    for (const path of ['/usuarios', '/inspecoes', '/chemical-shipment']) {
+      await request(app.getHttpServer()).get(path).expect(401);
+    }
   });
 
   afterEach(async () => {

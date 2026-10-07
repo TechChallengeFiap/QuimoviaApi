@@ -275,17 +275,24 @@ describe('Swagger do módulo inspection (e2e)', () => {
       method: 'get' | 'post' | 'patch' | 'delete',
     ) => Object.keys(document.paths[path]?.[method]?.responses ?? {}).sort();
 
-    expect(statusesOf('/inspecoes', 'post')).toEqual(['201', '400', '422']);
-    expect(statusesOf('/inspecoes', 'get')).toEqual(['200', '400']);
-    expect(statusesOf('/inspecoes/{id}', 'get')).toEqual(['200', '404']);
+    expect(statusesOf('/inspecoes', 'post')).toEqual([
+      '201',
+      '400',
+      '401',
+      '422',
+    ]);
+    expect(statusesOf('/inspecoes', 'get')).toEqual(['200', '400', '401']);
+    expect(statusesOf('/inspecoes/{id}', 'get')).toEqual(['200', '401', '404']);
     expect(statusesOf('/inspecoes/{id}', 'patch')).toEqual([
       '200',
       '400',
+      '401',
       '404',
       '422',
     ]);
     expect(statusesOf('/inspecoes/{id}', 'delete')).toEqual([
       '204',
+      '401',
       '404',
       '422',
     ]);

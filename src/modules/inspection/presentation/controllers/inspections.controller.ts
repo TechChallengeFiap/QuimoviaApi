@@ -34,6 +34,7 @@ import { InspectionItemResult } from '@/modules/inspection/domain/enums/inspecti
 import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
+import { ApiRequiresAuthentication } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { CreateInspectionDto } from '@/modules/inspection/presentation/dtos/create-inspection.dto.js';
@@ -56,6 +57,7 @@ const INSPECTION_NOT_FOUND_EXAMPLE = {
 @ApiTags('Inspeções')
 @Controller('inspecoes')
 @UseFilters(DomainExceptionFilter)
+@ApiRequiresAuthentication()
 export class InspectionsController {
   constructor(
     @Inject(CreateInspectionUseCase)
