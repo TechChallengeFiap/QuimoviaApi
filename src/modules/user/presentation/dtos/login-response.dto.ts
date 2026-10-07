@@ -15,6 +15,7 @@ export class LoginResponseDto {
 
   @ApiProperty({
     type: String,
+    enum: ['Bearer'],
     description: 'Tipo do token, a ser usado no cabeçalho Authorization',
     example: 'Bearer',
   })

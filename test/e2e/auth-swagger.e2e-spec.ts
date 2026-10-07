@@ -141,7 +141,7 @@ describe('Swagger da autenticação (e2e)', () => {
     expect(document.components?.schemas?.LoginResponseDto).toMatchObject({
       properties: {
         accessToken: { type: 'string' },
-        tokenType: { type: 'string', example: 'Bearer' },
+        tokenType: { type: 'string', enum: ['Bearer'], example: 'Bearer' },
         expiresAt: { type: 'string', format: 'date-time' },
         user: {
           allOf: [{ $ref: '#/components/schemas/UserResponseDto' }],
