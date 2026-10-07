@@ -151,6 +151,40 @@ describe('AuthController (e2e)', () => {
     });
   });
 
+  describe('POST /autenticacao/logout', () => {
+    it('encerra a sessão atual, que deixa de valer, sem afetar as outras', async () => {
+      await registerUser('maria@quimovia.com');
+      const first = (await login('maria@quimovia.com').expect(200)).body
+        .accessToken as string;
+      const second = (await login('maria@quimovia.com').expect(200)).body
+        .accessToken as string;
+
+      await request(app.getHttpServer())
+        .post('/autenticacao/logout')
+        .set('Authorization', `Bearer ${first}`)
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .get('/usuarios')
+        .set('Authorization', `Bearer ${first}`)
+        .expect(401);
+      await request(app.getHttpServer())
+        .post('/autenticacao/logout')
+        .set('Authorization', `Bearer ${first}`)
+        .expect(401);
+      await request(app.getHttpServer())
+        .get('/usuarios')
+        .set('Authorization', `Bearer ${second}`)
+        .expect(200);
+    });
+
+    it('exige o token de acesso', async () => {
+      await request(app.getHttpServer())
+        .post('/autenticacao/logout')
+        .expect(401);
+    });
+  });
+
   describe('rotas protegidas pelo guard global', () => {
     async function accessTokenOf(email: string): Promise<string> {
       await registerUser(email);

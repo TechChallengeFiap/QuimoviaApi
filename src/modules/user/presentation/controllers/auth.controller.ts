@@ -11,6 +11,7 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -20,7 +21,11 @@ import {
   INVALID_CREDENTIALS_MESSAGE,
   LoginUseCase,
 } from '@/modules/user/application/use-cases/auth/login.use-case.js';
+import { LogoutUseCase } from '@/modules/user/application/use-cases/auth/logout.use-case.js';
+import type { AuthenticatedSession } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
+import { CurrentSession } from '@/modules/user/infrastructure/auth/current-session.decorator.js';
+import { ApiRequiresAuthentication } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
 import { Public } from '@/shared/presentation/decorators/public.decorator.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
@@ -45,6 +50,7 @@ const ACCOUNT_WITHOUT_ACCESS_EXAMPLE = {
 export class AuthController {
   constructor(
     @Inject(LoginUseCase) private readonly loginUseCase: LoginUseCase,
+    @Inject(LogoutUseCase) private readonly logoutUseCase: LogoutUseCase,
   ) {}
 
   @Post('login')
@@ -99,5 +105,18 @@ export class AuthController {
   ): Promise<LoginResponseDto> {
     const result = await this.loginUseCase.execute(loginDto);
     return LoginResponseDto.fromResult(result);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Encerra a sessão atual',
+    description:
+      'Encerra a sessão do token enviado, que deixa de valer imediatamente. As outras sessões do usuário continuam ativas.',
+  })
+  @ApiNoContentResponse({ description: 'Sessão encerrada.' })
+  @ApiRequiresAuthentication()
+  async logout(@CurrentSession() session: AuthenticatedSession): Promise<void> {
+    await this.logoutUseCase.execute(session.sessionId);
   }
 }
