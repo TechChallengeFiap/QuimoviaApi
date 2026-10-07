@@ -3,7 +3,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '@/app.module.ts';
+import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
+import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -17,6 +19,8 @@ describe('AppController (e2e)', () => {
         $connect: jest.fn(async () => {}),
         $disconnect: jest.fn(async () => {}),
       })
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
       .compile();
 
     app = moduleFixture.createNestApplication();

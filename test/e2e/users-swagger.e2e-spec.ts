@@ -31,10 +31,14 @@ describe('Swagger do módulo user (e2e)', () => {
       await import('@/modules/user/domain/repositories/user.repository.js');
     const { PASSWORD_HASHER } =
       await import('@/modules/user/application/contracts/password-hasher.contract.js');
+    const { SESSION_REPOSITORY } =
+      await import('@/modules/user/domain/repositories/session.repository.js');
     const { UserRepositoryMock } =
       await import('../mocks/user-repository.mock.js');
     const { PasswordHasherMock } =
       await import('../mocks/password-hasher.mock.js');
+    const { SessionRepositoryMock } =
+      await import('../mocks/session-repository.mock.js');
 
     const moduleFixture = await Test.createTestingModule({
       imports: [UserModule],
@@ -43,6 +47,8 @@ describe('Swagger do módulo user (e2e)', () => {
       .useClass(UserRepositoryMock)
       .overrideProvider(PASSWORD_HASHER)
       .useClass(PasswordHasherMock)
+      .overrideProvider(SESSION_REPOSITORY)
+      .useClass(SessionRepositoryMock)
       .compile();
 
     app = moduleFixture.createNestApplication();

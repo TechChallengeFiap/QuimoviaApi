@@ -24,6 +24,7 @@ async function bootstrap() {
       'A QuimoviaAPI é uma API REST desenvolvida para o gerenciamento de produtos químicos, oferecendo recursos para cadastro, consulta, atualização e exclusão de produtos e suas respectivas informações.',
     )
     .setVersion('1.0')
+    .addTag('Autenticação', 'Login e encerramento das sessões dos usuários')
     .addTag('Produtos Químicos', 'Operações relacionadas aos produtos químicos')
     .addTag('Inspeções', 'Operações relacionadas as inspeções')
     .addTag(
