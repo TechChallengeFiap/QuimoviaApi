@@ -185,6 +185,51 @@ describe('AuthController (e2e)', () => {
     });
   });
 
+  describe('bloqueio e inativação de usuários', () => {
+    it.each([
+      [UserStatus.BLOCKED, UserStatus.ACTIVE],
+      [UserStatus.INACTIVE, UserStatus.ACTIVE],
+    ])(
+      'invalida as sessões ao mudar para %s, sem reativá-las ao voltar para %s',
+      async (status, reactivatedStatus) => {
+        await registerUser('admin@quimovia.com');
+        const maria = await registerUser('maria@quimovia.com');
+        const adminToken = (await login('admin@quimovia.com').expect(200)).body
+          .accessToken as string;
+        const mariaToken = (await login('maria@quimovia.com').expect(200)).body
+          .accessToken as string;
+
+        await request(app.getHttpServer())
+          .patch(`/usuarios/${maria.id}`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ status })
+          .expect(200);
+        await request(app.getHttpServer())
+          .get('/usuarios')
+          .set('Authorization', `Bearer ${mariaToken}`)
+          .expect(401);
+        await login('maria@quimovia.com').expect(403);
+
+        await request(app.getHttpServer())
+          .patch(`/usuarios/${maria.id}`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ status: reactivatedStatus })
+          .expect(200);
+        await request(app.getHttpServer())
+          .get('/usuarios')
+          .set('Authorization', `Bearer ${mariaToken}`)
+          .expect(401);
+
+        const newToken = (await login('maria@quimovia.com').expect(200)).body
+          .accessToken as string;
+        await request(app.getHttpServer())
+          .get('/usuarios')
+          .set('Authorization', `Bearer ${newToken}`)
+          .expect(200);
+      },
+    );
+  });
+
   describe('rotas protegidas pelo guard global', () => {
     async function accessTokenOf(email: string): Promise<string> {
       await registerUser(email);
