@@ -220,25 +220,19 @@ describe('Swagger do módulo user (e2e)', () => {
     expect(statusesOf('/usuarios', 'post')).toEqual([
       '201',
       '400',
-      '401',
       '409',
       '422',
     ]);
-    expect(statusesOf('/usuarios', 'get')).toEqual(['200', '400', '401']);
-    expect(statusesOf('/usuarios/{id}', 'get')).toEqual(['200', '401', '404']);
+    expect(statusesOf('/usuarios', 'get')).toEqual(['200', '400']);
+    expect(statusesOf('/usuarios/{id}', 'get')).toEqual(['200', '404']);
     expect(statusesOf('/usuarios/{id}', 'patch')).toEqual([
       '200',
       '400',
-      '401',
       '404',
       '409',
       '422',
     ]);
-    expect(statusesOf('/usuarios/{id}', 'delete')).toEqual([
-      '204',
-      '401',
-      '404',
-    ]);
+    expect(statusesOf('/usuarios/{id}', 'delete')).toEqual(['204', '404']);
   });
 
   it('expõe operationIds descritivos, derivados dos nomes dos métodos', () => {

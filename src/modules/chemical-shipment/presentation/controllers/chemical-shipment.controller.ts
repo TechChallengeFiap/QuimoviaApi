@@ -38,7 +38,6 @@ import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/applica
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
 import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.ts';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.ts';
-import { ApiRequiresAuthentication } from '@/shared/presentation/decorators/api-requires-authentication.decorator.ts';
 import { DomainError } from '@/shared/domain/errors/domain.error.ts';
 import { UpdateChemicalShipmentDto } from '../dtos/update-chemical-shipment.dto.ts';
 import { UpdateChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
@@ -46,7 +45,6 @@ import { DeleteChemicalShipmentUseCase } from '../../application/use-cases/chemi
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
 @UseFilters(DomainExceptionFilter)
-@ApiRequiresAuthentication()
 export class ChemicalShipmentController {
   private readonly logger = new Logger(ChemicalShipmentController.name);
 

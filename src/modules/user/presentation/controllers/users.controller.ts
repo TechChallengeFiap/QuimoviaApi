@@ -33,7 +33,6 @@ import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/lis
 import { UpdateUserUseCase } from '@/modules/user/application/use-cases/users/update-user.use-case.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
-import { ApiRequiresAuthentication } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { CreateUserDto } from '@/modules/user/presentation/dtos/create-user.dto.js';
@@ -66,7 +65,6 @@ const BUSINESS_RULE_EXAMPLE = {
 @ApiTags('Operações dos usuários')
 @Controller('usuarios')
 @UseFilters(DomainExceptionFilter)
-@ApiRequiresAuthentication()
 export class UsersController {
   constructor(
     @Inject(CreateUserUseCase)

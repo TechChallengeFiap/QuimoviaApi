@@ -6,6 +6,7 @@ import {
   Inject,
   Post,
   UseFilters,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -24,9 +25,9 @@ import {
 import { LogoutUseCase } from '@/modules/user/application/use-cases/auth/logout.use-case.js';
 import type { AuthenticatedSession } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
+import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
 import { CurrentSession } from '@/modules/user/infrastructure/auth/current-session.decorator.js';
 import { ApiRequiresAuthentication } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
-import { Public } from '@/shared/presentation/decorators/public.decorator.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { LoginDto } from '@/modules/user/presentation/dtos/login.dto.js';
@@ -55,13 +56,10 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Public()
   @ApiOperation({
     summary: 'Autentica o usuário e inicia uma sessão',
     description:
       'Confere o e-mail e a senha e, se a conta estiver ativa, inicia uma sessão e devolve o token de acesso. O token vale até expiresAt ou até o logout e deve ser enviado nas demais rotas no cabeçalho Authorization: Bearer <token>.',
-    // Rota pública: não exige o token de acesso na documentação.
-    security: [],
   })
   @ApiBody({
     type: LoginDto,
@@ -109,6 +107,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AuthGuard)
   @ApiOperation({
     summary: 'Encerra a sessão atual',
     description:

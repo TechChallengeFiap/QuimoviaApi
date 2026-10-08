@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { LoginUseCase } from '@/modules/user/application/use-cases/auth/login.use-case.js';
 import { LogoutUseCase } from '@/modules/user/application/use-cases/auth/logout.use-case.js';
@@ -18,11 +17,11 @@ import { AuthController } from '@/modules/user/presentation/controllers/auth.con
 import { UserModule } from '@/modules/user/user.module.js';
 
 /**
- * Autenticação do contexto Identidade e Acesso: login, logout e o guard global
- * que exige uma sessão ativa em todas as rotas, exceto as marcadas com @Public().
+ * Autenticação do contexto Identidade e Acesso: login, logout e o AuthGuard,
+ * que exige uma sessão ativa nas rotas em que é aplicado.
  *
- * Fica separado do UserModule porque o guard vale para a aplicação inteira
- * (APP_GUARD): só o AppModule deve importar este módulo.
+ * Para proteger as rotas de outro módulo, importe este módulo nele e use
+ * @UseGuards(AuthGuard) no controller ou no endpoint.
  *
  * A configuração (AUTH_CONFIG) é lida das variáveis de ambiente quando o
  * módulo é iniciado; sem um JWT_SECRET válido, a aplicação não sobe.
@@ -43,7 +42,8 @@ import { UserModule } from '@/modules/user/user.module.js';
       }),
     },
     { provide: ACCESS_TOKEN_SERVICE, useClass: JwtAccessTokenService },
-    { provide: APP_GUARD, useClass: AuthGuard },
+    AuthGuard,
   ],
+  exports: [AuthGuard, ValidateSessionUseCase],
 })
 export class AuthModule {}

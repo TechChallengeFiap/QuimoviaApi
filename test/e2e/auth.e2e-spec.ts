@@ -4,7 +4,6 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
-import { AuthModule } from '@/modules/user/auth.module.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
@@ -14,6 +13,7 @@ import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
+import { ProtectedRouteModule } from '../mocks/protected-route.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 
@@ -29,7 +29,7 @@ describe('AuthController (e2e)', () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AuthModule],
+      imports: [ProtectedRouteModule],
     })
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
@@ -172,7 +172,7 @@ describe('AuthController (e2e)', () => {
         .expect(204);
 
       await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/rota-protegida')
         .set('Authorization', `Bearer ${first}`)
         .expect(401);
       await request(app.getHttpServer())
@@ -180,7 +180,7 @@ describe('AuthController (e2e)', () => {
         .set('Authorization', `Bearer ${first}`)
         .expect(401);
       await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/rota-protegida')
         .set('Authorization', `Bearer ${second}`)
         .expect(200);
     });
@@ -199,16 +199,12 @@ describe('AuthController (e2e)', () => {
     ])(
       'invalida as sessões ao mudar para %s, sem reativá-las ao voltar para %s',
       async (status, reactivatedStatus) => {
-        await registerUser('admin@quimovia.com');
         const maria = await registerUser('maria@quimovia.com');
-        const adminToken = (await login('admin@quimovia.com').expect(200)).body
-          .accessToken as string;
         const mariaToken = (await login('maria@quimovia.com').expect(200)).body
           .accessToken as string;
 
         await request(app.getHttpServer())
           .patch(`/usuarios/${maria.id}`)
-          .set('Authorization', `Bearer ${adminToken}`)
           .send({ status })
           .expect(200);
         // Sem nenhuma requisição com o token no meio: quem encerra a sessão é
@@ -220,25 +216,24 @@ describe('AuthController (e2e)', () => {
 
         await request(app.getHttpServer())
           .patch(`/usuarios/${maria.id}`)
-          .set('Authorization', `Bearer ${adminToken}`)
           .send({ status: reactivatedStatus })
           .expect(200);
         await request(app.getHttpServer())
-          .get('/usuarios')
+          .get('/rota-protegida')
           .set('Authorization', `Bearer ${mariaToken}`)
           .expect(401);
 
         const newToken = (await login('maria@quimovia.com').expect(200)).body
           .accessToken as string;
         await request(app.getHttpServer())
-          .get('/usuarios')
+          .get('/rota-protegida')
           .set('Authorization', `Bearer ${newToken}`)
           .expect(200);
       },
     );
   });
 
-  describe('rotas protegidas pelo guard global', () => {
+  describe('rotas protegidas pelo AuthGuard', () => {
     async function accessTokenOf(email: string): Promise<string> {
       await registerUser(email);
       const response = await login(email).expect(200);
@@ -248,7 +243,7 @@ describe('AuthController (e2e)', () => {
 
     it('exige o token de acesso', async () => {
       const response = await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/rota-protegida')
         .expect(401);
 
       expect(response.body).toEqual({
@@ -259,20 +254,32 @@ describe('AuthController (e2e)', () => {
       });
     });
 
-    it('libera a rota com o token de uma sessão ativa', async () => {
+    it('libera a rota com o token de uma sessão ativa e expõe a sessão', async () => {
       const token = await accessTokenOf('maria@quimovia.com');
+      const user = await users.findByEmail('maria@quimovia.com');
 
       await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/rota-protegida')
         .set('Authorization', `Bearer ${token}`)
-        .expect(200);
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body).toEqual({
+            userId: user?.id,
+            sessionId: sessionIdOf(token),
+            role: UserRole.PORT_OPERATOR,
+          });
+        });
+    });
+
+    it('não protege as rotas em que não é aplicado', async () => {
+      await request(app.getHttpServer()).get('/usuarios').expect(200);
     });
 
     it('recusa um token inválido ou de outro esquema', async () => {
       const token = await accessTokenOf('maria@quimovia.com');
 
       await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/rota-protegida')
         .set('Authorization', `Bearer ${token}x`)
         .expect(401)
         .expect(({ body }) => {
@@ -281,7 +288,7 @@ describe('AuthController (e2e)', () => {
           );
         });
       await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/rota-protegida')
         .set('Authorization', `Basic ${token}`)
         .expect(401);
     });
@@ -292,7 +299,7 @@ describe('AuthController (e2e)', () => {
       user?.block();
 
       await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/rota-protegida')
         .set('Authorization', `Bearer ${token}`)
         .expect(401)
         .expect(({ body }) => {
@@ -303,7 +310,7 @@ describe('AuthController (e2e)', () => {
 
       user?.unblock();
       await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/rota-protegida')
         .set('Authorization', `Bearer ${token}`)
         .expect(401);
     });

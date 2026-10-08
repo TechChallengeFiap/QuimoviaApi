@@ -1,15 +1,17 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
-import { ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { BEARER_AUTH } from '@/shared/infrastructure/config/swagger.config.js';
 
 export const MISSING_ACCESS_TOKEN_MESSAGE =
   'Token de acesso não informado. Envie o cabeçalho Authorization: Bearer <token>.';
 
 /**
- * Documenta no Swagger a resposta 401 das rotas protegidas pelo guard global
- * de autenticação. O envio do token já é exigido pela configuração do Swagger.
+ * Documenta no Swagger uma rota protegida pelo AuthGuard: exige o token de
+ * acesso (botão "Authorize") e descreve a resposta 401.
  */
 export function ApiRequiresAuthentication() {
   return applyDecorators(
+    ApiBearerAuth(BEARER_AUTH),
     ApiUnauthorizedResponse({
       description:
         'Token de acesso ausente, inválido ou expirado, ou sessão encerrada; é preciso fazer login novamente.',

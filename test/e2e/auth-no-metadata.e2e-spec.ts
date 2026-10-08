@@ -12,8 +12,9 @@ const PASSWORD = 'S3nhaForte!';
 /**
  * Executa o login, o guard e o logout como no `npm run start:dev` com tsx, que
  * não emite a metadata `design:*`: a injeção de dependências (inclusive a do
- * guard global e a do serviço de token), a validação do corpo e a leitura da
- * sessão passam a depender só do que está declarado explicitamente.
+ * guard aplicado em outro módulo e a do serviço de token), a validação do
+ * corpo e a leitura da sessão passam a depender só do que está declarado
+ * explicitamente.
  *
  * Assim como no main.ts, apenas o ValidationPipe é global; os erros de domínio
  * são tratados pelo filtro declarado no controller.
@@ -27,7 +28,6 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
     // Os casos de uso registram os erros esperados (401, 403) no log.
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
-    const { AuthModule } = await import('@/modules/user/auth.module.js');
     const { USER_REPOSITORY } =
       await import('@/modules/user/domain/repositories/user.repository.js');
     const { SESSION_REPOSITORY } =
@@ -43,9 +43,11 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
     const { PasswordHasherMock } =
       await import('../mocks/password-hasher.mock.js');
     const { TEST_AUTH_CONFIG } = await import('../mocks/auth-config.mock.js');
+    const { ProtectedRouteModule } =
+      await import('../mocks/protected-route.mock.js');
 
     const moduleFixture = await Test.createTestingModule({
-      imports: [AuthModule],
+      imports: [ProtectedRouteModule],
     })
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
@@ -99,17 +101,20 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
     await registerUser('maria@quimovia.com');
     const token = await accessTokenOf('maria@quimovia.com');
 
-    await request(app.getHttpServer()).get('/usuarios').expect(401);
+    await request(app.getHttpServer()).get('/rota-protegida').expect(401);
     await request(app.getHttpServer())
-      .get('/usuarios')
+      .get('/rota-protegida')
       .set('Authorization', `Bearer ${token}`)
-      .expect(200);
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ role: UserRole.SYSTEM_ADMIN });
+      });
     await request(app.getHttpServer())
       .post('/autenticacao/logout')
       .set('Authorization', `Bearer ${token}`)
       .expect(204);
     await request(app.getHttpServer())
-      .get('/usuarios')
+      .get('/rota-protegida')
       .set('Authorization', `Bearer ${token}`)
       .expect(401);
   });
@@ -140,25 +145,21 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
   });
 
   it('encerra as sessões de um usuário bloqueado pelo PATCH /usuarios/:id, sem reativá-las no desbloqueio', async () => {
-    await registerUser('admin@quimovia.com');
     const joao = await registerUser('joao@quimovia.com');
-    const adminToken = await accessTokenOf('admin@quimovia.com');
     const joaoToken = await accessTokenOf('joao@quimovia.com');
 
     await request(app.getHttpServer())
       .patch(`/usuarios/${joao.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'BLOCKED' })
       .expect(200);
     // Desbloqueia antes de usar o token: ele só é recusado se o bloqueio já
     // tiver encerrado a sessão.
     await request(app.getHttpServer())
       .patch(`/usuarios/${joao.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'ACTIVE' })
       .expect(200);
     await request(app.getHttpServer())
-      .get('/usuarios')
+      .get('/rota-protegida')
       .set('Authorization', `Bearer ${joaoToken}`)
       .expect(401);
   });

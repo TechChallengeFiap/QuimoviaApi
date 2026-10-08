@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import type { AuthenticatedSession } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { ValidateSessionUseCase } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
@@ -8,16 +7,6 @@ import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
 import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
 import { AuthenticationError } from '@/shared/domain/errors/domain.error.js';
 import { MISSING_ACCESS_TOKEN_MESSAGE } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
-import { Public } from '@/shared/presentation/decorators/public.decorator.js';
-
-class ProtectedController {
-  handler(): void {}
-}
-
-class PublicController {
-  @Public()
-  handler(): void {}
-}
 
 const session: AuthenticatedSession = {
   userId: 'user-001',
@@ -31,33 +20,24 @@ describe('AuthGuard', () => {
 
   beforeEach(() => {
     execute = jest.fn<ValidateSessionUseCase['execute']>();
-    guard = new AuthGuard(new Reflector(), {
+    guard = new AuthGuard({
       execute,
     } as unknown as ValidateSessionUseCase);
   });
 
-  function contextFor(
-    controller: typeof ProtectedController | typeof PublicController,
-    authorization?: string,
-  ): { context: ExecutionContext; request: AuthenticatedRequest } {
+  function contextFor(authorization?: string): {
+    context: ExecutionContext;
+    request: AuthenticatedRequest;
+  } {
     const request = {
       headers: authorization ? { authorization } : {},
     } as AuthenticatedRequest;
     const context = {
-      getHandler: () => controller.prototype.handler,
-      getClass: () => controller,
       switchToHttp: () => ({ getRequest: () => request }),
     } as unknown as ExecutionContext;
 
     return { context, request };
   }
-
-  it('libera as rotas marcadas com @Public() sem exigir token', async () => {
-    const { context } = contextFor(PublicController);
-
-    await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(execute).not.toHaveBeenCalled();
-  });
 
   it.each([
     ['sem o cabeçalho', undefined],
@@ -65,7 +45,7 @@ describe('AuthGuard', () => {
     ['sem o token', 'Bearer'],
     ['com partes a mais', 'Bearer token extra'],
   ])('responde 401 %s', async (_, authorization) => {
-    const { context } = contextFor(ProtectedController, authorization);
+    const { context } = contextFor(authorization);
 
     await expect(guard.canActivate(context)).rejects.toThrow(
       new UnauthorizedException(MISSING_ACCESS_TOKEN_MESSAGE),
@@ -75,10 +55,7 @@ describe('AuthGuard', () => {
 
   it('valida o token e guarda a sessão na requisição', async () => {
     execute.mockResolvedValueOnce(session);
-    const { context, request } = contextFor(
-      ProtectedController,
-      '  bearer   token-001 ',
-    );
+    const { context, request } = contextFor('  bearer   token-001 ');
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(execute).toHaveBeenCalledWith('token-001');
@@ -89,7 +66,7 @@ describe('AuthGuard', () => {
     execute.mockRejectedValueOnce(
       new AuthenticationError('Sessão expirada ou encerrada.'),
     );
-    const { context } = contextFor(ProtectedController, 'Bearer token-001');
+    const { context } = contextFor('Bearer token-001');
 
     await expect(guard.canActivate(context)).rejects.toThrow(
       new UnauthorizedException('Sessão expirada ou encerrada.'),
@@ -99,7 +76,7 @@ describe('AuthGuard', () => {
   it('propaga os erros que não são de autenticação', async () => {
     const failure = new Error('Falha de conexão com o banco');
     execute.mockRejectedValueOnce(failure);
-    const { context } = contextFor(ProtectedController, 'Bearer token-001');
+    const { context } = contextFor('Bearer token-001');
 
     await expect(guard.canActivate(context)).rejects.toBe(failure);
   });

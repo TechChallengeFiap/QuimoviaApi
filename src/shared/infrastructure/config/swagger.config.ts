@@ -7,9 +7,8 @@ export const BEARER_AUTH = 'bearer';
 /**
  * Configuração do documento OpenAPI (Swagger) da API.
  *
- * Assim como o guard global de autenticação, a documentação exige o token de
- * acesso em todas as operações: o botão "Authorize" passa a enviá-lo. As rotas
- * públicas, como o login, removem essa exigência na própria operação.
+ * Registra o esquema do token de acesso (botão "Authorize"). Só as operações
+ * protegidas pelo AuthGuard o exigem, com @ApiRequiresAuthentication().
  */
 export function buildSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
   return new DocumentBuilder()
@@ -28,7 +27,6 @@ export function buildSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
       },
       BEARER_AUTH,
     )
-    .addSecurityRequirements(BEARER_AUTH)
     .addTag('Autenticação', 'Login e encerramento das sessões dos usuários')
     .addTag('Produtos Químicos', 'Operações relacionadas aos produtos químicos')
     .addTag('Inspeções', 'Operações relacionadas as inspeções')

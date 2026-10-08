@@ -9,7 +9,8 @@ import { MISSING_ACCESS_TOKEN_MESSAGE } from '@/shared/presentation/decorators/a
 
 /**
  * Sessão autenticada da requisição, preenchida pelo AuthGuard. Só pode ser
- * usada em rotas protegidas; numa rota pública não há sessão para devolver.
+ * usada em rotas com @UseGuards(AuthGuard); sem o guard, não há sessão para
+ * devolver.
  */
 export const CurrentSession = createParamDecorator(
   (_: unknown, context: ExecutionContext): AuthenticatedSession => {

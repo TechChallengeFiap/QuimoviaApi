@@ -9,7 +9,7 @@ import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
 /**
  * Gera o Swagger da autenticação sem a metadata `design:*`, como acontece com
  * o tsx, usando a mesma configuração do main.ts: o token de acesso é exigido
- * em todas as operações, menos no login.
+ * só nas operações protegidas pelo AuthGuard.
  */
 describe('Swagger da autenticação (e2e)', () => {
   let app: INestApplication;
@@ -77,7 +77,7 @@ describe('Swagger da autenticação (e2e)', () => {
     );
   });
 
-  it('exige o token de acesso (bearer JWT) em todas as operações', () => {
+  it('registra o esquema do token de acesso (bearer JWT)', () => {
     expect(document.components?.securitySchemes).toEqual({
       bearer: expect.objectContaining({
         type: 'http',
@@ -85,29 +85,17 @@ describe('Swagger da autenticação (e2e)', () => {
         bearerFormat: 'JWT',
       }),
     });
-    expect(document.security).toEqual([{ bearer: [] }]);
-    expect(document.paths['/autenticacao/logout']?.post).not.toHaveProperty(
+  });
+
+  it('exige o token só no logout, a operação protegida pelo AuthGuard', () => {
+    expect(document.security).toBeUndefined();
+    expect(document.paths['/autenticacao/logout']?.post?.security).toEqual([
+      { bearer: [] },
+    ]);
+    expect(document.paths['/autenticacao/login']?.post).not.toHaveProperty(
       'security',
     );
     expect(document.paths['/usuarios']?.get).not.toHaveProperty('security');
-  });
-
-  it('deixa o login como a única operação pública', () => {
-    const publicOperations = Object.entries(document.paths).flatMap(
-      ([path, operations]) =>
-        Object.entries(operations)
-          .filter(
-            ([, operation]) =>
-              typeof operation === 'object' &&
-              operation !== null &&
-              'security' in operation &&
-              Array.isArray(operation.security) &&
-              operation.security.length === 0,
-          )
-          .map(([method]) => `${method.toUpperCase()} ${path}`),
-    );
-
-    expect(publicOperations).toEqual(['POST /autenticacao/login']);
   });
 
   it('documenta o corpo do login com o LoginDto e um exemplo válido', async () => {

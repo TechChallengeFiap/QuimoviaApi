@@ -29,22 +29,16 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET) continua público', () => {
+  it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
       .expect('Hello World!');
   });
 
-  it('exige o token de acesso nas rotas dos módulos', async () => {
-    for (const path of ['/usuarios', '/inspecoes', '/chemical-shipment']) {
-      await request(app.getHttpServer()).get(path).expect(401);
-    }
-  });
-
-  it('documenta no Swagger como públicas só as rotas liberadas pelo guard', async () => {
+  it('exige o token de acesso no Swagger só nas rotas protegidas pelo AuthGuard', () => {
     const document = SwaggerModule.createDocument(app, buildSwaggerConfig());
-    const publicOperations = Object.entries(document.paths).flatMap(
+    const protectedOperations = Object.entries(document.paths).flatMap(
       ([path, operations]) =>
         Object.entries(operations)
           .filter(
@@ -53,23 +47,13 @@ describe('AppController (e2e)', () => {
               operation !== null &&
               'security' in operation &&
               Array.isArray(operation.security) &&
-              operation.security.length === 0,
+              operation.security.length > 0,
           )
           .map(([method]) => `${method.toUpperCase()} ${path}`),
     );
 
-    expect(document.security).toEqual([{ bearer: [] }]);
-    expect(publicOperations.sort()).toEqual([
-      'GET /',
-      'POST /autenticacao/login',
-    ]);
-
-    // As mesmas rotas respondem sem token; as demais exigem login.
-    await request(app.getHttpServer()).get('/').expect(200);
-    await request(app.getHttpServer())
-      .post('/autenticacao/login')
-      .send({})
-      .expect(400);
+    expect(document.security).toBeUndefined();
+    expect(protectedOperations).toEqual(['POST /autenticacao/logout']);
   });
 
   afterEach(async () => {
