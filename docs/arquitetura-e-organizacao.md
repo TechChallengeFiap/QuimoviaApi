@@ -547,7 +547,7 @@ Use para:
 
 - repositories Prisma;
 - mappers Prisma;
-- componentes específicos de banco, como o seed do administrador inicial (`seed/initial-admin.seed.ts`, executado por `prisma/seed.ts`).
+- componentes específicos de banco.
 
 **Nomenclatura**
 

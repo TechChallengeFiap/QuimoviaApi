@@ -145,9 +145,6 @@ O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e cone
 | `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
 | `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48`                                                                       |
 | `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `3600`                                                                                                     |
-| `ADMIN_NAME`             | Nome do administrador inicial criado pelo seed (opcional)                                                | `Administrador do Sistema`                                                                                 |
-| `ADMIN_EMAIL`            | E-mail do administrador inicial criado pelo seed                                                         | `admin@quimovia.com`                                                                                       |
-| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | definida por você                                                                                          |
 
 ### 5.3. Executando com Docker e Localmente
 
@@ -175,7 +172,7 @@ copy .env.example .env
 
 > **Importante:** O `docker-compose.yml` utiliza essas variáveis para inicializar o MySQL. Verifique se as credenciais de `MYSQL_*` e a string de conexão em `DATABASE_URL` estão configuradas corretamente.
 
-> **Autenticação:** o `JWT_SECRET` e o `ADMIN_PASSWORD` vêm em branco no exemplo e precisam ser preenchidos. Sem um `JWT_SECRET` válido a API não sobe, e sem o `ADMIN_PASSWORD` o seed não cria o administrador. Para gerar o segredo, use por exemplo `openssl rand -base64 48`.
+> **Autenticação:** o `JWT_SECRET` vem em branco no exemplo e precisa ser preenchido; sem um valor válido, a API não sobe. Para gerá-lo, use por exemplo `openssl rand -base64 48`.
 
 #### 3. Subir o container do banco de dados (MySQL)
 
@@ -207,17 +204,7 @@ npm run migrate:dev
 npm run migrate:deploy
 ```
 
-#### 6. Criar o administrador inicial
-
-Todas as rotas exigem login, inclusive o cadastro de usuários. Por isso, um banco novo precisa de um primeiro usuário, o Administrador do Sistema, criado com os dados de `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME`:
-
-```bash
-npm run migrate:seed
-```
-
-> O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado.
-
-#### 7. Iniciar a API em Desenvolvimento
+#### 6. Iniciar a API em Desenvolvimento
 
 ```bash
 npm run start:dev
@@ -243,7 +230,6 @@ A documentação Swagger estará disponível em: `http://localhost:3000/api`
 | `npm run migrate:generate` | Gera o cliente Prisma tipado                                |
 | `npm run migrate:dev`      | Executa migrations em modo desenvolvimento                  |
 | `npm run migrate:deploy`   | Aplica migrations pendentes no banco                        |
-| `npm run migrate:seed`     | Cria o administrador inicial (também via `prisma db seed`)  |
 
 ---
 
