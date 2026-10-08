@@ -243,11 +243,11 @@ A API possui documentação interativa completa via Swagger. Com a aplicação e
 
 A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `401`, `403`, `404`, `422`).
 
-Para testar as rotas protegidas pelo Swagger, faça login em `POST /autenticacao/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**.
+Para testar as rotas que exigem login pelo Swagger, como o logout, faça login em `POST /autenticacao/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**.
 
 ### 6.2. Principais Endpoints
 
-Com exceção do login e da rota raiz (`GET /`), todas as rotas exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa. Sem ele, a API responde `401`.
+As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa; sem ele, a API responde `401`. Por enquanto, só o logout usa o guard: cada módulo pode exigir login nas próprias rotas importando o `AuthModule` e usando `@UseGuards(AuthGuard)`.
 
 #### Autenticação (`/autenticacao`)
 
@@ -256,7 +256,7 @@ Com exceção do login e da rota raiz (`GET /`), todas as rotas exigem o cabeça
 
 Bloquear ou inativar um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
 
-Por enquanto, a autorização por perfil (RN-ACE-04) ainda não é aplicada: qualquer usuário autenticado acessa todas as rotas.
+A autorização por perfil (RN-ACE-04) ainda não é aplicada.
 
 #### Cargas Químicas (`/chemical-shipment`)
 
@@ -308,7 +308,7 @@ Os testes automatizados validam cenários críticos exigidos no Tech Challenge, 
 - Impedimento de transições ilegais na máquina de estados;
 - Bloqueio de movimentação de cargas marcadas como `BLOCKED`;
 - Validação e hash criptográfico de senhas;
-- Login, sessões com expiração e encerramento, e exigência do token de acesso em todas as rotas protegidas;
+- Login, sessões com expiração e encerramento, e exigência do token de acesso nas rotas protegidas pelo `AuthGuard`;
 - Tratamento de exceções e mapeamento padronizado de erros de domínio.
 
 ---

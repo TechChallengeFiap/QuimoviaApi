@@ -222,7 +222,7 @@ Hoje contém:
 
 - `Usuario` e o seu cadastro (`UserModule`);
 - `Sessao` (`Session`), com repositório próprio;
-- login, logout e o guard global que exige uma sessão ativa nas rotas (`AuthModule`, importado só pelo `AppModule`, porque o guard vale para a aplicação inteira).
+- login, logout e o `AuthGuard`, que exige uma sessão ativa nas rotas em que é aplicado (`AuthModule`).
 
 Pode conter futuramente:
 
@@ -608,11 +608,11 @@ src/modules/user/infrastructure/auth/
 
 Use para guards, strategies e adapters técnicos de autenticação.
 
-Hoje contém o `AuthGuard` (guard global), a leitura da configuração (`JWT_SECRET` e `JWT_EXPIRES_IN_SECONDS`) e o decorator `@CurrentSession()`, que entrega ao controller a sessão validada.
+Hoje contém o `AuthGuard`, a leitura da configuração (`JWT_SECRET` e `JWT_EXPIRES_IN_SECONDS`) e o decorator `@CurrentSession()`, que entrega ao controller a sessão validada.
 
 Regras de usuário, perfil e permissão pertencem ao domínio ou aplicação de `user`.
 
-Para liberar uma rota do login, use `@Public()` (`src/shared/presentation/decorators/`). Nas rotas protegidas, `@ApiRequiresAuthentication()` documenta a resposta 401 no Swagger.
+O guard não é global: para exigir login, importe o `AuthModule` no módulo e use `@UseGuards(AuthGuard)` no controller ou no endpoint. Nessas rotas, `@ApiRequiresAuthentication()` (`src/shared/presentation/decorators/`) exige o token no Swagger e documenta a resposta 401.
 
 ## 9. Presentation
 
@@ -714,7 +714,7 @@ src/shared/
 - config global;
 - Prisma global;
 - erro base sem regra específica;
-- decorators transversais, como `@Public()`.
+- decorators transversais, como `@ApiRequiresAuthentication()`.
 
 ### Não deve entrar em `shared`
 
