@@ -155,12 +155,28 @@ describe('LoginUseCase', () => {
     expect(registerLogin).toHaveBeenCalledTimes(1);
   });
 
-  it('não desfaz um bloqueio feito enquanto a senha era conferida', async () => {
+  it('cria a sessão antes de gravar o login', async () => {
     await registerUser();
+    const createSession = jest.spyOn(sessions, 'create');
+    const registerLogin = jest.spyOn(users, 'registerLogin');
+
+    await useCase.execute({
+      email: 'maria@quimovia.com',
+      password: 'S3nhaForte!',
+    });
+
+    expect(createSession.mock.invocationCallOrder[0]).toBeLessThan(
+      registerLogin.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('não desfaz um bloqueio feito durante o login e encerra a sessão criada', async () => {
+    const user = await registerUser();
     // O repositório não grava o login porque a conta já não está ativa.
     jest.spyOn(users, 'registerLogin').mockResolvedValueOnce(false);
     const createSession = jest.spyOn(sessions, 'create');
     const update = jest.spyOn(users, 'update');
+    const issue = jest.spyOn(accessTokens, 'issue');
 
     const attempt = useCase.execute({
       email: 'maria@quimovia.com',
@@ -171,8 +187,12 @@ describe('LoginUseCase', () => {
     await expect(attempt).rejects.toThrow(
       'A conta do usuário deixou de estar ativa durante o login; não é possível autenticar-se no sistema.',
     );
-    expect(createSession).not.toHaveBeenCalled();
+    expect(createSession).toHaveBeenCalledTimes(1);
+    const session = await sessions.findById(createSession.mock.calls[0][0].id);
+    expect(session?.userId).toBe(user.id);
+    expect(session?.endedAt).toEqual(expect.any(Date));
     expect(update).not.toHaveBeenCalled();
+    expect(issue).not.toHaveBeenCalled();
   });
 
   it('não revela o status de uma conta bloqueada para quem erra a senha', async () => {

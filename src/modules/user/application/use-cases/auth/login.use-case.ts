@@ -75,20 +75,25 @@ export class LoginUseCase {
       }
 
       const now = new Date();
-      user.registerLogin(now);
-
-      // Grava só o horário do login, e só se a conta continuar ativa: um
-      // bloqueio feito enquanto a senha era conferida não é desfeito aqui.
-      if (!(await this.users.registerLogin(user))) {
-        throw new AccessDeniedError(ACCOUNT_CHANGED_DURING_LOGIN_MESSAGE);
-      }
-
       const session = Session.start({
         userId: user.id,
         durationInSeconds: this.sessionSettings.durationInSeconds,
         startedAt: now,
       });
+      // A sessão é criada antes de gravar o login: um bloqueio feito a partir
+      // daqui já a encerra junto com as outras sessões do usuário.
       await this.sessions.create(session);
+
+      user.registerLogin(now);
+
+      // Grava só o horário do login, e só se a conta continuar ativa: um
+      // bloqueio feito durante o login não é desfeito, e a sessão recém-criada
+      // é encerrada.
+      if (!(await this.users.registerLogin(user))) {
+        session.end(now);
+        await this.sessions.update(session);
+        throw new AccessDeniedError(ACCOUNT_CHANGED_DURING_LOGIN_MESSAGE);
+      }
 
       return {
         accessToken: await this.accessTokens.issue(
