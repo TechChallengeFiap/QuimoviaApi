@@ -61,15 +61,16 @@ export class UpdateUserUseCase {
         this.changeStatus(user, input.status);
       }
 
-      const updated = await this.users.update(user);
-
       // A inativação ou o bloqueio invalida as sessões vigentes do usuário
-      // (RN-ACE-03); reativar a conta não as reativa.
+      // (RN-ACE-03); reativar a conta não as reativa. As sessões são
+      // encerradas antes de gravar o novo status: se o encerramento falhar, o
+      // status não muda e nenhuma sessão fica aberta para voltar a valer numa
+      // reativação.
       if (user.status !== previousStatus && !user.canAuthenticate()) {
         await this.sessions.endAllByUserId(user.id, new Date());
       }
 
-      return updated;
+      return await this.users.update(user);
     } catch (error) {
       this.logger.error(
         `Erro ao atualizar o usuário com id ${id}: ${error instanceof Error ? error.message : String(error)}`,

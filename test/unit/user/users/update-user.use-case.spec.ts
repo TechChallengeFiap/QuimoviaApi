@@ -113,6 +113,18 @@ describe('UpdateUserUseCase', () => {
     expect(session.isActive()).toBe(false);
   });
 
+  it('não grava o bloqueio quando o encerramento das sessões falha', async () => {
+    const user = await registerUser();
+    const failure = new Error('Falha de conexão com o banco');
+    jest.spyOn(sessions, 'endAllByUserId').mockRejectedValueOnce(failure);
+    const update = jest.spyOn(users, 'update');
+
+    await expect(
+      useCase.execute(user.id, { status: UserStatus.BLOCKED }),
+    ).rejects.toBe(failure);
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('mantém as sessões quando o usuário continua com acesso', async () => {
     const user = await registerUser();
     const session = await startSession(user.id);
