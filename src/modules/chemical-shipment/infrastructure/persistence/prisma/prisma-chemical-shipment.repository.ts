@@ -1,12 +1,22 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
-import type { ChemicalShipmentModel as PersistedChemicalShipment } from '@/generated/prisma/models.ts';
+import type {
+  ChemicalShipmentModel as PersistedChemicalShipment,
+  UserModel as PersistedUser,
+} from '@/generated/prisma/models.ts';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
+import { User } from '@/modules/user/domain/entities/user.entity.ts';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.ts';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.ts';
 import type {
   ChemicalShipmentPage,
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
 } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+
+type PersistedChemicalShipmentWithRelations = PersistedChemicalShipment & {
+  responsibleUser?: PersistedUser | null;
+};
 
 @Injectable()
 export class PrismaChemicalShipmentRepository implements ChemicalShipmentRepository {
@@ -61,6 +71,9 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
           where,
           take: pageSize,
           skip: (page - 1) * pageSize,
+          include: {
+            responsibleUser: true,
+          },
         }),
         this.prismaService.chemicalShipment.count({
           where,
@@ -88,6 +101,9 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
     try {
       const record = await this.prismaService.chemicalShipment.findUnique({
         where: { id },
+        include: {
+          responsibleUser: true,
+        },
       });
 
       return record ? PrismaChemicalShipmentRepository.toDomain(record) : null;
@@ -113,6 +129,9 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             productId: chemicalShipment.productId,
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
+          },
+          include: {
+            responsibleUser: true,
           },
         });
 
@@ -144,7 +163,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
   }
 
   private static toDomain(
-    chemicalShipment: PersistedChemicalShipment,
+    chemicalShipment: PersistedChemicalShipmentWithRelations,
   ): ChemicalShipment {
     return ChemicalShipment.restore({
       id: chemicalShipment.id,
@@ -153,6 +172,19 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
       status: chemicalShipment.status,
       productId: chemicalShipment.productId,
       responsibleUserId: chemicalShipment.responsibleUserId,
+      responsibleUser: chemicalShipment.responsibleUser
+        ? User.restore({
+            id: chemicalShipment.responsibleUser.id,
+            name: chemicalShipment.responsibleUser.name,
+            email: chemicalShipment.responsibleUser.email,
+            passwordHash: chemicalShipment.responsibleUser.passwordHash,
+            role: chemicalShipment.responsibleUser.role as UserRole,
+            status: chemicalShipment.responsibleUser.status as UserStatus,
+            lastLoginAt: chemicalShipment.responsibleUser.lastLoginAt,
+            createdAt: chemicalShipment.responsibleUser.createdAt,
+            updatedAt: chemicalShipment.responsibleUser.updatedAt,
+          })
+        : null,
       documentsIds: chemicalShipment.documentsIds,
       deletedAt: chemicalShipment.deletedAt ?? null,
     });

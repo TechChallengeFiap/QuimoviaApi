@@ -28,7 +28,6 @@ import {
   ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
 import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.ts';
@@ -99,6 +98,16 @@ export class ChemicalShipmentController {
         ],
         error: 'Bad Request',
         statusCode: 400,
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Usuário responsável não encontrado.',
+    schema: {
+      example: {
+        message: 'Usuário não encontrado(a) para o identificador "user-001".',
+        error: 'Not Found',
+        statusCode: 404,
       },
     },
   })

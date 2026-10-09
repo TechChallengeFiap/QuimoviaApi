@@ -8,8 +8,10 @@ import { FindChemicalShipmentByIdUseCase } from './application/use-cases/chemica
 import { UpdateChemicalShipmentUseCase } from './application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
 import { DeleteChemicalShipmentUseCase } from './application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.ts';
 
+import { UserModule } from '@/modules/user/user.module.ts';
+
 @Module({
-  imports: [],
+  imports: [UserModule],
   controllers: [ChemicalShipmentController],
   providers: [
     CreateChemicalShipmentUseCase,

@@ -12,6 +12,60 @@ datasource db {
   provider = "mysql"
 }
 
+enum InspectionScope {
+  CARGO
+  CARGO_ITEM
+}
+
+enum InspectionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InspectionRequirement {
+  EXPIRATION_DATE
+  PACKAGING_INTEGRITY
+  NO_LEAKAGE
+  CORRECT_LABELING
+  TRANSPORT_CONDITIONS
+  SAFETY_EQUIPMENT
+}
+
+enum InspectionItemResult {
+  COMPLIANT
+  NON_COMPLIANT
+}
+
+model Inspection {
+  id                 String           @id @default(uuid())
+  cargoId            String
+  compositionVersion Int
+  scope              InspectionScope
+  cargoItemId        String?
+  inspectorId        String
+  status             InspectionStatus @default(PENDING)
+  items              InspectionItem[]
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([cargoId])
+  @@index([inspectorId, status])
+}
+
+model InspectionItem {
+  id           String                @id @default(uuid())
+  inspectionId String
+  inspection   Inspection            @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  requirement  InspectionRequirement
+  result       InspectionItemResult?
+  observation  String?               @db.VarChar(500)
+
+  @@unique([inspectionId, requirement])
+}
+
 enum UserRole {
   PORT_OPERATOR
   SHIPPER_DRIVER
@@ -27,15 +81,16 @@ enum UserStatus {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  name         String     @db.VarChar(120)
-  email        String     @unique @db.VarChar(180)
-  passwordHash String     @db.VarChar(255)
-  role         UserRole
-  status       UserStatus @default(ACTIVE)
-  lastLoginAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                String             @id @default(uuid())
+  name              String             @db.VarChar(120)
+  email             String             @unique @db.VarChar(180)
+  passwordHash      String             @db.VarChar(255)
+  role              UserRole
+  status            UserStatus         @default(ACTIVE)
+  lastLoginAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  chemicalShipments ChemicalShipment[]
 }
 
 enum StatusShipment {
@@ -52,10 +107,13 @@ model ChemicalShipment {
   productId         String
   status            StatusShipment @default(ANALYZING)
   responsibleUserId String
+  responsibleUser   User           @relation(fields: [responsibleUserId], references: [id])
   documentsIds      String
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   deletedAt         DateTime?
+
+  @@index([responsibleUserId])
 }
 
 enum ProductRiskClass {

@@ -4,6 +4,7 @@ import { AppService } from './app.service.js';
 import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.module.ts';
 import { UserModule } from '@/modules/user/user.module.ts';
 import { ChemicalShipmentModule } from '@/modules/chemical-shipment/chemical-shipment.module.ts';
+import { InspectionModule } from '@/modules/inspection/inspection.module.js';
 import { ChemicalProductsModule } from '@/modules/chemical-products/chemical-products.module.js';
 
 @Module({
@@ -12,6 +13,7 @@ import { ChemicalProductsModule } from '@/modules/chemical-products/chemical-pro
     UserModule,
     ChemicalShipmentModule,
     ChemicalProductsModule,
+    InspectionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
