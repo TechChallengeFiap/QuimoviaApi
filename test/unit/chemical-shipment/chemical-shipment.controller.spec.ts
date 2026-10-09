@@ -5,6 +5,9 @@ import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/appli
 import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.ts';
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { User } from '@/modules/user/domain/entities/user.entity.ts';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.ts';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
 import {
   BadRequestException,
@@ -92,6 +95,20 @@ describe('ChemicalShipmentController', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('deve repassar ResourceNotFoundError para ser tratado pelo filtro de domínio quando o usuário não existir', async () => {
+      createUseCase.execute.mockRejectedValue(
+        new ResourceNotFoundError('Usuário', 'user-inexistente'),
+      );
+
+      await expect(
+        controller.createChemicalShipment({
+          productId: 'prod-001',
+          responsibleUserId: 'user-inexistente',
+          documentsIds: 'doc-001',
+        }),
+      ).rejects.toThrow(ResourceNotFoundError);
+    });
+
     it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
       createUseCase.execute.mockRejectedValue(
         new Error('Falha de conexão com banco'),
@@ -120,6 +137,38 @@ describe('ChemicalShipmentController', () => {
 
       expect(result.items).toHaveLength(1);
       expect(result.total).toBe(1);
+    });
+
+    it('deve incluir responsibleUser na listagem se presente na entidade', async () => {
+      const user = User.create({
+        name: 'Carlos Oliveira',
+        email: 'carlos@quimovia.com',
+        passwordHash: 'hash123',
+        role: UserRole.PORT_OPERATOR,
+      });
+
+      const shipmentWithUser = ChemicalShipment.restore({
+        id: 'ship-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        status: StatusShipment.ANALYZING,
+        productId: 'prod-001',
+        responsibleUserId: user.id,
+        responsibleUser: user,
+        documentsIds: 'doc-001',
+      });
+
+      listUseCase.execute.mockResolvedValue({
+        items: [shipmentWithUser],
+        total: 1,
+        page: 1,
+        pageSize: 20,
+      });
+
+      const result = await controller.listChemicalShipments({});
+      expect(result.items[0].responsibleUser).toBeDefined();
+      expect(result.items[0].responsibleUser?.name).toBe('Carlos Oliveira');
     });
 
     it('deve capturar erro inesperado na listagem e lançar InternalServerErrorException', async () => {
@@ -186,6 +235,18 @@ describe('ChemicalShipmentController', () => {
           documentsIds: 'doc-001',
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve repassar ResourceNotFoundError para ser tratado pelo filtro de domínio quando usuário ou carga não existirem', async () => {
+      updateUseCase.execute.mockRejectedValue(
+        new ResourceNotFoundError('Usuário', 'user-inexistente'),
+      );
+
+      await expect(
+        controller.updateChemicalShipment(mockShipment.id, {
+          responsibleUserId: 'user-inexistente',
+        }),
+      ).rejects.toThrow(ResourceNotFoundError);
     });
 
     it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {

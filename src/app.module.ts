@@ -5,12 +5,14 @@ import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.
 import { DocumentComplianceModule } from '@/modules/document-compliance/document-compliance.module.js';
 import { UserModule } from './modules/user/user.module.ts';
 import { ChemicalShipmentModule } from './modules/chemical-shipment/chemical-shipment.module.ts';
+import { InspectionModule } from '@/modules/inspection/inspection.module.js';
 
 @Module({
   imports: [
     PrismaModule,
     UserModule,
     ChemicalShipmentModule,
+    InspectionModule,
     DocumentComplianceModule,
   ],
   controllers: [AppController],

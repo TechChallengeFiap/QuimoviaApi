@@ -1,12 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.ts';
 
 interface ChemicalShipmentResponseDtoData {
   id: string;
   productId: string;
   status: StatusShipment;
   responsibleUserId: string;
+  responsibleUser?: UserResponseDto | null;
   documentsIds: string;
   createdAt: Date;
   updatedAt: Date;
@@ -28,6 +30,13 @@ export class ChemicalShipmentResponseDto {
 
   @ApiProperty({ type: String, example: 'user-001' })
   responsibleUserId: string;
+
+  @ApiPropertyOptional({
+    type: () => UserResponseDto,
+    nullable: true,
+    description: 'Dados do usuário responsável pela carga química',
+  })
+  responsibleUser?: UserResponseDto | null;
 
   @ApiProperty({ type: String, example: 'doc-001' })
   documentsIds: string;
@@ -51,6 +60,9 @@ export class ChemicalShipmentResponseDto {
       productId: shipment.productId,
       status: shipment.status,
       responsibleUserId: shipment.responsibleUserId,
+      responsibleUser: shipment.responsibleUser
+        ? UserResponseDto.fromEntity(shipment.responsibleUser)
+        : null,
       documentsIds: shipment.documentsIds,
       createdAt: shipment.createdAt,
       updatedAt: shipment.updatedAt,

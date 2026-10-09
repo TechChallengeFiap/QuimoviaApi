@@ -2,6 +2,8 @@ import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects
 import { BusinessRuleError } from '@/shared/domain/errors/domain.error.ts';
 import { randomUUID } from 'crypto';
 
+import { User } from '@/modules/user/domain/entities/user.entity.ts';
+
 export interface CreateChemicalShipmentData {
   productId: string;
   responsibleUserId: string;
@@ -14,6 +16,7 @@ export interface ChemicalShipmentProperties {
   productId: string;
   status: StatusShipment;
   responsibleUserId: string;
+  responsibleUser?: User | null;
   documentsIds: string;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -26,6 +29,7 @@ export class ChemicalShipment {
   #productId: string;
   #status: StatusShipment;
   #responsibleUserId: string;
+  #responsibleUser?: User | null;
   #documentsIds: string;
   #updatedAt: Date;
   #deletedAt: Date | null;
@@ -36,6 +40,7 @@ export class ChemicalShipment {
     this.#productId = props.productId;
     this.#status = props.status;
     this.#responsibleUserId = props.responsibleUserId;
+    this.#responsibleUser = props.responsibleUser ?? null;
     this.#documentsIds = props.documentsIds;
     this.#updatedAt = props.updatedAt;
     this.#deletedAt = props.deletedAt;
@@ -126,6 +131,10 @@ export class ChemicalShipment {
     return this.#responsibleUserId;
   }
 
+  get responsibleUser(): User | null | undefined {
+    return this.#responsibleUser;
+  }
+
   get documentsIds(): string {
     return this.#documentsIds;
   }
@@ -150,6 +159,10 @@ export class ChemicalShipment {
     this.#responsibleUserId = responsibleUserId;
   }
 
+  set responsibleUser(responsibleUser: User | null | undefined) {
+    this.#responsibleUser = responsibleUser;
+  }
+
   set documentsIds(documentsIds: string) {
     this.#documentsIds = documentsIds;
   }
@@ -170,6 +183,7 @@ export class ChemicalShipment {
       status: this.#status,
       productId: this.#productId,
       responsibleUserId: this.#responsibleUserId,
+      responsibleUser: this.#responsibleUser,
       documentsIds: this.#documentsIds,
       deletedAt: this.#deletedAt,
     };
