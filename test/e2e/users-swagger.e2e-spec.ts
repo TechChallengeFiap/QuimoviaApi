@@ -39,6 +39,9 @@ describe('Swagger do módulo user (e2e)', () => {
       await import('../mocks/password-hasher.mock.js');
     const { SessionRepositoryMock } =
       await import('../mocks/session-repository.mock.js');
+    const { AUTH_CONFIG } =
+      await import('@/modules/user/infrastructure/auth/auth.config.js');
+    const { TEST_AUTH_CONFIG } = await import('../mocks/auth-config.mock.js');
 
     const moduleFixture = await Test.createTestingModule({
       imports: [UserModule],
@@ -49,6 +52,8 @@ describe('Swagger do módulo user (e2e)', () => {
       .useClass(PasswordHasherMock)
       .overrideProvider(SESSION_REPOSITORY)
       .useClass(SessionRepositoryMock)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -220,6 +225,8 @@ describe('Swagger do módulo user (e2e)', () => {
     expect(statusesOf('/usuarios', 'post')).toEqual([
       '201',
       '400',
+      '401',
+      '403',
       '409',
       '422',
     ]);
@@ -228,11 +235,18 @@ describe('Swagger do módulo user (e2e)', () => {
     expect(statusesOf('/usuarios/{id}', 'patch')).toEqual([
       '200',
       '400',
+      '401',
+      '403',
       '404',
       '409',
       '422',
     ]);
-    expect(statusesOf('/usuarios/{id}', 'delete')).toEqual(['204', '404']);
+    expect(statusesOf('/usuarios/{id}', 'delete')).toEqual([
+      '204',
+      '401',
+      '403',
+      '404',
+    ]);
   });
 
   it('expõe operationIds descritivos, derivados dos nomes dos métodos', () => {

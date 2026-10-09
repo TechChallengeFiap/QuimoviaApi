@@ -53,7 +53,12 @@ describe('AppController (e2e)', () => {
     );
 
     expect(document.security).toBeUndefined();
-    expect(protectedOperations).toEqual(['POST /autenticacao/logout']);
+    expect(protectedOperations.sort()).toEqual([
+      'DELETE /usuarios/{id}',
+      'PATCH /usuarios/{id}',
+      'POST /autenticacao/logout',
+      'POST /usuarios',
+    ]);
   });
 
   afterEach(async () => {

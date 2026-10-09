@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { LoginUseCase } from '@/modules/user/application/use-cases/auth/login.use-case.js';
 import { LogoutUseCase } from '@/modules/user/application/use-cases/auth/logout.use-case.js';
@@ -30,7 +30,7 @@ import { UserModule } from '@/modules/user/user.module.js';
  * módulo é iniciado; sem um JWT_SECRET válido, a aplicação não sobe.
  */
 @Module({
-  imports: [UserModule, JwtModule.register({})],
+  imports: [forwardRef(() => UserModule), JwtModule.register({})],
   controllers: [AuthController],
   providers: [
     LoginUseCase,

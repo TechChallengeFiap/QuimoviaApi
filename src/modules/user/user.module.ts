@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { CreateUserUseCase } from '@/modules/user/application/use-cases/users/create-user.use-case.js';
 import { DeleteUserUseCase } from '@/modules/user/application/use-cases/users/delete-user.use-case.js';
 import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/find-user-by-id.use-case.js';
@@ -10,9 +10,17 @@ import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.reposit
 import { ScryptPasswordHasher } from '@/modules/user/infrastructure/services/password-hasher.service.js';
 import { PrismaSessionRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-session.repository.js';
 import { PrismaUserRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-user.repository.js';
+import { AuthModule } from '@/modules/user/auth.module.js';
 import { UsersController } from '@/modules/user/presentation/controllers/users.controller.js';
 
+/**
+ * Cadastro de usuários. Importa o AuthModule para proteger as rotas de
+ * gestão com o AuthGuard e o RolesGuard; como o AuthModule também depende
+ * deste módulo (repositórios e hash de senha), os dois se importam com
+ * forwardRef.
+ */
 @Module({
+  imports: [forwardRef(() => AuthModule)],
   controllers: [UsersController],
   providers: [
     CreateUserUseCase,

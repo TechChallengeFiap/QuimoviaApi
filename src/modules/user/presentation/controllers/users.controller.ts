@@ -11,12 +11,14 @@ import {
   Post,
   Query,
   UseFilters,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -33,6 +35,13 @@ import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/lis
 import { UpdateUserUseCase } from '@/modules/user/application/use-cases/users/update-user.use-case.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
+import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
+import { Roles } from '@/modules/user/infrastructure/auth/roles.decorator.js';
+import {
+  INSUFFICIENT_ROLE_MESSAGE,
+  RolesGuard,
+} from '@/modules/user/infrastructure/auth/roles.guard.js';
+import { ApiRequiresAuthentication } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { CreateUserDto } from '@/modules/user/presentation/dtos/create-user.dto.js';
@@ -54,6 +63,12 @@ const EMAIL_CONFLICT_EXAMPLE = {
     'Já existe um usuário cadastrado com o e-mail "maria.silva@quimovia.com".',
   error: 'Conflict',
   statusCode: HttpStatus.CONFLICT,
+};
+
+const INSUFFICIENT_ROLE_EXAMPLE = {
+  message: INSUFFICIENT_ROLE_MESSAGE,
+  error: 'Forbidden',
+  statusCode: HttpStatus.FORBIDDEN,
 };
 
 const BUSINESS_RULE_EXAMPLE = {
@@ -80,6 +95,8 @@ export class UsersController {
   ) {}
 
   @Post()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.SYSTEM_ADMIN)
   @ApiOperation({
     summary: 'Cadastra um novo usuário',
     description:
@@ -138,6 +155,12 @@ export class UsersController {
   @ApiUnprocessableEntityResponse({
     description: 'Os dados violam uma regra de negócio do usuário.',
     schema: { example: BUSINESS_RULE_EXAMPLE },
+  })
+  @ApiRequiresAuthentication()
+  @ApiForbiddenResponse({
+    description:
+      'Apenas o Administrador do Sistema pode executar esta operação.',
+    schema: { example: INSUFFICIENT_ROLE_EXAMPLE },
   })
   async createUser(
     @Body(validationPipeFor(CreateUserDto)) createUserDto: CreateUserDto,
@@ -237,6 +260,8 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.SYSTEM_ADMIN)
   @ApiOperation({
     summary: 'Atualiza os dados de um usuário',
     description:
@@ -303,6 +328,12 @@ export class UsersController {
     description: 'A alteração viola uma regra de negócio do usuário.',
     schema: { example: BUSINESS_RULE_EXAMPLE },
   })
+  @ApiRequiresAuthentication()
+  @ApiForbiddenResponse({
+    description:
+      'Apenas o Administrador do Sistema pode executar esta operação.',
+    schema: { example: INSUFFICIENT_ROLE_EXAMPLE },
+  })
   async updateUser(
     @Param('id') id: string,
     @Body(validationPipeFor(UpdateUserDto)) updateUserDto: UpdateUserDto,
@@ -313,6 +344,8 @@ export class UsersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.SYSTEM_ADMIN)
   @ApiOperation({
     summary: 'Remove um usuário',
     description: 'Remove definitivamente o usuário informado.',
@@ -327,6 +360,12 @@ export class UsersController {
   @ApiNotFoundResponse({
     description: 'Usuário não encontrado.',
     schema: { example: USER_NOT_FOUND_EXAMPLE },
+  })
+  @ApiRequiresAuthentication()
+  @ApiForbiddenResponse({
+    description:
+      'Apenas o Administrador do Sistema pode executar esta operação.',
+    schema: { example: INSUFFICIENT_ROLE_EXAMPLE },
   })
   async deleteUser(@Param('id') id: string): Promise<void> {
     await this.deleteUserUseCase.execute(id);

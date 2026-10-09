@@ -22,6 +22,7 @@ const PASSWORD = 'S3nhaForte!';
 describe('Autenticação sem a metadata de decorators (e2e)', () => {
   let app: INestApplication;
   let users: UserRepository;
+  let loginAsAdmin: typeof import('../mocks/admin-session.mock.js').loginAsAdmin;
 
   beforeAll(async () => {
     disableDesignMetadata();
@@ -43,6 +44,7 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
     const { PasswordHasherMock } =
       await import('../mocks/password-hasher.mock.js');
     const { TEST_AUTH_CONFIG } = await import('../mocks/auth-config.mock.js');
+    ({ loginAsAdmin } = await import('../mocks/admin-session.mock.js'));
     const { ProtectedRouteModule } =
       await import('../mocks/protected-route.mock.js');
 
@@ -145,17 +147,20 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
   });
 
   it('encerra as sessões de um usuário bloqueado pelo PATCH /usuarios/:id, sem reativá-las no desbloqueio', async () => {
+    const adminToken = await loginAsAdmin(app, users);
     const joao = await registerUser('joao@quimovia.com');
     const joaoToken = await accessTokenOf('joao@quimovia.com');
 
     await request(app.getHttpServer())
       .patch(`/usuarios/${joao.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'BLOCKED' })
       .expect(200);
     // Desbloqueia antes de usar o token: ele só é recusado se o bloqueio já
     // tiver encerrado a sessão.
     await request(app.getHttpServer())
       .patch(`/usuarios/${joao.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'ACTIVE' })
       .expect(200);
     await request(app.getHttpServer())

@@ -12,6 +12,7 @@ import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.reposit
 import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
+import { loginAsAdmin } from '../mocks/admin-session.mock.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { ProtectedRouteModule } from '../mocks/protected-route.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
@@ -199,12 +200,14 @@ describe('AuthController (e2e)', () => {
     ])(
       'invalida as sessões ao mudar para %s, sem reativá-las ao voltar para %s',
       async (status, reactivatedStatus) => {
+        const adminToken = await loginAsAdmin(app, users);
         const maria = await registerUser('maria@quimovia.com');
         const mariaToken = (await login('maria@quimovia.com').expect(200)).body
           .accessToken as string;
 
         await request(app.getHttpServer())
           .patch(`/usuarios/${maria.id}`)
+          .set('Authorization', `Bearer ${adminToken}`)
           .send({ status })
           .expect(200);
         // Sem nenhuma requisição com o token no meio: quem encerra a sessão é
@@ -216,6 +219,7 @@ describe('AuthController (e2e)', () => {
 
         await request(app.getHttpServer())
           .patch(`/usuarios/${maria.id}`)
+          .set('Authorization', `Bearer ${adminToken}`)
           .send({ status: reactivatedStatus })
           .expect(200);
         await request(app.getHttpServer())
