@@ -12,16 +12,19 @@ import {
 } from '@/modules/user/infrastructure/auth/auth.config.js';
 import type { AuthConfig } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
+import { RolesGuard } from '@/modules/user/infrastructure/auth/roles.guard.js';
 import { JwtAccessTokenService } from '@/modules/user/infrastructure/services/jwt-access-token.service.js';
 import { AuthController } from '@/modules/user/presentation/controllers/auth.controller.js';
 import { UserModule } from '@/modules/user/user.module.js';
 
 /**
- * Autenticação do contexto Identidade e Acesso: login, logout e o AuthGuard,
- * que exige uma sessão ativa nas rotas em que é aplicado.
+ * Autenticação do contexto Identidade e Acesso: login, logout, o AuthGuard,
+ * que exige uma sessão ativa nas rotas em que é aplicado, e o RolesGuard,
+ * que restringe a rota aos perfis informados em @Roles().
  *
  * Para proteger as rotas de outro módulo, importe este módulo nele e use
- * @UseGuards(AuthGuard) no controller ou no endpoint.
+ * @UseGuards(AuthGuard) ou @UseGuards(AuthGuard, RolesGuard) no controller ou
+ * no endpoint.
  *
  * A configuração (AUTH_CONFIG) é lida das variáveis de ambiente quando o
  * módulo é iniciado; sem um JWT_SECRET válido, a aplicação não sobe.
@@ -43,7 +46,8 @@ import { UserModule } from '@/modules/user/user.module.js';
     },
     { provide: ACCESS_TOKEN_SERVICE, useClass: JwtAccessTokenService },
     AuthGuard,
+    RolesGuard,
   ],
-  exports: [AuthGuard, ValidateSessionUseCase],
+  exports: [AuthGuard, RolesGuard, ValidateSessionUseCase],
 })
 export class AuthModule {}
