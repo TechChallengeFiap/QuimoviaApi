@@ -222,7 +222,7 @@ Hoje contém:
 
 - `Usuario` e o seu cadastro (`UserModule`);
 - `Sessao` (`Session`), com repositório próprio;
-- login, logout e o `AuthGuard`, que exige uma sessão ativa nas rotas em que é aplicado (`AuthModule`).
+- login, logout, o `AuthGuard`, que exige uma sessão ativa nas rotas em que é aplicado, e o `RolesGuard`, que restringe a rota aos perfis de `@Roles()` (`AuthModule`). O `UserModule` e o `AuthModule` se importam com `forwardRef`, porque a gestão de usuários usa os guards e o login usa os repositórios de usuário.
 
 Pode conter futuramente:
 
@@ -547,7 +547,7 @@ Use para:
 
 - repositories Prisma;
 - mappers Prisma;
-- componentes específicos de banco.
+- componentes específicos de banco, como o seed do administrador inicial (`seed/initial-admin.seed.ts`, executado por `prisma/seed.ts`).
 
 **Nomenclatura**
 
@@ -608,11 +608,11 @@ src/modules/user/infrastructure/auth/
 
 Use para guards, strategies e adapters técnicos de autenticação.
 
-Hoje contém o `AuthGuard`, a leitura da configuração (`JWT_SECRET` e `JWT_EXPIRES_IN_SECONDS`) e o decorator `@CurrentSession()`, que entrega ao controller a sessão validada.
+Hoje contém o `AuthGuard`, o `RolesGuard` com o decorator `@Roles()`, a leitura da configuração (`JWT_SECRET` e `JWT_EXPIRES_IN_SECONDS`) e o decorator `@CurrentSession()`, que entrega ao controller a sessão validada.
 
 Regras de usuário, perfil e permissão pertencem ao domínio ou aplicação de `user`.
 
-O guard não é global: para exigir login, importe o `AuthModule` no módulo e use `@UseGuards(AuthGuard)` no controller ou no endpoint. Nessas rotas, `@ApiRequiresAuthentication()` (`src/shared/presentation/decorators/`) exige o token no Swagger e documenta a resposta 401.
+Os guards não são globais: para exigir login, importe o `AuthModule` no módulo e use `@UseGuards(AuthGuard)` no controller ou no endpoint. Para restringir a rota a alguns perfis, use `@UseGuards(AuthGuard, RolesGuard)` com `@Roles(UserRole.SYSTEM_ADMIN)`, sempre com o `AuthGuard` primeiro. Nessas rotas, `@ApiRequiresAuthentication()` (`src/shared/presentation/decorators/`) exige o token no Swagger e documenta a resposta 401.
 
 ## 9. Presentation
 

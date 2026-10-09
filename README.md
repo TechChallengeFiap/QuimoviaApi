@@ -145,6 +145,9 @@ O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e cone
 | `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
 | `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48`                                                                       |
 | `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `3600`                                                                                                     |
+| `ADMIN_NAME`             | Nome do administrador inicial criado pelo seed (opcional)                                                | `Administrador do Sistema`                                                                                 |
+| `ADMIN_EMAIL`            | E-mail do administrador inicial criado pelo seed                                                         | `admin@quimovia.com`                                                                                       |
+| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | definida por você                                                                                          |
 
 ### 5.3. Executando com Docker e Localmente
 
@@ -172,7 +175,7 @@ copy .env.example .env
 
 > **Importante:** O `docker-compose.yml` utiliza essas variáveis para inicializar o MySQL. Verifique se as credenciais de `MYSQL_*` e a string de conexão em `DATABASE_URL` estão configuradas corretamente.
 
-> **Autenticação:** o `JWT_SECRET` vem em branco no exemplo e precisa ser preenchido; sem um valor válido, a API não sobe. Para gerá-lo, use por exemplo `openssl rand -base64 48`.
+> **Autenticação:** o `JWT_SECRET` e o `ADMIN_PASSWORD` vêm em branco no exemplo e precisam ser preenchidos. Sem um `JWT_SECRET` válido a API não sobe, e sem o `ADMIN_PASSWORD` o seed não cria o administrador. Para gerar o segredo, use por exemplo `openssl rand -base64 48`.
 
 #### 3. Subir o container do banco de dados (MySQL)
 
@@ -204,7 +207,17 @@ npm run migrate:dev
 npm run migrate:deploy
 ```
 
-#### 6. Iniciar a API em Desenvolvimento
+#### 6. Criar o administrador inicial
+
+Só o Administrador do Sistema pode cadastrar usuários. Por isso, um banco novo precisa de um primeiro administrador, criado com os dados de `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME`:
+
+```bash
+npm run migrate:seed
+```
+
+> O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado.
+
+#### 7. Iniciar a API em Desenvolvimento
 
 ```bash
 npm run start:dev
@@ -230,6 +243,7 @@ A documentação Swagger estará disponível em: `http://localhost:3000/api`
 | `npm run migrate:generate` | Gera o cliente Prisma tipado                                |
 | `npm run migrate:dev`      | Executa migrations em modo desenvolvimento                  |
 | `npm run migrate:deploy`   | Aplica migrations pendentes no banco                        |
+| `npm run migrate:seed`     | Cria o administrador inicial (também via `prisma db seed`)  |
 
 ---
 
@@ -247,7 +261,7 @@ Para testar as rotas que exigem login pelo Swagger, como o logout, faça login e
 
 ### 6.2. Principais Endpoints
 
-As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa; sem ele, a API responde `401`. Por enquanto, só o logout usa o guard: cada módulo pode exigir login nas próprias rotas importando o `AuthModule` e usando `@UseGuards(AuthGuard)`.
+As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa; sem ele, a API responde `401`. Hoje, o guard protege o logout e a gestão de usuários; cada módulo pode exigir login nas próprias rotas importando o `AuthModule` e usando `@UseGuards(AuthGuard)`. Para restringir a rota a alguns perfis, use `@UseGuards(AuthGuard, RolesGuard)` com `@Roles()`: com outro perfil, a API responde `403`. O perfil conferido é o atual do usuário, então uma troca de perfil vale já na próxima requisição.
 
 #### Autenticação (`/autenticacao`)
 
@@ -256,7 +270,7 @@ As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer 
 
 Bloquear ou inativar um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
 
-A autorização por perfil (RN-ACE-04) ainda não é aplicada.
+A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de usuários.
 
 #### Cargas Químicas (`/chemical-shipment`)
 
@@ -275,6 +289,8 @@ A autorização por perfil (RN-ACE-04) ainda não é aplicada.
 - `DELETE /inspecoes/:id` — Remove registro de inspeção.
 
 #### Usuários e Acessos (`/usuarios`)
+
+Cadastrar, editar e remover usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis).
 
 - `POST /usuarios` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
 - `GET /usuarios` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
@@ -309,6 +325,7 @@ Os testes automatizados validam cenários críticos exigidos no Tech Challenge, 
 - Bloqueio de movimentação de cargas marcadas como `BLOCKED`;
 - Validação e hash criptográfico de senhas;
 - Login, sessões com expiração e encerramento, e exigência do token de acesso nas rotas protegidas pelo `AuthGuard`;
+- Gestão de usuários restrita ao Administrador do Sistema, com a troca de perfil valendo na próxima requisição;
 - Tratamento de exceções e mapeamento padronizado de erros de domínio.
 
 ---
