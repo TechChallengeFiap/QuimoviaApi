@@ -90,7 +90,7 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
 
   async function accessTokenOf(email: string): Promise<string> {
     const response = await request(app.getHttpServer())
-      .post('/autenticacao/login')
+      .post('/auth/login')
       .send({ email, password: PASSWORD })
       .expect(200);
 
@@ -110,7 +110,7 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
         expect(body).toMatchObject({ role: UserRole.SYSTEM_ADMIN });
       });
     await request(app.getHttpServer())
-      .post('/autenticacao/logout')
+      .post('/auth/logout')
       .set('Authorization', `Bearer ${token}`)
       .expect(204);
     await request(app.getHttpServer())
@@ -124,22 +124,22 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
     blocked.block();
 
     await request(app.getHttpServer())
-      .post('/autenticacao/login')
+      .post('/auth/login')
       .send({ email: 'ninguem@quimovia.com', password: PASSWORD })
       .expect(401);
     await request(app.getHttpServer())
-      .post('/autenticacao/login')
+      .post('/auth/login')
       .send({ email: 'bloqueado@quimovia.com', password: PASSWORD })
       .expect(403);
   });
 
   it('valida o corpo do login com o DTO esperado', async () => {
     await request(app.getHttpServer())
-      .post('/autenticacao/login')
+      .post('/auth/login')
       .send({ email: 'nao-e-email', password: PASSWORD })
       .expect(400);
     await request(app.getHttpServer())
-      .post('/autenticacao/login')
+      .post('/auth/login')
       .send({ email: 'maria@quimovia.com', password: PASSWORD, admin: true })
       .expect(400);
   });

@@ -46,7 +46,7 @@ const ACCOUNT_WITHOUT_ACCESS_EXAMPLE = {
 };
 
 @ApiTags('Autenticação')
-@Controller('autenticacao')
+@Controller('auth')
 @UseFilters(DomainExceptionFilter)
 export class AuthController {
   constructor(
