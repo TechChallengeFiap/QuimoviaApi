@@ -26,7 +26,7 @@ export async function loginAsAdmin(
   );
 
   const response = await request(app.getHttpServer())
-    .post('/autenticacao/login')
+    .post('/auth/login')
     .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
     .expect(200);
 

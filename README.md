@@ -257,16 +257,16 @@ A API possui documentação interativa completa via Swagger. Com a aplicação e
 
 A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `401`, `403`, `404`, `422`).
 
-Para testar as rotas que exigem login pelo Swagger, como o logout, faça login em `POST /autenticacao/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**.
+Para testar as rotas que exigem login pelo Swagger, como o logout, faça login em `POST /auth/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**.
 
 ### 6.2. Principais Endpoints
 
 As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa; sem ele, a API responde `401`. Hoje, o guard protege o logout e a gestão de usuários; cada módulo pode exigir login nas próprias rotas importando o `AuthModule` e usando `@UseGuards(AuthGuard)`. Para restringir a rota a alguns perfis, use `@UseGuards(AuthGuard, RolesGuard)` com `@Roles()`: com outro perfil, a API responde `403`. O perfil conferido é o atual do usuário, então uma troca de perfil vale já na próxima requisição.
 
-#### Autenticação (`/autenticacao`)
+#### Autenticação (`/auth`)
 
-- `POST /autenticacao/login` — Confere e-mail e senha, inicia uma sessão e devolve o token de acesso (`401` para credenciais inválidas e `403` para conta inativa ou bloqueada).
-- `POST /autenticacao/logout` — Encerra a sessão do token enviado, que deixa de valer na hora.
+- `POST /auth/login` — Confere e-mail e senha, inicia uma sessão e devolve o token de acesso (`401` para credenciais inválidas e `403` para conta inativa ou bloqueada).
+- `POST /auth/logout` — Encerra a sessão do token enviado, que deixa de valer na hora.
 
 Bloquear ou inativar um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
 

@@ -60,8 +60,7 @@ describe('Swagger da autenticação (e2e)', () => {
   });
 
   function loginRequestBody() {
-    const requestBody =
-      document.paths['/autenticacao/login']?.post?.requestBody;
+    const requestBody = document.paths['/auth/login']?.post?.requestBody;
 
     return requestBody && 'content' in requestBody
       ? requestBody.content['application/json']
@@ -69,10 +68,10 @@ describe('Swagger da autenticação (e2e)', () => {
   }
 
   it('expõe operationIds descritivos, derivados dos nomes dos métodos', () => {
-    expect(document.paths['/autenticacao/login']?.post?.operationId).toBe(
+    expect(document.paths['/auth/login']?.post?.operationId).toBe(
       'AuthController_login',
     );
-    expect(document.paths['/autenticacao/logout']?.post?.operationId).toBe(
+    expect(document.paths['/auth/logout']?.post?.operationId).toBe(
       'AuthController_logout',
     );
   });
@@ -89,12 +88,10 @@ describe('Swagger da autenticação (e2e)', () => {
 
   it('exige o token só no logout, a operação protegida pelo AuthGuard', () => {
     expect(document.security).toBeUndefined();
-    expect(document.paths['/autenticacao/logout']?.post?.security).toEqual([
+    expect(document.paths['/auth/logout']?.post?.security).toEqual([
       { bearer: [] },
     ]);
-    expect(document.paths['/autenticacao/login']?.post).not.toHaveProperty(
-      'security',
-    );
+    expect(document.paths['/auth/login']?.post).not.toHaveProperty('security');
     expect(document.paths['/usuarios']?.get).not.toHaveProperty('security');
   });
 
@@ -142,20 +139,14 @@ describe('Swagger da autenticação (e2e)', () => {
     const statusesOf = (path: string) =>
       Object.keys(document.paths[path]?.post?.responses ?? {}).sort();
 
-    expect(statusesOf('/autenticacao/login')).toEqual([
-      '200',
-      '400',
-      '401',
-      '403',
-    ]);
-    expect(statusesOf('/autenticacao/logout')).toEqual(['204', '401']);
+    expect(statusesOf('/auth/login')).toEqual(['200', '400', '401', '403']);
+    expect(statusesOf('/auth/logout')).toEqual(['204', '401']);
   });
 
   it('documenta a resposta 401 com a mensagem do guard', async () => {
     const { MISSING_ACCESS_TOKEN_MESSAGE } =
       await import('@/shared/presentation/decorators/api-requires-authentication.decorator.js');
-    const response =
-      document.paths['/autenticacao/logout']?.post?.responses?.['401'];
+    const response = document.paths['/auth/logout']?.post?.responses?.['401'];
     const example =
       response && 'content' in response
         ? response.content?.['application/json']?.schema

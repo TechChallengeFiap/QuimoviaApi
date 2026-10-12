@@ -234,7 +234,7 @@ describe('UsersController (e2e)', () => {
 
     async function loginAs(email: string): Promise<string> {
       const response = await request(app.getHttpServer())
-        .post('/autenticacao/login')
+        .post('/auth/login')
         .send({ email, password: newUser.password })
         .expect(200);
 

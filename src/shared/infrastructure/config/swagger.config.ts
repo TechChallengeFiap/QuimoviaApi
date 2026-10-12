@@ -23,7 +23,7 @@ export function buildSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         description:
-          'Token de acesso obtido em POST /autenticacao/login, enviado no cabeçalho Authorization: Bearer <token>.',
+          'Token de acesso obtido em POST /auth/login, enviado no cabeçalho Authorization: Bearer <token>.',
       },
       BEARER_AUTH,
     )

@@ -86,11 +86,11 @@ describe('AuthController (e2e)', () => {
 
   function login(email: string, password = PASSWORD) {
     return request(app.getHttpServer())
-      .post('/autenticacao/login')
+      .post('/auth/login')
       .send({ email, password });
   }
 
-  describe('POST /autenticacao/login', () => {
+  describe('POST /auth/login', () => {
     it('inicia uma sessão e devolve o token, sem expor o hash da senha', async () => {
       const user = await registerUser('maria@quimovia.com');
 
@@ -149,17 +149,17 @@ describe('AuthController (e2e)', () => {
 
     it('valida o corpo da requisição', async () => {
       await request(app.getHttpServer())
-        .post('/autenticacao/login')
+        .post('/auth/login')
         .send({ email: 'nao-e-email', password: '' })
         .expect(400);
       await request(app.getHttpServer())
-        .post('/autenticacao/login')
+        .post('/auth/login')
         .send({ email: 'maria@quimovia.com', password: PASSWORD, admin: true })
         .expect(400);
     });
   });
 
-  describe('POST /autenticacao/logout', () => {
+  describe('POST /auth/logout', () => {
     it('encerra a sessão atual, que deixa de valer, sem afetar as outras', async () => {
       await registerUser('maria@quimovia.com');
       const first = (await login('maria@quimovia.com').expect(200)).body
@@ -168,7 +168,7 @@ describe('AuthController (e2e)', () => {
         .accessToken as string;
 
       await request(app.getHttpServer())
-        .post('/autenticacao/logout')
+        .post('/auth/logout')
         .set('Authorization', `Bearer ${first}`)
         .expect(204);
 
@@ -177,7 +177,7 @@ describe('AuthController (e2e)', () => {
         .set('Authorization', `Bearer ${first}`)
         .expect(401);
       await request(app.getHttpServer())
-        .post('/autenticacao/logout')
+        .post('/auth/logout')
         .set('Authorization', `Bearer ${first}`)
         .expect(401);
       await request(app.getHttpServer())
@@ -187,9 +187,7 @@ describe('AuthController (e2e)', () => {
     });
 
     it('exige o token de acesso', async () => {
-      await request(app.getHttpServer())
-        .post('/autenticacao/logout')
-        .expect(401);
+      await request(app.getHttpServer()).post('/auth/logout').expect(401);
     });
   });
 
