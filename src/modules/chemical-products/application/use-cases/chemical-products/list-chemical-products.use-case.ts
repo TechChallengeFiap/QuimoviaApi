@@ -15,6 +15,7 @@ export interface ListChemicalProductsInput {
   riskClass?: ProductRiskClass;
   physicalState?: ProductPhysicalState;
   status?: ProductStatus;
+  responsibleUserId?: string;
   page?: number;
   pageSize?: number;
 }
@@ -30,6 +31,7 @@ export class ListChemicalProductsUseCase {
       riskClass: input.riskClass,
       physicalState: input.physicalState,
       status: input.status,
+      responsibleUserId: input.responsibleUserId,
       page: input.page ?? DEFAULT_PAGE,
       pageSize: input.pageSize ?? DEFAULT_PAGE_SIZE,
     });

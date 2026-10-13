@@ -5,6 +5,8 @@ import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/produ
 import { ConflictError, ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
 import type { ChemicalProductRepository } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
+import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
 
 export interface UpdateChemicalProductInput {
   code?: string;
@@ -13,6 +15,7 @@ export interface UpdateChemicalProductInput {
   unNumber?: string;
   riskClass?: ProductRiskClass;
   physicalState?: ProductPhysicalState;
+  responsibleUserId?: string;
 }
 
 /**
@@ -25,6 +28,7 @@ export interface UpdateChemicalProductInput {
 export class UpdateChemicalProductUseCase {
   constructor(
     @Inject(CHEMICAL_PRODUCT_REPOSITORY) private readonly products: ChemicalProductRepository,
+    @Inject(USER_REPOSITORY) private readonly users: UserRepository,
   ) {}
 
   async execute(id: string, input: UpdateChemicalProductInput): Promise<ChemicalProduct> {
@@ -58,6 +62,10 @@ export class UpdateChemicalProductUseCase {
       product.changePhysicalState(input.physicalState);
     }
 
+    if (input.responsibleUserId !== undefined) {
+      await this.changeResponsibleUser(product, input.responsibleUserId);
+    }
+
     return this.products.update(product);
   }
 
@@ -77,5 +85,22 @@ export class UpdateChemicalProductUseCase {
     }
 
     product.changeCode(normalizedCode);
+  }
+
+  private async changeResponsibleUser(
+    product: ChemicalProduct,
+    responsibleUserId: string,
+  ): Promise<void> {
+    if (responsibleUserId === product.responsibleUserId) {
+      return;
+    }
+
+    const user = await this.users.findById(responsibleUserId);
+
+    if (!user) {
+      throw new ResourceNotFoundError('Usuário', responsibleUserId);
+    }
+
+    product.changeResponsibleUser(user.id);
   }
 }
