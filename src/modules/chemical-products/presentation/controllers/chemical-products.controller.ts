@@ -69,6 +69,13 @@ const DOCUMENT_ID_PARAM = {
   example: '9b2f1c7e-4d3a-4f6b-8e21-5c0d7a1b2c3d',
 } as const;
 
+const USER_NOT_FOUND_EXAMPLE = {
+  message:
+    'Usuário não encontrado(a) para o identificador "3fa85f64-5717-4562-b3fc-2c963f66afa6".',
+  error: 'Not Found',
+  statusCode: 404,
+};
+
 const PRODUCT_NOT_FOUND_EXAMPLE = {
   message:
     'Produto químico não encontrado(a) para o identificador "3fa85f64-5717-4562-b3fc-2c963f66afa6".',
@@ -122,6 +129,7 @@ export class ChemicalProductsController {
           unNumber: '1830',
           riskClass: ProductRiskClass.CORROSIVE_SUBSTANCES,
           physicalState: ProductPhysicalState.LIQUID,
+          responsibleUserId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
         },
       },
       comDocumentos: {
@@ -134,6 +142,7 @@ export class ChemicalProductsController {
           riskClass: ProductRiskClass.GASES,
           physicalState: ProductPhysicalState.GASEOUS,
           status: ProductStatus.ACTIVE,
+          responsibleUserId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
           documents: [
             {
               type: 'SAFETY_DATA_SHEET',
@@ -160,11 +169,16 @@ export class ChemicalProductsController {
           'unNumber deve conter exatamente 4 dígitos',
           'riskClass must be one of the following values: EXPLOSIVES, GASES, FLAMMABLE_LIQUIDS, FLAMMABLE_SOLIDS, OXIDIZING_SUBSTANCES, TOXIC_SUBSTANCES, RADIOACTIVE_MATERIALS, CORROSIVE_SUBSTANCES, MISCELLANEOUS_DANGEROUS_SUBSTANCES',
           'physicalState must be one of the following values: SOLID, LIQUID, GASEOUS',
+          'responsibleUserId should not be empty',
         ],
         error: 'Bad Request',
         statusCode: 400,
       },
     },
+  })
+  @ApiNotFoundResponse({
+    description: 'Usuário responsável não encontrado.',
+    schema: { example: USER_NOT_FOUND_EXAMPLE },
   })
   @ApiConflictResponse({
     description: 'Já existe um produto químico com o código informado.',
@@ -235,6 +249,13 @@ export class ChemicalProductsController {
     description: 'Filtra os produtos químicos pelo status atual',
     enum: ProductStatus,
     example: ProductStatus.ACTIVE,
+  })
+  @ApiQuery({
+    name: 'responsibleUserId',
+    required: false,
+    type: String,
+    description: 'Filtra os produtos químicos pelo ID do usuário responsável',
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   })
   @ApiQuery({
     name: 'page',
@@ -321,7 +342,7 @@ export class ChemicalProductsController {
   @ApiOperation({
     summary: 'Atualiza os dados cadastrais de um produto químico',
     description:
-      'Altera apenas os campos enviados. O status e os documentos possuem endpoints próprios e não são aceitos aqui.',
+      'Altera apenas os campos enviados, incluindo a troca do usuário responsável. O status e os documentos possuem endpoints próprios e não são aceitos aqui.',
   })
   @ApiParam(PRODUCT_ID_PARAM)
   @ApiBody({
@@ -336,6 +357,10 @@ export class ChemicalProductsController {
           tradeName: null,
           unNumber: '1831',
         },
+      },
+      trocaResponsavel: {
+        summary: 'Troca o usuário responsável',
+        value: { responsibleUserId: '3fa85f64-5717-4562-b3fc-2c963f66afa6' },
       },
     },
   })
@@ -354,7 +379,7 @@ export class ChemicalProductsController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Produto químico não encontrado.',
+    description: 'Produto químico ou usuário responsável não encontrado.',
     schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
   })
   @ApiConflictResponse({

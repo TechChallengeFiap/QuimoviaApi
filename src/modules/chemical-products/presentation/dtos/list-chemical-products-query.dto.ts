@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
 import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/product-risk-class.enum.js';
 import { ProductStatus } from '@/modules/chemical-products/domain/enums/product-status.enum.js';
@@ -35,6 +35,15 @@ export class ListChemicalProductsQueryDto {
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
+
+  @ApiPropertyOptional({
+    description: 'Filtra os produtos químicos pelo ID do usuário responsável',
+    type: String,
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+  })
+  @IsOptional()
+  @IsString()
+  responsibleUserId?: string;
 
   @ApiPropertyOptional({
     description: 'Número da página desejada',

@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -66,6 +67,15 @@ export class CreateChemicalProductDto {
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
+
+  @ApiProperty({
+    type: String,
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'ID do usuário responsável pelo cadastro do produto. Deve existir.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  responsibleUserId!: string;
 
   @ApiPropertyOptional({ type: [CreateProductDocumentDto] })
   @IsOptional()
