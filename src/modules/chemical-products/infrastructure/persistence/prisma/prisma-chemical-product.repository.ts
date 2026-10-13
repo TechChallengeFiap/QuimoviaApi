@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ChemicalProductRepository,
   ChemicalProductSearchFilters,
@@ -10,20 +10,33 @@ import { ProductDocumentType } from '@/modules/chemical-products/domain/enums/pr
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
 import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/product-risk-class.enum.js';
 import { ProductStatus } from '@/modules/chemical-products/domain/enums/product-status.enum.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import type {
   ChemicalProductModel,
   ProductDocumentModel,
+  UserModel,
 } from '@/generated/prisma/models.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 
-type PersistedChemicalProduct = ChemicalProductModel & { documents: ProductDocumentModel[] };
+type PersistedChemicalProduct = ChemicalProductModel & {
+  documents: ProductDocumentModel[];
+  responsibleUser?: UserModel | null;
+};
 
-/** Os documentos são sempre carregados junto com o produto (agregado inteiro). */
-const WITH_DOCUMENTS = { documents: { orderBy: { createdAt: 'asc' } } } as const;
+/**
+ * O agregado é sempre carregado inteiro: documentos e usuário responsável vêm
+ * junto com o produto.
+ */
+const WITH_RELATIONS = {
+  documents: { orderBy: { createdAt: 'asc' } },
+  responsibleUser: true,
+} as const;
 
 @Injectable()
 export class PrismaChemicalProductRepository implements ChemicalProductRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async create(product: ChemicalProduct): Promise<ChemicalProduct> {
     const record = await this.prisma.chemicalProduct.create({
@@ -36,7 +49,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
           ),
         },
       },
-      include: WITH_DOCUMENTS,
+      include: WITH_RELATIONS,
     });
 
     return PrismaChemicalProductRepository.toDomain(record);
@@ -61,7 +74,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
           }),
         },
       },
-      include: WITH_DOCUMENTS,
+      include: WITH_RELATIONS,
     });
 
     return PrismaChemicalProductRepository.toDomain(record);
@@ -74,7 +87,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
   async findById(id: string): Promise<ChemicalProduct | null> {
     const record = await this.prisma.chemicalProduct.findUnique({
       where: { id },
-      include: WITH_DOCUMENTS,
+      include: WITH_RELATIONS,
     });
 
     return record ? PrismaChemicalProductRepository.toDomain(record) : null;
@@ -83,7 +96,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
   async findByCode(code: string): Promise<ChemicalProduct | null> {
     const record = await this.prisma.chemicalProduct.findUnique({
       where: { code },
-      include: WITH_DOCUMENTS,
+      include: WITH_RELATIONS,
     });
 
     return record ? PrismaChemicalProductRepository.toDomain(record) : null;
@@ -94,12 +107,13 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
       ...(filters.riskClass ? { riskClass: filters.riskClass } : {}),
       ...(filters.physicalState ? { physicalState: filters.physicalState } : {}),
       ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.responsibleUserId ? { responsibleUserId: filters.responsibleUserId } : {}),
     };
 
     const [records, total] = await Promise.all([
       this.prisma.chemicalProduct.findMany({
         where,
-        include: WITH_DOCUMENTS,
+        include: WITH_RELATIONS,
         orderBy: { createdAt: 'desc' },
         skip: (filters.page - 1) * filters.pageSize,
         take: filters.pageSize,
@@ -124,6 +138,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
       riskClass: product.riskClass,
       physicalState: product.physicalState,
       status: product.status,
+      responsibleUserId: product.responsibleUserId,
     };
   }
 
@@ -148,6 +163,10 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
       riskClass: record.riskClass as ProductRiskClass,
       physicalState: record.physicalState as ProductPhysicalState,
       status: record.status as ProductStatus,
+      responsibleUserId: record.responsibleUserId,
+      responsibleUser: record.responsibleUser
+        ? PrismaChemicalProductRepository.userToDomain(record.responsibleUser)
+        : null,
       documents: record.documents.map((document) =>
         PrismaChemicalProductRepository.documentToDomain(document),
       ),
@@ -164,6 +183,20 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
       expiresAt: record.expiresAt,
       filePath: record.filePath,
       createdAt: record.createdAt,
+    });
+  }
+
+  private static userToDomain(record: UserModel): User {
+    return User.restore({
+      id: record.id,
+      name: record.name,
+      email: record.email,
+      passwordHash: record.passwordHash,
+      role: record.role as UserRole,
+      status: record.status as UserStatus,
+      lastLoginAt: record.lastLoginAt,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
     });
   }
 }
