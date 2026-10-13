@@ -21,6 +21,7 @@ describe('DeleteChemicalProductUseCase', () => {
         unNumber: '9999',
         riskClass: ProductRiskClass.MISCELLANEOUS_DANGEROUS_SUBSTANCES,
         physicalState: ProductPhysicalState.SOLID,
+        responsibleUserId: 'user-001',
       }),
     );
 

@@ -4,8 +4,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
 import { ChemicalProductsModule } from '@/modules/chemical-products/chemical-products.module.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { ChemicalProductRepositoryMock } from '../mocks/chemical-product-repository.mock.js';
+import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 
 const validProduct = {
   code: 'H2SO4-98',
@@ -25,6 +29,8 @@ const validDocument = {
 
 describe('ChemicalProductsController (e2e)', () => {
   let app: INestApplication;
+  let users: UserRepositoryMock;
+  let responsibleUser: User;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -32,6 +38,8 @@ describe('ChemicalProductsController (e2e)', () => {
     })
       .overrideProvider(CHEMICAL_PRODUCT_REPOSITORY)
       .useClass(ChemicalProductRepositoryMock)
+      .overrideProvider(USER_REPOSITORY)
+      .useClass(UserRepositoryMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -40,6 +48,16 @@ describe('ChemicalProductsController (e2e)', () => {
     );
     app.useGlobalFilters(new DomainExceptionFilter(app.get(HttpAdapterHost)));
     await app.init();
+
+    users = app.get<UserRepositoryMock>(USER_REPOSITORY);
+    responsibleUser = await users.create(
+      User.create({
+        name: 'Responsável Técnico',
+        email: 'tecnico@quimovia.com',
+        passwordHash: 'hash',
+        role: UserRole.TECHNICAL_MANAGER,
+      }),
+    );
   });
 
   afterEach(async () => {
@@ -49,16 +67,21 @@ describe('ChemicalProductsController (e2e)', () => {
   async function createProduct(override: Record<string, unknown> = {}) {
     const response = await request(app.getHttpServer())
       .post('/chemical-products')
-      .send({ ...validProduct, ...override })
+      .send({ ...validProduct, responsibleUserId: responsibleUser.id, ...override })
       .expect(201);
 
     return response.body as { id: string; documents: { id: string }[] };
   }
 
-  it('cadastra um produto químico em análise, com o código normalizado', async () => {
+  it('cadastra um produto químico em análise, com o código normalizado e o responsável', async () => {
     const response = await request(app.getHttpServer())
       .post('/chemical-products')
-      .send({ ...validProduct, code: 'h2so4-98', documents: [validDocument] })
+      .send({
+        ...validProduct,
+        code: 'h2so4-98',
+        responsibleUserId: responsibleUser.id,
+        documents: [validDocument],
+      })
       .expect(201);
 
     expect(response.body).toMatchObject({
@@ -69,6 +92,7 @@ describe('ChemicalProductsController (e2e)', () => {
       riskClass: 'CORROSIVE_SUBSTANCES',
       physicalState: 'LIQUID',
       status: 'UNDER_ANALYSIS',
+      responsibleUserId: responsibleUser.id,
     });
     expect(response.body.documents).toHaveLength(1);
     expect(response.body.documents[0]).toMatchObject({
@@ -78,23 +102,41 @@ describe('ChemicalProductsController (e2e)', () => {
     });
   });
 
+  it('rejeita o cadastro sem usuário responsável ou com usuário inexistente', async () => {
+    await request(app.getHttpServer()).post('/chemical-products').send(validProduct).expect(400);
+
+    await request(app.getHttpServer())
+      .post('/chemical-products')
+      .send({ ...validProduct, responsibleUserId: 'user-inexistente' })
+      .expect(404);
+  });
+
   it('rejeita a criação de um produto com código duplicado', async () => {
     await createProduct();
     await request(app.getHttpServer())
       .post('/chemical-products')
-      .send({ ...validProduct, technicalName: 'Outro produto' })
+      .send({ ...validProduct, responsibleUserId: responsibleUser.id, technicalName: 'Outro' })
       .expect(409);
   });
 
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
       .post('/chemical-products')
-      .send({ ...validProduct, unNumber: '12', riskClass: 'INEXISTENTE' })
+      .send({
+        ...validProduct,
+        responsibleUserId: responsibleUser.id,
+        unNumber: '12',
+        riskClass: 'INEXISTENTE',
+      })
       .expect(400);
 
     await request(app.getHttpServer())
       .post('/chemical-products')
-      .send({ ...validProduct, documents: [{ type: 'SAFETY_DATA_SHEET' }] })
+      .send({
+        ...validProduct,
+        responsibleUserId: responsibleUser.id,
+        documents: [{ type: 'SAFETY_DATA_SHEET' }],
+      })
       .expect(400);
   });
 
@@ -106,14 +148,29 @@ describe('ChemicalProductsController (e2e)', () => {
       .expect(200)
       .expect(({ body }) => {
         expect(body.code).toBe('H2SO4-98');
+        expect(body.responsibleUserId).toBe(responsibleUser.id);
       });
 
     await request(app.getHttpServer()).get('/chemical-products/id-inexistente').expect(404);
   });
 
-  it('lista produtos paginados, com filtro por status', async () => {
+  it('lista produtos paginados, com filtro por status e por responsável', async () => {
+    const otherUser = await users.create(
+      User.create({
+        name: 'Outro Responsável',
+        email: 'outro@quimovia.com',
+        passwordHash: 'hash',
+        role: UserRole.TECHNICAL_MANAGER,
+      }),
+    );
+
     await createProduct();
-    await createProduct({ code: 'NH3-01', unNumber: '1005', status: 'ACTIVE' });
+    await createProduct({
+      code: 'NH3-01',
+      unNumber: '1005',
+      status: 'ACTIVE',
+      responsibleUserId: otherUser.id,
+    });
 
     const all = await request(app.getHttpServer()).get('/chemical-products').expect(200);
     expect(all.body).toMatchObject({ total: 2, page: 1, pageSize: 20 });
@@ -124,20 +181,46 @@ describe('ChemicalProductsController (e2e)', () => {
       .expect(200);
     expect(active.body.total).toBe(1);
     expect(active.body.items[0].code).toBe('NH3-01');
+
+    const byUser = await request(app.getHttpServer())
+      .get('/chemical-products')
+      .query({ responsibleUserId: otherUser.id })
+      .expect(200);
+    expect(byUser.body.total).toBe(1);
+    expect(byUser.body.items[0].responsibleUserId).toBe(otherUser.id);
   });
 
-  it('atualiza os dados cadastrais de um produto', async () => {
+  it('atualiza os dados cadastrais de um produto, incluindo o responsável', async () => {
     const created = await createProduct();
+    const otherUser = await users.create(
+      User.create({
+        name: 'Outro Responsável',
+        email: 'outro@quimovia.com',
+        passwordHash: 'hash',
+        role: UserRole.TECHNICAL_MANAGER,
+      }),
+    );
 
     await request(app.getHttpServer())
       .patch(`/chemical-products/${created.id}`)
-      .send({ technicalName: 'Ácido sulfúrico concentrado', tradeName: null, unNumber: '1831' })
+      .send({
+        technicalName: 'Ácido sulfúrico concentrado',
+        tradeName: null,
+        unNumber: '1831',
+        responsibleUserId: otherUser.id,
+      })
       .expect(200)
       .expect(({ body }) => {
         expect(body.technicalName).toBe('Ácido sulfúrico concentrado');
         expect(body.tradeName).toBeNull();
         expect(body.unNumber).toBe('1831');
+        expect(body.responsibleUserId).toBe(otherUser.id);
       });
+
+    await request(app.getHttpServer())
+      .patch(`/chemical-products/${created.id}`)
+      .send({ responsibleUserId: 'user-inexistente' })
+      .expect(404);
   });
 
   it('não aceita alterar o status pelo endpoint de atualização cadastral', async () => {

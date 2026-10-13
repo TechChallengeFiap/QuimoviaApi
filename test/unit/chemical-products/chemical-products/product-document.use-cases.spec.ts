@@ -35,6 +35,7 @@ describe('Documentos do produto químico', () => {
         unNumber: '1017',
         riskClass: ProductRiskClass.GASES,
         physicalState: ProductPhysicalState.GASEOUS,
+        responsibleUserId: 'user-001',
       }),
     );
   }

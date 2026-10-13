@@ -46,6 +46,10 @@ export class ChemicalProductRepositoryMock implements ChemicalProductRepository 
       items = items.filter((product) => product.status === filters.status);
     }
 
+    if (filters.responsibleUserId) {
+      items = items.filter((product) => product.responsibleUserId === filters.responsibleUserId);
+    }
+
     const total = items.length;
     const start = (filters.page - 1) * filters.pageSize;
 

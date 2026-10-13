@@ -14,6 +14,7 @@ function buildProduct(code: string, override: Partial<Parameters<typeof Chemical
     unNumber: '1234',
     riskClass: ProductRiskClass.GASES,
     physicalState: ProductPhysicalState.GASEOUS,
+    responsibleUserId: 'user-001',
     ...override,
   });
 }
@@ -51,6 +52,7 @@ describe('ListChemicalProductsUseCase', () => {
       buildProduct('LIQ-01', {
         riskClass: ProductRiskClass.FLAMMABLE_LIQUIDS,
         physicalState: ProductPhysicalState.LIQUID,
+        responsibleUserId: 'user-001',
         status: ProductStatus.ACTIVE,
       }),
     );
@@ -65,5 +67,16 @@ describe('ListChemicalProductsUseCase', () => {
 
     const byStatus = await useCase.execute({ status: ProductStatus.ACTIVE });
     expect(byStatus.total).toBe(1);
+  });
+
+  it('filtra pelo usuário responsável', async () => {
+    const products = new ChemicalProductRepositoryMock();
+    await products.create(buildProduct('GAS-01'));
+    await products.create(buildProduct('GAS-02', { responsibleUserId: 'user-002' }));
+
+    const useCase = new ListChemicalProductsUseCase(products);
+    const result = await useCase.execute({ responsibleUserId: 'user-002' });
+
+    expect(result.items.map((product) => product.code)).toEqual(['GAS-02']);
   });
 });

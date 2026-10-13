@@ -26,6 +26,7 @@ describe('ChangeChemicalProductStatusUseCase', () => {
         unNumber: '1005',
         riskClass: ProductRiskClass.GASES,
         physicalState: ProductPhysicalState.GASEOUS,
+        responsibleUserId: 'user-001',
       }),
     );
   }
