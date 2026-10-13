@@ -91,6 +91,7 @@ model User {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   chemicalShipments ChemicalShipment[]
+  chemicalProducts  ChemicalProduct[]
 }
 
 enum StatusShipment {
@@ -150,17 +151,21 @@ enum ProductDocumentType {
 }
 
 model ChemicalProduct {
-  id            String               @id @default(uuid())
-  code          String               @unique @db.VarChar(40)
-  technicalName String               @db.VarChar(180)
-  tradeName     String?              @db.VarChar(180)
-  unNumber      String               @db.VarChar(4)
-  riskClass     ProductRiskClass
-  physicalState ProductPhysicalState
-  status        ProductStatus        @default(UNDER_ANALYSIS)
-  documents     ProductDocument[]
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  id                String               @id @default(uuid())
+  code              String               @unique @db.VarChar(40)
+  technicalName     String               @db.VarChar(180)
+  tradeName         String?              @db.VarChar(180)
+  unNumber          String               @db.VarChar(4)
+  riskClass         ProductRiskClass
+  physicalState     ProductPhysicalState
+  status            ProductStatus        @default(UNDER_ANALYSIS)
+  responsibleUserId String
+  responsibleUser   User                 @relation(fields: [responsibleUserId], references: [id])
+  documents         ProductDocument[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([responsibleUserId])
 }
 
 model ProductDocument {
