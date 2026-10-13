@@ -4,10 +4,12 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
+import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import { UserModule } from '@/modules/user/user.module.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
+import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 
 describe('UsersController (e2e)', () => {
@@ -24,6 +26,8 @@ describe('UsersController (e2e)', () => {
       .useClass(UserRepositoryMock)
       .overrideProvider(PASSWORD_HASHER)
       .useClass(PasswordHasherMock)
+      .overrideProvider(SESSION_REPOSITORY)
+      .useClass(SessionRepositoryMock)
       .compile();
 
     app = moduleFixture.createNestApplication();

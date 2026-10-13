@@ -5,8 +5,10 @@ import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/
 import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/list-users.use-case.js';
 import { UpdateUserUseCase } from '@/modules/user/application/use-cases/users/update-user.use-case.js';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
+import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import { ScryptPasswordHasher } from '@/modules/user/infrastructure/services/password-hasher.service.js';
+import { PrismaSessionRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-session.repository.js';
 import { PrismaUserRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-user.repository.js';
 import { UsersController } from '@/modules/user/presentation/controllers/users.controller.js';
 
@@ -19,8 +21,9 @@ import { UsersController } from '@/modules/user/presentation/controllers/users.c
     UpdateUserUseCase,
     DeleteUserUseCase,
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
+    { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },
     { provide: PASSWORD_HASHER, useClass: ScryptPasswordHasher },
   ],
-  exports: [USER_REPOSITORY],
+  exports: [USER_REPOSITORY, SESSION_REPOSITORY, PASSWORD_HASHER],
 })
 export class UserModule {}

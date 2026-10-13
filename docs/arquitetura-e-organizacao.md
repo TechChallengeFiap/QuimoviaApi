@@ -44,7 +44,7 @@ O estado real do repositório é a fonte de verdade.
 Hoje o projeto possui:
 
 - aplicação NestJS com `src/main.ts` e `src/app.module.ts`;
-- Swagger configurado em `src/main.ts`;
+- Swagger configurado em `src/main.ts`, a partir de `src/shared/infrastructure/config/swagger.config.ts`;
 - cinco módulos principais em `src/modules/`;
 - estrutura interna de pastas criada dentro dos módulos;
 - Prisma schema em `prisma/schema.prisma`;
@@ -218,14 +218,17 @@ Aggregate Root principal previsto: `Inspecao`.
 
 Responsável por identidade, autenticação e autorização.
 
+Hoje contém:
+
+- `Usuario` e o seu cadastro (`UserModule`);
+- `Sessao` (`Session`), com repositório próprio;
+- login, logout e o `AuthGuard`, que exige uma sessão ativa nas rotas em que é aplicado (`AuthModule`).
+
 Pode conter futuramente:
 
-- `Usuario`;
 - `Perfil`;
 - permissões;
-- sessão;
-- autenticação;
-- autorização.
+- autorização por perfil e permissão.
 
 Aggregate Roots principais previstos: `Usuario` e `Perfil`.
 
@@ -605,7 +608,11 @@ src/modules/user/infrastructure/auth/
 
 Use para guards, strategies e adapters técnicos de autenticação.
 
+Hoje contém o `AuthGuard`, a leitura da configuração (`JWT_SECRET` e `JWT_EXPIRES_IN_SECONDS`) e o decorator `@CurrentSession()`, que entrega ao controller a sessão validada.
+
 Regras de usuário, perfil e permissão pertencem ao domínio ou aplicação de `user`.
+
+O guard não é global: para exigir login, importe o `AuthModule` no módulo e use `@UseGuards(AuthGuard)` no controller ou no endpoint. Nessas rotas, `@ApiRequiresAuthentication()` (`src/shared/presentation/decorators/`) exige o token no Swagger e documenta a resposta 401.
 
 ## 9. Presentation
 
@@ -706,7 +713,8 @@ src/shared/
 - logger transversal;
 - config global;
 - Prisma global;
-- erro base sem regra específica.
+- erro base sem regra específica;
+- decorators transversais, como `@ApiRequiresAuthentication()`.
 
 ### Não deve entrar em `shared`
 
