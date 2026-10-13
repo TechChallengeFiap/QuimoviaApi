@@ -5,6 +5,7 @@ import type { CreateProductDocumentData } from '@/modules/chemical-products/doma
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
 import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/product-risk-class.enum.js';
 import { ProductStatus } from '@/modules/chemical-products/domain/enums/product-status.enum.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
 
 const MIN_TECHNICAL_NAME_LENGTH = 3;
 const CODE_FORMAT = /^[A-Z0-9][A-Z0-9._-]*$/;
@@ -20,6 +21,9 @@ export interface ChemicalProductProperties {
   riskClass: ProductRiskClass;
   physicalState: ProductPhysicalState;
   status: ProductStatus;
+  responsibleUserId: string;
+  /** Usuário responsável carregado junto com o produto, quando disponível. */
+  responsibleUser?: User | null;
   documents: ProductDocument[];
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +37,7 @@ export interface CreateChemicalProductData {
   riskClass: ProductRiskClass;
   physicalState: ProductPhysicalState;
   status?: ProductStatus;
+  responsibleUserId: string;
   documents?: CreateProductDocumentData[];
 }
 
@@ -40,11 +45,11 @@ export interface CreateChemicalProductData {
  * Raiz do agregado Produto Químico.
  *
  * Concentra as invariantes do cadastro (código, nome técnico, número ONU,
- * classe de risco e estado físico obrigatórios) e controla o ciclo de vida do
- * produto e de seus documentos: nenhum elemento interno do agregado é alterado
- * sem passar por um de seus métodos. A unicidade do código é a única regra que
- * a entidade não consegue garantir sozinha: ela depende do repositório, que
- * consulta o conjunto completo de produtos.
+ * classe de risco, estado físico e usuário responsável obrigatórios) e controla
+ * o ciclo de vida do produto e de seus documentos: nenhum elemento interno do
+ * agregado é alterado sem passar por um de seus métodos. Duas regras dependem
+ * de fora da entidade: a unicidade do código e a existência do usuário
+ * responsável, ambas verificadas pelos casos de uso através dos repositórios.
  */
 export class ChemicalProduct {
   readonly id: string;
@@ -57,6 +62,8 @@ export class ChemicalProduct {
   #riskClass: ProductRiskClass;
   #physicalState: ProductPhysicalState;
   #status: ProductStatus;
+  #responsibleUserId: string;
+  #responsibleUser: User | null;
   #documents: ProductDocument[];
   #updatedAt: Date;
 
@@ -70,6 +77,8 @@ export class ChemicalProduct {
     this.#riskClass = properties.riskClass;
     this.#physicalState = properties.physicalState;
     this.#status = properties.status;
+    this.#responsibleUserId = properties.responsibleUserId;
+    this.#responsibleUser = properties.responsibleUser ?? null;
     this.#documents = [...properties.documents];
     this.#updatedAt = properties.updatedAt;
   }
@@ -87,6 +96,8 @@ export class ChemicalProduct {
       riskClass: data.riskClass,
       physicalState: data.physicalState,
       status: data.status ?? ProductStatus.UNDER_ANALYSIS,
+      responsibleUserId: ChemicalProduct.validateResponsibleUserId(data.responsibleUserId),
+      responsibleUser: null,
       documents: (data.documents ?? []).map((document) => ProductDocument.create(document)),
       createdAt: now,
       updatedAt: now,
@@ -126,6 +137,15 @@ export class ChemicalProduct {
     return this.#status;
   }
 
+  get responsibleUserId(): string {
+    return this.#responsibleUserId;
+  }
+
+  /** Nulo quando o produto foi carregado sem o usuário responsável. */
+  get responsibleUser(): User | null {
+    return this.#responsibleUser;
+  }
+
   /** Cópia defensiva: a lista só é alterada por meio dos métodos do agregado. */
   get documents(): ProductDocument[] {
     return [...this.#documents];
@@ -163,6 +183,22 @@ export class ChemicalProduct {
 
   changePhysicalState(physicalState: ProductPhysicalState): void {
     this.#physicalState = physicalState;
+    this.markAsUpdated();
+  }
+
+  /**
+   * Troca o usuário responsável. O usuário carregado é descartado porque não
+   * corresponde mais ao novo id; o repositório o recarrega ao persistir.
+   */
+  changeResponsibleUser(responsibleUserId: string): void {
+    const validatedId = ChemicalProduct.validateResponsibleUserId(responsibleUserId);
+
+    if (validatedId === this.#responsibleUserId) {
+      return;
+    }
+
+    this.#responsibleUserId = validatedId;
+    this.#responsibleUser = null;
     this.markAsUpdated();
   }
 
@@ -217,6 +253,8 @@ export class ChemicalProduct {
       riskClass: this.#riskClass,
       physicalState: this.#physicalState,
       status: this.#status,
+      responsibleUserId: this.#responsibleUserId,
+      responsibleUser: this.#responsibleUser,
       documents: this.documents,
       createdAt: this.createdAt,
       updatedAt: this.#updatedAt,
@@ -280,5 +318,15 @@ export class ChemicalProduct {
     }
 
     return normalizedUnNumber;
+  }
+
+  private static validateResponsibleUserId(responsibleUserId: string): string {
+    const normalizedId = responsibleUserId?.trim() ?? '';
+
+    if (normalizedId.length === 0) {
+      throw new BusinessRuleError('O produto químico deve possuir um usuário responsável.');
+    }
+
+    return normalizedId;
   }
 }

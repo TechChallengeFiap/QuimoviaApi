@@ -7,6 +7,7 @@ export interface ChemicalProductSearchFilters {
   riskClass?: ProductRiskClass;
   physicalState?: ProductPhysicalState;
   status?: ProductStatus;
+  responsibleUserId?: string;
   page: number;
   pageSize: number;
 }
