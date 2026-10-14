@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { logError } from '@/shared/application/log-error.js';
 
 @Injectable()
 export class DeleteChemicalShipmentUseCase {
@@ -22,9 +23,10 @@ export class DeleteChemicalShipmentUseCase {
 
       await this.chemicalShipment.delete(id);
     } catch (error) {
-      this.logger.error(
-        `Erro ao remover a carga química com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
+      logError(
+        this.logger,
+        `Erro ao remover a carga química com id ${id}`,
+        error,
       );
       throw error;
     }

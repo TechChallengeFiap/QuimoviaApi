@@ -16,6 +16,7 @@ import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.r
 import type { SessionRepository } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import { logError } from '@/shared/application/log-error.js';
 
 /** A mesma mensagem para e-mail inexistente e senha errada (RN-ACE-02). */
 export const INVALID_CREDENTIALS_MESSAGE = 'E-mail ou senha inválidos.';
@@ -104,10 +105,7 @@ export class LoginUseCase {
         user,
       };
     } catch (error) {
-      this.logger.error(
-        `Erro ao autenticar o usuário: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, 'Erro ao autenticar o usuário', error);
       throw error;
     }
   }

@@ -5,6 +5,7 @@ import {
 } from '@/modules/inspection/domain/entities/inspection.entity.js';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import type { InspectionRepository } from '@/modules/inspection/domain/repositories/inspection.repository.js';
+import { logError } from '@/shared/application/log-error.js';
 
 @Injectable()
 export class CreateInspectionUseCase {
@@ -22,10 +23,7 @@ export class CreateInspectionUseCase {
 
       return await this.inspections.create(inspection);
     } catch (error) {
-      this.logger.error(
-        `Erro ao cadastrar a inspeção: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, 'Erro ao cadastrar a inspeção', error);
       throw error;
     }
   }

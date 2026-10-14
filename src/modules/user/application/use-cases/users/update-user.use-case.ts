@@ -12,6 +12,7 @@ import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.r
 import type { SessionRepository } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import { logError } from '@/shared/application/log-error.js';
 
 export interface UpdateUserInput {
   name?: string;
@@ -72,10 +73,7 @@ export class UpdateUserUseCase {
 
       return await this.users.update(user);
     } catch (error) {
-      this.logger.error(
-        `Erro ao atualizar o usuário com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, `Erro ao atualizar o usuário com id ${id}`, error);
       throw error;
     }
   }

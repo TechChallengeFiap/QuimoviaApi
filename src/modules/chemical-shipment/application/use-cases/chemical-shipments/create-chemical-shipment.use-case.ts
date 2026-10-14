@@ -11,6 +11,7 @@ import {
   type UserDirectory,
 } from '@/modules/user/public/index.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { logError } from '@/shared/application/log-error.js';
 
 @Injectable()
 export class CreateChemicalShipmentUseCase {
@@ -44,10 +45,7 @@ export class CreateChemicalShipmentUseCase {
 
       return { shipment, responsibleUser };
     } catch (error) {
-      this.logger.error(
-        `Erro ao executar criação da carga química: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, 'Erro ao executar criação da carga química', error);
       throw error;
     }
   }

@@ -7,6 +7,7 @@ import {
   type UserDirectory,
 } from '@/modules/user/public/index.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { logError } from '@/shared/application/log-error.js';
 
 @Injectable()
 export class FindChemicalShipmentByIdUseCase {
@@ -33,10 +34,7 @@ export class FindChemicalShipmentByIdUseCase {
 
       return { shipment, responsibleUser };
     } catch (error) {
-      this.logger.error(
-        `Erro ao buscar carga química por ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, `Erro ao buscar carga química por ID ${id}`, error);
       throw error;
     }
   }

@@ -9,6 +9,7 @@ import {
 } from '@/shared/domain/errors/domain.error.js';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import type { InspectionRepository } from '@/modules/inspection/domain/repositories/inspection.repository.js';
+import { logError } from '@/shared/application/log-error.js';
 
 export interface InspectionResultInput {
   requirement: InspectionRequirement;
@@ -69,10 +70,7 @@ export class UpdateInspectionUseCase {
 
       return await this.inspections.update(inspection);
     } catch (error) {
-      this.logger.error(
-        `Erro ao atualizar a inspeção com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, `Erro ao atualizar a inspeção com id ${id}`, error);
       throw error;
     }
   }

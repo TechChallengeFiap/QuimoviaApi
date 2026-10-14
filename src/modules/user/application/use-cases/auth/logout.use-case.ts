@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import type { SessionRepository } from '@/modules/user/domain/repositories/session.repository.js';
+import { logError } from '@/shared/application/log-error.js';
 
 @Injectable()
 export class LogoutUseCase {
@@ -26,9 +27,10 @@ export class LogoutUseCase {
       session.end();
       await this.sessions.update(session);
     } catch (error) {
-      this.logger.error(
-        `Erro ao encerrar a sessão com id ${sessionId}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
+      logError(
+        this.logger,
+        `Erro ao encerrar a sessão com id ${sessionId}`,
+        error,
       );
       throw error;
     }

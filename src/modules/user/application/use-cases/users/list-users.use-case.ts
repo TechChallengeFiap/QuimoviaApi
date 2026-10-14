@@ -9,6 +9,7 @@ import {
   DEFAULT_PAGE_SIZE,
   type Page,
 } from '@/shared/domain/pagination.js';
+import { logError } from '@/shared/application/log-error.js';
 
 export interface ListUsersInput {
   role?: UserRole;
@@ -34,10 +35,7 @@ export class ListUsersUseCase {
         pageSize: input.pageSize ?? DEFAULT_PAGE_SIZE,
       });
     } catch (error) {
-      this.logger.error(
-        `Erro ao listar os usuários: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, 'Erro ao listar os usuários', error);
       throw error;
     }
   }

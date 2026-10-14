@@ -9,6 +9,7 @@ import {
   type UserSummary,
 } from '@/modules/user/public/index.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { logError } from '@/shared/application/log-error.js';
 
 export interface UpdateChemicalShipmentInput {
   status?: StatusShipment;
@@ -74,9 +75,10 @@ export class UpdateChemicalShipmentUseCase {
 
       return { shipment, responsibleUser };
     } catch (error) {
-      this.logger.error(
-        `Erro ao atualizar a carga química com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
+      logError(
+        this.logger,
+        `Erro ao atualizar a carga química com id ${id}`,
+        error,
       );
       throw error;
     }

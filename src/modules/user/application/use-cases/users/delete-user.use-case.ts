@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import { logError } from '@/shared/application/log-error.js';
 
 @Injectable()
 export class DeleteUserUseCase {
@@ -21,10 +22,7 @@ export class DeleteUserUseCase {
 
       await this.users.remove(id);
     } catch (error) {
-      this.logger.error(
-        `Erro ao remover o usuário com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, `Erro ao remover o usuário com id ${id}`, error);
       throw error;
     }
   }

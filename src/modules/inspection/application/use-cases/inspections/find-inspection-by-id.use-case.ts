@@ -3,6 +3,7 @@ import { Inspection } from '@/modules/inspection/domain/entities/inspection.enti
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import type { InspectionRepository } from '@/modules/inspection/domain/repositories/inspection.repository.js';
+import { logError } from '@/shared/application/log-error.js';
 
 @Injectable()
 export class FindInspectionByIdUseCase {
@@ -23,10 +24,7 @@ export class FindInspectionByIdUseCase {
 
       return inspection;
     } catch (error) {
-      this.logger.error(
-        `Erro ao buscar a inspeção com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      logError(this.logger, `Erro ao buscar a inspeção com id ${id}`, error);
       throw error;
     }
   }
