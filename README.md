@@ -92,7 +92,10 @@ O Quimovia adota o padrão **Monólito Modular** fundamentado nos princípios de
 >
 > Todas as decisões arquiteturais, estruturação detalhada de pastas, mapeamento de camadas (`domain`, `application`, `infrastructure`, `presentation`), regras de dependência, padrões de nomenclatura e boas práticas estão centralizadas na pasta [`docs/`](./docs/):
 >
-> 🔗 **Consulte a documentação completa em:** [**`docs/arquitetura-e-organizacao.md`**](./docs/arquitetura-e-organizacao.md)
+> 🔗 **Consulte a documentação completa em:**
+>
+> - [**`docs/arquitetura/01-fundamentos-e-decisoes.md`**](./docs/arquitetura/01-fundamentos-e-decisoes.md): o que é a arquitetura, por que foi adotada, DIP e DI;
+> - [**`docs/arquitetura/02-organizacao-e-aplicacao.md`**](./docs/arquitetura/02-organizacao-e-aplicacao.md): como ela se aplica ao repositório, regras de dependência e comunicação entre contextos.
 
 ---
 
