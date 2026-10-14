@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ChemicalProductRepository,
   ChemicalProductSearchFilters,
@@ -23,7 +23,7 @@ const WITH_DOCUMENTS = { documents: { orderBy: { createdAt: 'asc' } } } as const
 
 @Injectable()
 export class PrismaChemicalProductRepository implements ChemicalProductRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async create(product: ChemicalProduct): Promise<ChemicalProduct> {
     const record = await this.prisma.chemicalProduct.create({
