@@ -5,9 +5,6 @@ import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/appli
 import { ListChemicalShipmentsUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/list-chemical-shipments.use-case.js';
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/find-chemical-shipment-by-id.use-case.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
-import { User } from '@/modules/user/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import {
   BadRequestException,
@@ -15,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
+import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
+import { userSummary } from '../../mocks/user-directory.mock.js';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
@@ -29,6 +28,11 @@ describe('ChemicalShipmentController', () => {
     responsibleUserId: 'user-001',
     documentsIds: 'doc-001',
   });
+
+  const mockDetails: ChemicalShipmentDetails = {
+    shipment: mockShipment,
+    responsibleUser: userSummary({ id: 'user-001' }),
+  };
 
   beforeEach(async () => {
     createUseCase = {
@@ -69,7 +73,7 @@ describe('ChemicalShipmentController', () => {
 
   describe('createChemicalShipment', () => {
     it('deve cadastrar uma carga química com sucesso', async () => {
-      createUseCase.execute.mockResolvedValue(mockShipment);
+      createUseCase.execute.mockResolvedValue(mockDetails);
 
       const result = await controller.createChemicalShipment({
         productId: 'prod-001',
@@ -127,7 +131,7 @@ describe('ChemicalShipmentController', () => {
   describe('listChemicalShipments', () => {
     it('deve listar cargas químicas com sucesso', async () => {
       listUseCase.execute.mockResolvedValue({
-        items: [mockShipment],
+        items: [mockDetails],
         total: 1,
         page: 1,
         pageSize: 20,
@@ -139,36 +143,27 @@ describe('ChemicalShipmentController', () => {
       expect(result.total).toBe(1);
     });
 
-    it('deve incluir responsibleUser na listagem se presente na entidade', async () => {
-      const user = User.create({
-        name: 'Carlos Oliveira',
-        email: 'carlos@quimovia.com',
-        passwordHash: 'hash123',
-        role: UserRole.PORT_OPERATOR,
-      });
-
-      const shipmentWithUser = ChemicalShipment.restore({
-        id: 'ship-1',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-        status: StatusShipment.ANALYZING,
-        productId: 'prod-001',
-        responsibleUserId: user.id,
-        responsibleUser: user,
-        documentsIds: 'doc-001',
-      });
-
+    it('deve incluir os dados do responsável na listagem', async () => {
       listUseCase.execute.mockResolvedValue({
-        items: [shipmentWithUser],
+        items: [
+          {
+            shipment: mockShipment,
+            responsibleUser: userSummary({
+              id: 'user-001',
+              name: 'Carlos Oliveira',
+            }),
+          },
+        ],
         total: 1,
         page: 1,
         pageSize: 20,
       });
 
       const result = await controller.listChemicalShipments({});
-      expect(result.items[0].responsibleUser).toBeDefined();
       expect(result.items[0].responsibleUser?.name).toBe('Carlos Oliveira');
+      expect(result.items[0].responsibleUser).not.toHaveProperty(
+        'passwordHash',
+      );
     });
 
     it('deve capturar erro inesperado na listagem e lançar InternalServerErrorException', async () => {
@@ -182,7 +177,7 @@ describe('ChemicalShipmentController', () => {
 
   describe('findChemicalShipmentById', () => {
     it('deve retornar a carga química pelo ID', async () => {
-      findByIdUseCase.execute.mockResolvedValue(mockShipment);
+      findByIdUseCase.execute.mockResolvedValue(mockDetails);
 
       const result = await controller.findChemicalShipmentById(mockShipment.id);
 
@@ -212,7 +207,7 @@ describe('ChemicalShipmentController', () => {
 
   describe('updateChemicalShipment', () => {
     it('deve atualizar a carga química com sucesso', async () => {
-      updateUseCase.execute.mockResolvedValue(mockShipment);
+      updateUseCase.execute.mockResolvedValue(mockDetails);
 
       const result = await controller.updateChemicalShipment(mockShipment.id, {
         productId: 'prod-001',

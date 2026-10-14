@@ -1,50 +1,44 @@
 import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/create-chemical-shipment.use-case.js';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
-import { UserRepositoryMock } from '../../mocks/user-repository.mock.js';
-import { User } from '@/modules/user/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import {
+  BusinessRuleError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
+import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import {
+  UserDirectoryMock,
+  userSummary,
+} from '../../mocks/user-directory.mock.js';
 
 describe('CreateChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
-  let users: UserRepositoryMock;
   let useCase: CreateChemicalShipmentUseCase;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     chemicalShipments = new ChemicalShipmentMock();
-    users = new UserRepositoryMock();
-    useCase = new CreateChemicalShipmentUseCase(chemicalShipments, users);
-
-    await users.create(
-      User.restore({
-        id: 'user-001',
-        name: 'Operador Teste',
-        email: 'operador@quimovia.com',
-        passwordHash: 'hash',
-        role: UserRole.PORT_OPERATOR,
-        status: UserStatus.ACTIVE,
-        lastLoginAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
+    useCase = new CreateChemicalShipmentUseCase(
+      chemicalShipments,
+      new UserDirectoryMock([
+        userSummary({ id: 'user-001', name: 'Operador Teste' }),
+      ]),
     );
   });
 
-  it('cria uma carga química com status inicial ANALYZING', async () => {
+  it('cria uma carga química com status inicial ANALYZING e devolve o responsável', async () => {
     const input = {
       productId: 'prod-001',
       responsibleUserId: 'user-001',
       documentsIds: 'doc-001',
     };
 
-    const chemicalShipment = await useCase.execute(input);
+    const { shipment, responsibleUser } = await useCase.execute(input);
 
-    expect(chemicalShipment.status).toBe(StatusShipment.ANALYZING);
-    expect(
-      await chemicalShipments.findById(chemicalShipment.id),
-    ).not.toBeNull();
+    expect(shipment.status).toBe(StatusShipment.ANALYZING);
+    expect(await chemicalShipments.findById(shipment.id)).not.toBeNull();
+    expect(responsibleUser).toMatchObject({
+      id: 'user-001',
+      name: 'Operador Teste',
+    });
   });
 
   it('deve lançar ResourceNotFoundError quando o usuário responsável não existir', async () => {
@@ -55,6 +49,9 @@ describe('CreateChemicalShipmentUseCase', () => {
     };
 
     await expect(useCase.execute(input)).rejects.toThrow(ResourceNotFoundError);
+    expect(
+      (await chemicalShipments.list({ page: 1, pageSize: 20 })).total,
+    ).toBe(0);
   });
 
   it('deve rejeitar um productId invalido', async () => {
@@ -65,11 +62,11 @@ describe('CreateChemicalShipmentUseCase', () => {
     };
 
     await expect(useCase.execute(input)).rejects.toThrow(
-      'O productId não pode estar vazio',
+      new BusinessRuleError('O productId não pode estar vazio'),
     );
   });
 
-  it('deve rejeitar um responsibleUserId invalido', async () => {
+  it('deve rejeitar um responsibleUserId invalido antes de consultar o usuário', async () => {
     const input = {
       productId: 'prod-001',
       responsibleUserId: '',
@@ -77,7 +74,7 @@ describe('CreateChemicalShipmentUseCase', () => {
     };
 
     await expect(useCase.execute(input)).rejects.toThrow(
-      'O responsibleUserId não pode estar vazio',
+      new BusinessRuleError('O responsibleUserId não pode estar vazio'),
     );
   });
 
@@ -89,8 +86,7 @@ describe('CreateChemicalShipmentUseCase', () => {
     };
 
     await expect(useCase.execute(input)).rejects.toThrow(
-      'O documentsIds não pode estar vazio',
+      new BusinessRuleError('O documentsIds não pode estar vazio'),
     );
   });
 });
-

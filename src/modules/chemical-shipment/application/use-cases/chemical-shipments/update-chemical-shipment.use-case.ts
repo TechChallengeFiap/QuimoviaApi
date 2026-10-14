@@ -1,12 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
 import type { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import {
-  USER_REPOSITORY,
-  type UserRepository,
-} from '@/modules/user/domain/repositories/user.repository.js';
+  USER_DIRECTORY,
+  type UserDirectory,
+  type UserSummary,
+} from '@/modules/user/public/index.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 
 export interface UpdateChemicalShipmentInput {
@@ -21,8 +22,8 @@ export class UpdateChemicalShipmentUseCase {
   constructor(
     @Inject(CHEMICAL_SHIPMENT_REPOSITORY)
     private readonly chemicalShipments: ChemicalShipmentRepository,
-    @Inject(USER_REPOSITORY)
-    private readonly users: UserRepository,
+    @Inject(USER_DIRECTORY)
+    private readonly users: UserDirectory,
   ) {}
 
   /**
@@ -33,7 +34,7 @@ export class UpdateChemicalShipmentUseCase {
   async execute(
     id: string,
     input: UpdateChemicalShipmentInput,
-  ): Promise<ChemicalShipment> {
+  ): Promise<ChemicalShipmentDetails> {
     const chemicalShipment = await this.chemicalShipments.findById(id);
 
     if (!chemicalShipment) {
@@ -48,9 +49,11 @@ export class UpdateChemicalShipmentUseCase {
       chemicalShipment.changeProduct(input.productId);
     }
 
+    let newResponsibleUser: UserSummary | null = null;
+
     if (input.responsibleUserId) {
-      const user = await this.users.findById(input.responsibleUserId);
-      if (!user) {
+      newResponsibleUser = await this.users.findById(input.responsibleUserId);
+      if (!newResponsibleUser) {
         throw new ResourceNotFoundError('Usuário', input.responsibleUserId);
       }
 
@@ -61,6 +64,11 @@ export class UpdateChemicalShipmentUseCase {
       chemicalShipment.changeDocuments(input.documentsIds);
     }
 
-    return await this.chemicalShipments.update(chemicalShipment);
+    const shipment = await this.chemicalShipments.update(chemicalShipment);
+    const responsibleUser =
+      newResponsibleUser ??
+      (await this.users.findById(shipment.responsibleUserId));
+
+    return { shipment, responsibleUser };
   }
 }

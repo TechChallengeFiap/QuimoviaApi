@@ -1,57 +1,33 @@
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
-import { UserRepositoryMock } from '../../mocks/user-repository.mock.js';
-import { User } from '@/modules/user/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import {
   BusinessRuleError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
+import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import {
+  UserDirectoryMock,
+  userSummary,
+} from '../../mocks/user-directory.mock.js';
 
 describe('UpdateChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
-  let users: UserRepositoryMock;
   let useCase: UpdateChemicalShipmentUseCase;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     chemicalShipments = new ChemicalShipmentMock();
-    users = new UserRepositoryMock();
-    useCase = new UpdateChemicalShipmentUseCase(chemicalShipments, users);
-
-    await users.create(
-      User.restore({
-        id: 'user-001',
-        name: 'Operador Teste',
-        email: 'operador@quimovia.com',
-        passwordHash: 'hash',
-        role: UserRole.PORT_OPERATOR,
-        status: UserStatus.ACTIVE,
-        lastLoginAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
-    );
-
-    await users.create(
-      User.restore({
-        id: 'user-002',
-        name: 'Segundo Operador',
-        email: 'operador2@quimovia.com',
-        passwordHash: 'hash',
-        role: UserRole.TECHNICAL_MANAGER,
-        status: UserStatus.ACTIVE,
-        lastLoginAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
+    useCase = new UpdateChemicalShipmentUseCase(
+      chemicalShipments,
+      new UserDirectoryMock([
+        userSummary({ id: 'user-001', name: 'Operador Teste' }),
+        userSummary({ id: 'user-002', name: 'Segundo Operador' }),
+      ]),
     );
   });
 
   async function createSampleShipment(
-    status = StatusShipment.ANALYZING,
+    status: StatusShipment = StatusShipment.ANALYZING,
   ): Promise<ChemicalShipment> {
     const shipment = ChemicalShipment.create({
       productId: 'prod-001',
@@ -67,17 +43,31 @@ describe('UpdateChemicalShipmentUseCase', () => {
   it('atualiza a carga química com sucesso incluindo o usuário responsável existente', async () => {
     const shipment = await createSampleShipment();
 
-    const updated = await useCase.execute(shipment.id, {
-      productId: 'prod-002',
-      responsibleUserId: 'user-002',
-      documentsIds: 'doc-002',
-      status: StatusShipment.INSPECTION,
-    });
+    const { shipment: updated, responsibleUser } = await useCase.execute(
+      shipment.id,
+      {
+        productId: 'prod-002',
+        responsibleUserId: 'user-002',
+        documentsIds: 'doc-002',
+        status: StatusShipment.INSPECTION,
+      },
+    );
 
     expect(updated.productId).toBe('prod-002');
     expect(updated.responsibleUserId).toBe('user-002');
     expect(updated.documentsIds).toBe('doc-002');
     expect(updated.status).toBe(StatusShipment.INSPECTION);
+    expect(responsibleUser?.name).toBe('Segundo Operador');
+  });
+
+  it('devolve o responsável atual quando ele não é alterado', async () => {
+    const shipment = await createSampleShipment();
+
+    const { responsibleUser } = await useCase.execute(shipment.id, {
+      productId: 'prod-002',
+    });
+
+    expect(responsibleUser?.id).toBe('user-001');
   });
 
   it('deve lançar ResourceNotFoundError quando a carga química não for encontrada', async () => {

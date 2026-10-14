@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
-import { User } from '@/modules/user/domain/entities/user.entity.js';
 
 export interface CreateChemicalShipmentData {
   productId: string;
@@ -15,7 +14,6 @@ export interface ChemicalShipmentProperties {
   productId: string;
   status: StatusShipment;
   responsibleUserId: string;
-  responsibleUser?: User | null;
   documentsIds: string;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -27,6 +25,9 @@ export interface ChemicalShipmentProperties {
  * O estado só muda pelos métodos da entidade: uma carga aprovada ou reprovada
  * não pode mais ser alterada, e os identificadores obrigatórios nunca ficam
  * vazios.
+ *
+ * O responsável é outro agregado, de outro contexto (Identidade e Acesso), e
+ * por isso é referenciado apenas pelo identificador.
  */
 export class ChemicalShipment {
   readonly id: string;
@@ -35,7 +36,6 @@ export class ChemicalShipment {
   #productId: string;
   #status: StatusShipment;
   #responsibleUserId: string;
-  #responsibleUser: User | null;
   #documentsIds: string;
   #updatedAt: Date;
   #deletedAt: Date | null;
@@ -46,7 +46,6 @@ export class ChemicalShipment {
     this.#productId = properties.productId;
     this.#status = properties.status;
     this.#responsibleUserId = properties.responsibleUserId;
-    this.#responsibleUser = properties.responsibleUser ?? null;
     this.#documentsIds = properties.documentsIds;
     this.#updatedAt = properties.updatedAt;
     this.#deletedAt = properties.deletedAt;
@@ -95,10 +94,6 @@ export class ChemicalShipment {
 
   get responsibleUserId(): string {
     return this.#responsibleUserId;
-  }
-
-  get responsibleUser(): User | null {
-    return this.#responsibleUser;
   }
 
   get documentsIds(): string {
@@ -151,7 +146,6 @@ export class ChemicalShipment {
       status: this.#status,
       productId: this.#productId,
       responsibleUserId: this.#responsibleUserId,
-      responsibleUser: this.#responsibleUser,
       documentsIds: this.#documentsIds,
       deletedAt: this.#deletedAt,
     };

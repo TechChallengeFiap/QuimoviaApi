@@ -8,7 +8,7 @@ import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/app
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
 
-import { UserModule } from '@/modules/user/user.module.js';
+import { UserModule } from '@/modules/user/public/index.js';
 
 @Module({
   imports: [UserModule],

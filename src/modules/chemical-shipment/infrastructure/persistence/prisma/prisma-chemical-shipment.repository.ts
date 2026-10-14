@@ -1,23 +1,20 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
-import type {
-  ChemicalShipmentModel as PersistedChemicalShipment,
-  UserModel as PersistedUser,
-} from '@/generated/prisma/models.js';
+import type { ChemicalShipmentModel as PersistedChemicalShipment } from '@/generated/prisma/models.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
-import { User } from '@/modules/user/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import type {
   ChemicalShipmentPage,
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
 } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 
-type PersistedChemicalShipmentWithRelations = PersistedChemicalShipment & {
-  responsibleUser?: PersistedUser | null;
-};
-
+/**
+ * Persistência das cargas químicas.
+ *
+ * Lê e grava apenas a tabela de cargas. O responsável é referenciado pelo
+ * identificador: os dados do usuário pertencem a Identidade e Acesso e são
+ * obtidos pelo contrato público daquele contexto, nunca por relação do Prisma.
+ */
 @Injectable()
 export class PrismaChemicalShipmentRepository implements ChemicalShipmentRepository {
   private readonly logger = new Logger(PrismaChemicalShipmentRepository.name);
@@ -71,9 +68,6 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
           where,
           take: pageSize,
           skip: (page - 1) * pageSize,
-          include: {
-            responsibleUser: true,
-          },
         }),
         this.prismaService.chemicalShipment.count({
           where,
@@ -101,9 +95,6 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
     try {
       const record = await this.prismaService.chemicalShipment.findUnique({
         where: { id },
-        include: {
-          responsibleUser: true,
-        },
       });
 
       return record ? PrismaChemicalShipmentRepository.toDomain(record) : null;
@@ -129,9 +120,6 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             productId: chemicalShipment.productId,
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
-          },
-          include: {
-            responsibleUser: true,
           },
         });
 
@@ -162,31 +150,16 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
     }
   }
 
-  private static toDomain(
-    chemicalShipment: PersistedChemicalShipmentWithRelations,
-  ): ChemicalShipment {
+  private static toDomain(record: PersistedChemicalShipment): ChemicalShipment {
     return ChemicalShipment.restore({
-      id: chemicalShipment.id,
-      createdAt: chemicalShipment.createdAt,
-      updatedAt: chemicalShipment.updatedAt,
-      status: chemicalShipment.status,
-      productId: chemicalShipment.productId,
-      responsibleUserId: chemicalShipment.responsibleUserId,
-      responsibleUser: chemicalShipment.responsibleUser
-        ? User.restore({
-            id: chemicalShipment.responsibleUser.id,
-            name: chemicalShipment.responsibleUser.name,
-            email: chemicalShipment.responsibleUser.email,
-            passwordHash: chemicalShipment.responsibleUser.passwordHash,
-            role: chemicalShipment.responsibleUser.role as UserRole,
-            status: chemicalShipment.responsibleUser.status as UserStatus,
-            lastLoginAt: chemicalShipment.responsibleUser.lastLoginAt,
-            createdAt: chemicalShipment.responsibleUser.createdAt,
-            updatedAt: chemicalShipment.responsibleUser.updatedAt,
-          })
-        : null,
-      documentsIds: chemicalShipment.documentsIds,
-      deletedAt: chemicalShipment.deletedAt ?? null,
+      id: record.id,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      status: record.status,
+      productId: record.productId,
+      responsibleUserId: record.responsibleUserId,
+      documentsIds: record.documentsIds,
+      deletedAt: record.deletedAt ?? null,
     });
   }
 }

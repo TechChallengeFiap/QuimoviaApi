@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import type { ChemicalShipmentDetailsPage } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
 import { ChemicalShipmentResponseDto } from '@/modules/chemical-shipment/presentation/dtos/chemical-shipment-response.dto.js';
-import { ChemicalShipmentPage } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
 export class ChemicalShipmentPageResponseDto {
   @ApiProperty({ type: [ChemicalShipmentResponseDto] })
@@ -19,10 +19,12 @@ export class ChemicalShipmentPageResponseDto {
     Object.assign(this, data);
   }
 
-  static fromPage(page: ChemicalShipmentPage): ChemicalShipmentPageResponseDto {
+  static fromPage(
+    page: ChemicalShipmentDetailsPage,
+  ): ChemicalShipmentPageResponseDto {
     return new ChemicalShipmentPageResponseDto({
-      items: page.items.map((chemicalShipment) =>
-        ChemicalShipmentResponseDto.fromEntity(chemicalShipment),
+      items: page.items.map((details) =>
+        ChemicalShipmentResponseDto.fromDetails(details),
       ),
       total: page.total,
       page: page.page,

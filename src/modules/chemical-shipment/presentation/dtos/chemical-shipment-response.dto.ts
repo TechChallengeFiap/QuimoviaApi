@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
-import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.js';
+import { UserResponseDto } from '@/modules/user/public/index.js';
 
 interface ChemicalShipmentResponseDtoData {
   id: string;
@@ -54,14 +54,17 @@ export class ChemicalShipmentResponseDto {
     Object.assign(this, data);
   }
 
-  static fromEntity(shipment: ChemicalShipment): ChemicalShipmentResponseDto {
+  static fromDetails({
+    shipment,
+    responsibleUser,
+  }: ChemicalShipmentDetails): ChemicalShipmentResponseDto {
     return new ChemicalShipmentResponseDto({
       id: shipment.id,
       productId: shipment.productId,
       status: shipment.status,
       responsibleUserId: shipment.responsibleUserId,
-      responsibleUser: shipment.responsibleUser
-        ? UserResponseDto.from(shipment.responsibleUser)
+      responsibleUser: responsibleUser
+        ? UserResponseDto.from(responsibleUser)
         : null,
       documentsIds: shipment.documentsIds,
       createdAt: shipment.createdAt,

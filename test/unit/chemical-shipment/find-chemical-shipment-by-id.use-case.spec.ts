@@ -2,6 +2,10 @@ import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/app
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import {
+  UserDirectoryMock,
+  userSummary,
+} from '../../mocks/user-directory.mock.js';
 
 describe('FindChemicalShipmentByIdUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
@@ -9,7 +13,10 @@ describe('FindChemicalShipmentByIdUseCase', () => {
 
   beforeEach(() => {
     chemicalShipments = new ChemicalShipmentMock();
-    useCase = new FindChemicalShipmentByIdUseCase(chemicalShipments);
+    useCase = new FindChemicalShipmentByIdUseCase(
+      chemicalShipments,
+      new UserDirectoryMock([userSummary({ id: 'user-001' })]),
+    );
   });
 
   it('deve lançar ResourceNotFoundError quando a carga química não for encontrada', async () => {
@@ -18,7 +25,7 @@ describe('FindChemicalShipmentByIdUseCase', () => {
     );
   });
 
-  it('deve retornar a carga química quando encontrada', async () => {
+  it('deve retornar a carga química e o responsável quando encontrada', async () => {
     const shipment = await chemicalShipments.create(
       ChemicalShipment.create({
         productId: 'prod-001',
@@ -29,7 +36,21 @@ describe('FindChemicalShipmentByIdUseCase', () => {
 
     const result = await useCase.execute(shipment.id);
 
-    expect(result).toBe(shipment);
-    expect(result.id).toBe(shipment.id);
+    expect(result.shipment).toBe(shipment);
+    expect(result.responsibleUser?.id).toBe('user-001');
+  });
+
+  it('devolve o responsável nulo quando ele não é encontrado', async () => {
+    const shipment = await chemicalShipments.create(
+      ChemicalShipment.create({
+        productId: 'prod-001',
+        responsibleUserId: 'user-removido',
+        documentsIds: 'doc-001',
+      }),
+    );
+
+    const result = await useCase.execute(shipment.id);
+
+    expect(result.responsibleUser).toBeNull();
   });
 });

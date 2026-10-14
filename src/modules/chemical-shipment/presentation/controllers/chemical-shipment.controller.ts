@@ -126,9 +126,9 @@ export class ChemicalShipmentController {
     chemicalShipment: CreateChemicalShipmentDTO,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
-      const shipment =
+      const details =
         await this.createChemicalShipmentUseCase.execute(chemicalShipment);
-      return ChemicalShipmentResponseDto.fromEntity(shipment);
+      return ChemicalShipmentResponseDto.fromDetails(details);
     } catch (error) {
       this.logger.error(
         `Erro ao criar carga química: ${error instanceof Error ? error.message : String(error)}`,
@@ -258,8 +258,8 @@ export class ChemicalShipmentController {
     @Param('id') id: string,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
-      const shipment = await this.findChemicalShipmentByIdUseCase.execute(id);
-      return ChemicalShipmentResponseDto.fromEntity(shipment);
+      const details = await this.findChemicalShipmentByIdUseCase.execute(id);
+      return ChemicalShipmentResponseDto.fromDetails(details);
     } catch (error) {
       this.logger.error(
         `Erro ao buscar carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
@@ -340,12 +340,12 @@ export class ChemicalShipmentController {
     @Body() updateChemicalShipmentDto: UpdateChemicalShipmentDto,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
-      const updatedShipment = await this.updateChemicalShipmentUseCase.execute(
+      const details = await this.updateChemicalShipmentUseCase.execute(
         id,
         updateChemicalShipmentDto,
       );
 
-      return ChemicalShipmentResponseDto.fromEntity(updatedShipment);
+      return ChemicalShipmentResponseDto.fromDetails(details);
     } catch (error) {
       this.logger.error(
         `Erro ao atualizar carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
