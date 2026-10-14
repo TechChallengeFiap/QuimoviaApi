@@ -1,4 +1,4 @@
-import type { AuthConfig } from '@/modules/user/infrastructure/auth/auth.config.js';
+import type { AuthConfig } from '@/modules/user/infrastructure/config/auth.config.js';
 
 /** Configuração de autenticação dos testes, sem depender do .env. */
 export const TEST_AUTH_CONFIG: AuthConfig = {

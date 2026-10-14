@@ -6,8 +6,10 @@ import request from 'supertest';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { AUTH_CONFIG } from '@/modules/user/infrastructure/config/auth.config.js';
 import { UserModule } from '@/modules/user/user.module.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
+import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
@@ -28,6 +30,8 @@ describe('UsersController (e2e)', () => {
       .useClass(PasswordHasherMock)
       .overrideProvider(SESSION_REPOSITORY)
       .useClass(SessionRepositoryMock)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
       .compile();
 
     app = moduleFixture.createNestApplication();

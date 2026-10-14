@@ -25,9 +25,9 @@ import {
 import { LogoutUseCase } from '@/modules/user/application/use-cases/auth/logout.use-case.js';
 import type { AuthenticatedSession } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
-import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
-import { CurrentSession } from '@/modules/user/infrastructure/auth/current-session.decorator.js';
-import { ApiRequiresAuthentication } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
+import { AuthGuard } from '@/modules/user/presentation/guards/auth.guard.js';
+import { CurrentSession } from '@/modules/user/presentation/decorators/current-session.decorator.js';
+import { ApiRequiresAuthentication } from '@/modules/user/presentation/decorators/api-requires-authentication.decorator.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { LoginDto } from '@/modules/user/presentation/dtos/login.dto.js';

@@ -1,13 +1,15 @@
 import { Controller, Get, Module, UseGuards } from '@nestjs/common';
-import type { AuthenticatedSession } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
-import { AuthModule } from '@/modules/user/auth.module.js';
-import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
-import { CurrentSession } from '@/modules/user/infrastructure/auth/current-session.decorator.js';
+import {
+  AuthGuard,
+  CurrentSession,
+  UserModule,
+  type AuthenticatedSession,
+} from '@/modules/user/public/index.js';
 
 /**
- * Rota de outro módulo protegida pelo AuthGuard, do jeito que os módulos da
- * aplicação devem usá-lo: importando o AuthModule e aplicando
- * @UseGuards(AuthGuard) no controller.
+ * Rota de outro contexto protegida pelo AuthGuard, do jeito que os módulos da
+ * aplicação devem usá-lo: importando o UserModule pela API pública de
+ * Identidade e Acesso e aplicando @UseGuards(AuthGuard) no controller.
  */
 @Controller('rota-protegida')
 @UseGuards(AuthGuard)
@@ -21,7 +23,7 @@ export class ProtectedRouteController {
 }
 
 @Module({
-  imports: [AuthModule],
+  imports: [UserModule],
   controllers: [ProtectedRouteController],
 })
 export class ProtectedRouteModule {}

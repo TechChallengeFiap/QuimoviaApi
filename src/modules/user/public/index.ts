@@ -9,12 +9,18 @@
  */
 export { UserModule } from '@/modules/user/user.module.js';
 
+// Consulta de usuários
 export { USER_DIRECTORY } from '@/modules/user/public/user-directory.contract.js';
 export type {
   UserDirectory,
   UserSummary,
 } from '@/modules/user/public/user-directory.contract.js';
-
 export { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 export { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 export { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.js';
+
+// Autenticação das rotas de outros contextos
+export { AuthGuard } from '@/modules/user/presentation/guards/auth.guard.js';
+export { CurrentSession } from '@/modules/user/presentation/decorators/current-session.decorator.js';
+export { ApiRequiresAuthentication } from '@/modules/user/presentation/decorators/api-requires-authentication.decorator.js';
+export type { AuthenticatedSession } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';

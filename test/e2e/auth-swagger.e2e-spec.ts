@@ -18,7 +18,7 @@ describe('Swagger da autenticação (e2e)', () => {
   beforeAll(async () => {
     disableDesignMetadata();
 
-    const { AuthModule } = await import('@/modules/user/auth.module.js');
+    const { UserModule } = await import('@/modules/user/user.module.js');
     const { USER_REPOSITORY } =
       await import('@/modules/user/domain/repositories/user.repository.js');
     const { SESSION_REPOSITORY } =
@@ -26,7 +26,7 @@ describe('Swagger da autenticação (e2e)', () => {
     const { PASSWORD_HASHER } =
       await import('@/modules/user/application/contracts/password-hasher.contract.js');
     const { AUTH_CONFIG } =
-      await import('@/modules/user/infrastructure/auth/auth.config.js');
+      await import('@/modules/user/infrastructure/config/auth.config.js');
     const { buildSwaggerConfig } =
       await import('@/shared/infrastructure/config/swagger.config.js');
     const { UserRepositoryMock } =
@@ -38,7 +38,7 @@ describe('Swagger da autenticação (e2e)', () => {
     const { TEST_AUTH_CONFIG } = await import('../mocks/auth-config.mock.js');
 
     const moduleFixture = await Test.createTestingModule({
-      imports: [AuthModule],
+      imports: [UserModule],
     })
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
@@ -145,7 +145,7 @@ describe('Swagger da autenticação (e2e)', () => {
 
   it('documenta a resposta 401 com a mensagem do guard', async () => {
     const { MISSING_ACCESS_TOKEN_MESSAGE } =
-      await import('@/shared/presentation/decorators/api-requires-authentication.decorator.js');
+      await import('@/modules/user/presentation/decorators/api-requires-authentication.decorator.js');
     const response = document.paths['/auth/logout']?.post?.responses?.['401'];
     const example =
       response && 'content' in response

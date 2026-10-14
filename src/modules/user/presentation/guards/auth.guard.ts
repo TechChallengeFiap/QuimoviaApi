@@ -7,13 +7,14 @@ import {
 } from '@nestjs/common';
 import { ValidateSessionUseCase } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { AuthenticationError } from '@/shared/domain/errors/domain.error.js';
-import { MISSING_ACCESS_TOKEN_MESSAGE } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
-import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
+import { MISSING_ACCESS_TOKEN_MESSAGE } from '@/modules/user/presentation/decorators/api-requires-authentication.decorator.js';
+import type { AuthenticatedRequest } from '@/modules/user/presentation/guards/authenticated-request.js';
 
 /**
  * Guard de autenticação (RN-GER-01): exige o token de acesso de uma sessão
  * ativa nas rotas em que é aplicado, com @UseGuards(AuthGuard) no controller
- * ou no endpoint. O módulo do controller precisa importar o AuthModule.
+ * ou no endpoint. O módulo do controller precisa importar o UserModule, pela
+ * API pública do contexto (src/modules/user/public).
  *
  * Responde 401 por conta própria, sem depender dos filtros de exceção de
  * cada controller.

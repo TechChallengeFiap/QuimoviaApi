@@ -3,10 +3,10 @@ import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import type { AuthenticatedSession } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { ValidateSessionUseCase } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
-import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
-import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
+import { AuthGuard } from '@/modules/user/presentation/guards/auth.guard.js';
+import type { AuthenticatedRequest } from '@/modules/user/presentation/guards/authenticated-request.js';
 import { AuthenticationError } from '@/shared/domain/errors/domain.error.js';
-import { MISSING_ACCESS_TOKEN_MESSAGE } from '@/shared/presentation/decorators/api-requires-authentication.decorator.js';
+import { MISSING_ACCESS_TOKEN_MESSAGE } from '@/modules/user/presentation/decorators/api-requires-authentication.decorator.js';
 
 const session: AuthenticatedSession = {
   userId: 'user-001',

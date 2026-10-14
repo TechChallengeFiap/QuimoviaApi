@@ -35,7 +35,7 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
     const { PASSWORD_HASHER } =
       await import('@/modules/user/application/contracts/password-hasher.contract.js');
     const { AUTH_CONFIG } =
-      await import('@/modules/user/infrastructure/auth/auth.config.js');
+      await import('@/modules/user/infrastructure/config/auth.config.js');
     const { UserRepositoryMock } =
       await import('../mocks/user-repository.mock.js');
     const { SessionRepositoryMock } =

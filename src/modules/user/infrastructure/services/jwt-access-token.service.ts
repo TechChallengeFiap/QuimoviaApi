@@ -4,8 +4,8 @@ import type {
   AccessTokenClaims,
   AccessTokenService,
 } from '@/modules/user/application/contracts/access-token.contract.js';
-import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
-import type { AuthConfig } from '@/modules/user/infrastructure/auth/auth.config.js';
+import { AUTH_CONFIG } from '@/modules/user/infrastructure/config/auth.config.js';
+import type { AuthConfig } from '@/modules/user/infrastructure/config/auth.config.js';
 
 const ALGORITHM = 'HS256';
 

@@ -1,7 +1,7 @@
 import {
   DEFAULT_SESSION_DURATION_IN_SECONDS,
   loadAuthConfig,
-} from '@/modules/user/infrastructure/auth/auth.config.js';
+} from '@/modules/user/infrastructure/config/auth.config.js';
 
 describe('loadAuthConfig', () => {
   const secret = 'segredo-de-teste-com-mais-de-32-caracteres';
