@@ -1,7 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
-import { randomUUID } from 'crypto';
-
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 
 export interface CreateChemicalShipmentData {
@@ -22,6 +21,13 @@ export interface ChemicalShipmentProperties {
   deletedAt: Date | null;
 }
 
+/**
+ * Raiz do agregado Carga Química.
+ *
+ * O estado só muda pelos métodos da entidade: uma carga aprovada ou reprovada
+ * não pode mais ser alterada, e os identificadores obrigatórios nunca ficam
+ * vazios.
+ */
 export class ChemicalShipment {
   readonly id: string;
   readonly createdAt: Date;
@@ -29,24 +35,37 @@ export class ChemicalShipment {
   #productId: string;
   #status: StatusShipment;
   #responsibleUserId: string;
-  #responsibleUser?: User | null;
+  #responsibleUser: User | null;
   #documentsIds: string;
   #updatedAt: Date;
   #deletedAt: Date | null;
 
-  private constructor(props: ChemicalShipmentProperties) {
-    this.id = props.id;
-    this.createdAt = props.createdAt;
-    this.#productId = props.productId;
-    this.#status = props.status;
-    this.#responsibleUserId = props.responsibleUserId;
-    this.#responsibleUser = props.responsibleUser ?? null;
-    this.#documentsIds = props.documentsIds;
-    this.#updatedAt = props.updatedAt;
-    this.#deletedAt = props.deletedAt;
+  private constructor(properties: ChemicalShipmentProperties) {
+    this.id = properties.id;
+    this.createdAt = properties.createdAt;
+    this.#productId = properties.productId;
+    this.#status = properties.status;
+    this.#responsibleUserId = properties.responsibleUserId;
+    this.#responsibleUser = properties.responsibleUser ?? null;
+    this.#documentsIds = properties.documentsIds;
+    this.#updatedAt = properties.updatedAt;
+    this.#deletedAt = properties.deletedAt;
   }
 
+  /** Cria uma nova carga em análise, validando os dados informados. */
   static create(data: CreateChemicalShipmentData): ChemicalShipment {
+    const productId = ChemicalShipment.validateRequired(
+      data.productId,
+      'productId',
+    );
+    const responsibleUserId = ChemicalShipment.validateRequired(
+      data.responsibleUserId,
+      'responsibleUserId',
+    );
+    const documentsIds = ChemicalShipment.validateRequired(
+      data.documentsIds,
+      'documentsIds',
+    );
     const now = new Date();
 
     return new ChemicalShipment({
@@ -55,66 +74,13 @@ export class ChemicalShipment {
       updatedAt: now,
       deletedAt: null,
       status: StatusShipment.ANALYZING,
-      ...data,
+      productId,
+      responsibleUserId,
+      documentsIds,
     });
   }
 
-  updateChemicalShipmentStatus(
-    chemicalShipment: ChemicalShipment,
-    status: StatusShipment,
-  ): void {
-    this.validateCanBeUpdated(chemicalShipment);
-
-    chemicalShipment.status = status;
-    chemicalShipment.updatedAt = new Date();
-  }
-
-  changeChemicalShipmentProduct(
-    chemicalShipment: ChemicalShipment,
-    productId: string,
-  ) {
-    this.validateCanBeUpdated(chemicalShipment);
-
-    this.#productId = productId;
-    this.#updatedAt = new Date();
-  }
-
-  changeChemicalShipmentResponsibleUser(
-    chemicalShipment: ChemicalShipment,
-    responsibleUserId: string,
-  ) {
-    this.validateCanBeUpdated(chemicalShipment);
-
-    this.#responsibleUserId = responsibleUserId;
-    this.#updatedAt = new Date();
-  }
-
-  changeChemicalShipmentDocuments(
-    chemicalShipment: ChemicalShipment,
-    documentsIds: string,
-  ) {
-    this.validateCanBeUpdated(chemicalShipment);
-
-    this.#documentsIds = documentsIds;
-    this.#updatedAt = new Date();
-  }
-
-  private validateCanBeUpdated(chemicalShipment?: ChemicalShipment): void {
-    const status = chemicalShipment ? chemicalShipment.status : this.#status;
-
-    if (status === StatusShipment.REPROVED) {
-      throw new BusinessRuleError(
-        'Não é possível alterar uma carga química reprovada',
-      );
-    }
-
-    if (status === StatusShipment.APPROVED) {
-      throw new BusinessRuleError(
-        'Não é possível alterar uma carga química aprovada',
-      );
-    }
-  }
-
+  /** Reconstrói uma carga já persistida, sem revalidar os dados. */
   static restore(properties: ChemicalShipmentProperties): ChemicalShipment {
     return new ChemicalShipment(properties);
   }
@@ -131,7 +97,7 @@ export class ChemicalShipment {
     return this.#responsibleUserId;
   }
 
-  get responsibleUser(): User | null | undefined {
+  get responsibleUser(): User | null {
     return this.#responsibleUser;
   }
 
@@ -147,32 +113,34 @@ export class ChemicalShipment {
     return this.#deletedAt;
   }
 
-  set productId(productId: string) {
-    this.#productId = productId;
-  }
-
-  set status(status: StatusShipment) {
+  changeStatus(status: StatusShipment): void {
+    this.ensureCanBeChanged();
     this.#status = status;
+    this.markAsUpdated();
   }
 
-  set responsibleUserId(responsibleUserId: string) {
-    this.#responsibleUserId = responsibleUserId;
+  changeProduct(productId: string): void {
+    this.ensureCanBeChanged();
+    this.#productId = ChemicalShipment.validateRequired(productId, 'productId');
+    this.markAsUpdated();
   }
 
-  set responsibleUser(responsibleUser: User | null | undefined) {
-    this.#responsibleUser = responsibleUser;
+  changeResponsibleUser(responsibleUserId: string): void {
+    this.ensureCanBeChanged();
+    this.#responsibleUserId = ChemicalShipment.validateRequired(
+      responsibleUserId,
+      'responsibleUserId',
+    );
+    this.markAsUpdated();
   }
 
-  set documentsIds(documentsIds: string) {
-    this.#documentsIds = documentsIds;
-  }
-
-  set updatedAt(updatedAt: Date) {
-    this.#updatedAt = updatedAt;
-  }
-
-  set deletedAt(deletedAt: Date | null) {
-    this.#deletedAt = deletedAt;
+  changeDocuments(documentsIds: string): void {
+    this.ensureCanBeChanged();
+    this.#documentsIds = ChemicalShipment.validateRequired(
+      documentsIds,
+      'documentsIds',
+    );
+    this.markAsUpdated();
   }
 
   toObject(): ChemicalShipmentProperties {
@@ -187,5 +155,32 @@ export class ChemicalShipment {
       documentsIds: this.#documentsIds,
       deletedAt: this.#deletedAt,
     };
+  }
+
+  /** Uma carga aprovada ou reprovada já foi decidida e não muda mais. */
+  private ensureCanBeChanged(): void {
+    if (this.#status === StatusShipment.REPROVED) {
+      throw new BusinessRuleError(
+        'Não é possível alterar uma carga química reprovada',
+      );
+    }
+
+    if (this.#status === StatusShipment.APPROVED) {
+      throw new BusinessRuleError(
+        'Não é possível alterar uma carga química aprovada',
+      );
+    }
+  }
+
+  private markAsUpdated(): void {
+    this.#updatedAt = new Date();
+  }
+
+  private static validateRequired(value: string, field: string): string {
+    if (!value) {
+      throw new BusinessRuleError(`O ${field} não pode estar vazio`);
+    }
+
+    return value;
   }
 }

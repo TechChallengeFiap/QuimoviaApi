@@ -1,13 +1,13 @@
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { Inject, Injectable } from '@nestjs/common';
+import type { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import type { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
+import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import {
   USER_REPOSITORY,
   type UserRepository,
 } from '@/modules/user/domain/repositories/user.repository.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
-import { Inject, Injectable } from '@nestjs/common';
-import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
 export interface UpdateChemicalShipmentInput {
   status?: StatusShipment;
@@ -25,28 +25,27 @@ export class UpdateChemicalShipmentUseCase {
     private readonly users: UserRepository,
   ) {}
 
+  /**
+   * As alterações são aplicadas nesta ordem; como uma carga aprovada ou
+   * reprovada não muda mais, a mudança de status vale para as alterações
+   * seguintes da mesma requisição.
+   */
   async execute(
     id: string,
     input: UpdateChemicalShipmentInput,
   ): Promise<ChemicalShipment> {
-    const existingChemicalShipment = await this.chemicalShipments.findById(id);
+    const chemicalShipment = await this.chemicalShipments.findById(id);
 
-    if (!existingChemicalShipment) {
+    if (!chemicalShipment) {
       throw new ResourceNotFoundError('Carga Química', id);
     }
 
     if (input.status) {
-      existingChemicalShipment.updateChemicalShipmentStatus(
-        existingChemicalShipment,
-        input.status,
-      );
+      chemicalShipment.changeStatus(input.status);
     }
 
     if (input.productId) {
-      existingChemicalShipment.changeChemicalShipmentProduct(
-        existingChemicalShipment,
-        input.productId,
-      );
+      chemicalShipment.changeProduct(input.productId);
     }
 
     if (input.responsibleUserId) {
@@ -55,19 +54,13 @@ export class UpdateChemicalShipmentUseCase {
         throw new ResourceNotFoundError('Usuário', input.responsibleUserId);
       }
 
-      existingChemicalShipment.changeChemicalShipmentResponsibleUser(
-        existingChemicalShipment,
-        input.responsibleUserId,
-      );
+      chemicalShipment.changeResponsibleUser(input.responsibleUserId);
     }
 
     if (input.documentsIds) {
-      existingChemicalShipment.changeChemicalShipmentDocuments(
-        existingChemicalShipment,
-        input.documentsIds,
-      );
+      chemicalShipment.changeDocuments(input.documentsIds);
     }
 
-    return await this.chemicalShipments.update(existingChemicalShipment);
+    return await this.chemicalShipments.update(chemicalShipment);
   }
 }

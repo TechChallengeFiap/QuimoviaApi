@@ -59,7 +59,7 @@ describe('UpdateChemicalShipmentUseCase', () => {
       documentsIds: 'doc-001',
     });
     if (status !== StatusShipment.ANALYZING) {
-      shipment.updateChemicalShipmentStatus(shipment, status);
+      shipment.changeStatus(status);
     }
     return chemicalShipments.create(shipment);
   }
