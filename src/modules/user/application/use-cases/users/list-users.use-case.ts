@@ -2,13 +2,13 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
-import type {
-  UserPage,
-  UserRepository,
-} from '@/modules/user/domain/repositories/user.repository.js';
-
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_PAGE_SIZE = 20;
+import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import type { User } from '@/modules/user/domain/entities/user.entity.js';
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  type Page,
+} from '@/shared/domain/pagination.js';
 
 export interface ListUsersInput {
   role?: UserRole;
@@ -25,7 +25,7 @@ export class ListUsersUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
   ) {}
 
-  async execute(input: ListUsersInput = {}): Promise<UserPage> {
+  async execute(input: ListUsersInput = {}): Promise<Page<User>> {
     try {
       return await this.users.list({
         role: input.role,

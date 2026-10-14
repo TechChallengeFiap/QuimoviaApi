@@ -1,9 +1,9 @@
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import type {
-  ChemicalShipmentPage,
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
 } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 export class ChemicalShipmentMock implements ChemicalShipmentRepository {
   private readonly chemicalShipments = new Map<string, ChemicalShipment>();
@@ -19,7 +19,7 @@ export class ChemicalShipmentMock implements ChemicalShipmentRepository {
 
   async list(
     filters: ChemicalShipmentSearchFilters,
-  ): Promise<ChemicalShipmentPage> {
+  ): Promise<Page<ChemicalShipment>> {
     let items = Array.from(this.chemicalShipments.values());
 
     if (filters.status) {

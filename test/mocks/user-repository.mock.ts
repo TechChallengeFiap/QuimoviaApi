@@ -1,10 +1,10 @@
 import type {
   UserRepository,
   UserSearchFilters,
-  UserPage,
 } from '@/modules/user/domain/repositories/user.repository.js';
 import type { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 /** Implementação em memória de UserRepository, para uso nos testes. */
 export class UserRepositoryMock implements UserRepository {
@@ -42,7 +42,7 @@ export class UserRepositoryMock implements UserRepository {
     return this.users.get(user.id)?.status === UserStatus.ACTIVE;
   }
 
-  async list(filters: UserSearchFilters): Promise<UserPage> {
+  async list(filters: UserSearchFilters): Promise<Page<User>> {
     let items = [...this.users.values()];
 
     if (filters.role) {

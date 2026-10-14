@@ -1,10 +1,7 @@
-import {
-  ListChemicalShipmentsUseCase,
-  DEFAULT_PAGE,
-  DEFAULT_PAGE_SIZE,
-} from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/list-chemical-shipments.use-case.js';
+import { ListChemicalShipmentsUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/list-chemical-shipments.use-case.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/shared/domain/pagination.js';
 import { jest } from '@jest/globals';
 import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
 import {
@@ -46,7 +43,7 @@ describe('ListChemicalShipmentsUseCase', () => {
     useCase = new ListChemicalShipmentsUseCase(chemicalShipments, users);
   });
 
-  describe('Paginação e conversão de parâmetros', () => {
+  describe('Paginação', () => {
     it('deve usar os valores padrão de paginação quando não fornecidos', async () => {
       const result = await useCase.execute();
 
@@ -54,16 +51,6 @@ describe('ListChemicalShipmentsUseCase', () => {
       expect(result.pageSize).toBe(DEFAULT_PAGE_SIZE);
       expect(result.items).toHaveLength(0);
       expect(result.total).toBe(0);
-    });
-
-    it('deve converter page e pageSize para número quando fornecidos como string', async () => {
-      const result = await useCase.execute({
-        page: '2' as unknown as number,
-        pageSize: '10' as unknown as number,
-      });
-
-      expect(result.page).toBe(2);
-      expect(result.pageSize).toBe(10);
     });
 
     it('deve paginar corretamente os resultados', async () => {

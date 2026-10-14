@@ -1,13 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
-import type {
-  InspectionPage,
-  InspectionRepository,
-} from '@/modules/inspection/domain/repositories/inspection.repository.js';
-
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_PAGE_SIZE = 20;
+import type { InspectionRepository } from '@/modules/inspection/domain/repositories/inspection.repository.js';
+import type { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  type Page,
+} from '@/shared/domain/pagination.js';
 
 export interface ListInspectionsInput {
   cargoId?: string;
@@ -26,7 +26,7 @@ export class ListInspectionsUseCase {
     private readonly inspections: InspectionRepository,
   ) {}
 
-  async execute(input: ListInspectionsInput = {}): Promise<InspectionPage> {
+  async execute(input: ListInspectionsInput = {}): Promise<Page<Inspection>> {
     try {
       return await this.inspections.list({
         cargoId: input.cargoId,

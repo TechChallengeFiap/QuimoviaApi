@@ -1,17 +1,11 @@
 import { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 export interface InspectionSearchFilters {
   cargoId?: string;
   inspectorId?: string;
   status?: InspectionStatus;
-  page: number;
-  pageSize: number;
-}
-
-export interface InspectionPage {
-  items: Inspection[];
-  total: number;
   page: number;
   pageSize: number;
 }
@@ -27,7 +21,7 @@ export interface InspectionRepository {
   update(inspection: Inspection): Promise<Inspection>;
   remove(id: string): Promise<void>;
   findById(id: string): Promise<Inspection | null>;
-  list(filters: InspectionSearchFilters): Promise<InspectionPage>;
+  list(filters: InspectionSearchFilters): Promise<Page<Inspection>>;
 }
 
 /** Token de injeção usado pelo Nest para resolver a implementação concreta. */

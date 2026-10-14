@@ -1,12 +1,6 @@
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
-
-export interface ChemicalShipmentPage {
-  items: ChemicalShipment[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+import type { Page } from '@/shared/domain/pagination.js';
 
 export interface ChemicalShipmentSearchFilters {
   status?: StatusShipment;
@@ -19,7 +13,7 @@ export interface ChemicalShipmentSearchFilters {
 
 export interface ChemicalShipmentRepository {
   create(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment>;
-  list(filters: ChemicalShipmentSearchFilters): Promise<ChemicalShipmentPage>;
+  list(filters: ChemicalShipmentSearchFilters): Promise<Page<ChemicalShipment>>;
   findById(id: string): Promise<ChemicalShipment | null>;
   update(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment>;
   delete(id: string): Promise<void>;

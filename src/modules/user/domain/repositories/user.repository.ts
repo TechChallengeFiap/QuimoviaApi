@@ -1,17 +1,11 @@
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 export interface UserSearchFilters {
   role?: UserRole;
   status?: UserStatus;
-  page: number;
-  pageSize: number;
-}
-
-export interface UserPage {
-  items: User[];
-  total: number;
   page: number;
   pageSize: number;
 }
@@ -36,7 +30,7 @@ export interface UserRepository {
    * enquanto o login acontecia (por exemplo, foi bloqueado nesse intervalo).
    */
   registerLogin(user: User): Promise<boolean>;
-  list(filters: UserSearchFilters): Promise<UserPage>;
+  list(filters: UserSearchFilters): Promise<Page<User>>;
 }
 
 /** Token de injeção usado pelo Nest para resolver a implementação concreta. */

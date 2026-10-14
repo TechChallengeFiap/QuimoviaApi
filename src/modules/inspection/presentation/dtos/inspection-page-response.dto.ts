@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { InspectionPage } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import { InspectionResponseDto } from './inspection-response.dto.js';
+import type { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 export class InspectionPageResponseDto {
   @ApiProperty({
@@ -34,7 +35,7 @@ export class InspectionPageResponseDto {
     Object.assign(this, data);
   }
 
-  static fromPage(page: InspectionPage): InspectionPageResponseDto {
+  static fromPage(page: Page<Inspection>): InspectionPageResponseDto {
     return new InspectionPageResponseDto({
       items: page.items.map((inspection) =>
         InspectionResponseDto.fromEntity(inspection),

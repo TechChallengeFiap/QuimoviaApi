@@ -10,10 +10,3 @@ export interface ChemicalShipmentDetails {
   /** Nulo se o usuário responsável não for encontrado. */
   responsibleUser: UserSummary | null;
 }
-
-export interface ChemicalShipmentDetailsPage {
-  items: ChemicalShipmentDetails[];
-  total: number;
-  page: number;
-  pageSize: number;
-}

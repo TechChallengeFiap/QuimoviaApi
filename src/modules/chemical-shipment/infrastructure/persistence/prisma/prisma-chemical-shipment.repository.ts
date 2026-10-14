@@ -2,11 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { ChemicalShipmentModel as PersistedChemicalShipment } from '@/generated/prisma/models.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import type {
-  ChemicalShipmentPage,
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
 } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 /**
  * Persistência das cargas químicas.
@@ -40,10 +40,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
 
   async list(
     filters: ChemicalShipmentSearchFilters,
-  ): Promise<ChemicalShipmentPage> {
-    const page = Number(filters.page);
-    const pageSize = Number(filters.pageSize);
-
+  ): Promise<Page<ChemicalShipment>> {
     const where = {
       status: filters.status,
       productId: filters.productId,
@@ -55,8 +52,8 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
     const [items, total] = await Promise.all([
       this.prismaService.chemicalShipment.findMany({
         where,
-        take: pageSize,
-        skip: (page - 1) * pageSize,
+        take: filters.pageSize,
+        skip: (filters.page - 1) * filters.pageSize,
       }),
       this.prismaService.chemicalShipment.count({
         where,
@@ -68,8 +65,8 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
         PrismaChemicalShipmentRepository.toDomain(item),
       ),
       total,
-      page,
-      pageSize,
+      page: filters.page,
+      pageSize: filters.pageSize,
     };
   }
 
@@ -86,8 +83,6 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
       await this.prismaService.chemicalShipment.update({
         where: { id: chemicalShipment.id },
         data: {
-          id: chemicalShipment.id,
-          createdAt: chemicalShipment.createdAt,
           updatedAt: chemicalShipment.updatedAt,
           status: chemicalShipment.status,
           productId: chemicalShipment.productId,

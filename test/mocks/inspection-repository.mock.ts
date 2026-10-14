@@ -1,9 +1,9 @@
 import type {
-  InspectionPage,
   InspectionRepository,
   InspectionSearchFilters,
 } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import type { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 /** Implementação em memória de InspectionRepository, para uso nos testes. */
 export class InspectionRepositoryMock implements InspectionRepository {
@@ -27,7 +27,7 @@ export class InspectionRepositoryMock implements InspectionRepository {
     return this.inspections.get(id) ?? null;
   }
 
-  async list(filters: InspectionSearchFilters): Promise<InspectionPage> {
+  async list(filters: InspectionSearchFilters): Promise<Page<Inspection>> {
     let items = [...this.inspections.values()];
 
     if (filters.cargoId) {

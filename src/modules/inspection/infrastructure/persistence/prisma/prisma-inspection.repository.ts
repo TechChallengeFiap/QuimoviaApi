@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  InspectionPage,
   InspectionRepository,
   InspectionSearchFilters,
 } from '@/modules/inspection/domain/repositories/inspection.repository.js';
@@ -15,6 +14,7 @@ import type {
   InspectionModel as PersistedInspection,
 } from '@/generated/prisma/models.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 type PersistedInspectionWithItems = PersistedInspection & {
   items: PersistedInspectionItem[];
@@ -98,7 +98,7 @@ export class PrismaInspectionRepository implements InspectionRepository {
     return record ? PrismaInspectionRepository.toDomain(record) : null;
   }
 
-  async list(filters: InspectionSearchFilters): Promise<InspectionPage> {
+  async list(filters: InspectionSearchFilters): Promise<Page<Inspection>> {
     const where = {
       ...(filters.cargoId ? { cargoId: filters.cargoId } : {}),
       ...(filters.inspectorId ? { inspectorId: filters.inspectorId } : {}),

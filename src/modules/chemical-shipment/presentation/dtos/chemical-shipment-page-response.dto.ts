@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { ChemicalShipmentDetailsPage } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
 import { ChemicalShipmentResponseDto } from '@/modules/chemical-shipment/presentation/dtos/chemical-shipment-response.dto.js';
+import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 export class ChemicalShipmentPageResponseDto {
   @ApiProperty({ type: [ChemicalShipmentResponseDto] })
@@ -20,7 +21,7 @@ export class ChemicalShipmentPageResponseDto {
   }
 
   static fromPage(
-    page: ChemicalShipmentDetailsPage,
+    page: Page<ChemicalShipmentDetails>,
   ): ChemicalShipmentPageResponseDto {
     return new ChemicalShipmentPageResponseDto({
       items: page.items.map((details) =>

@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { ChemicalShipmentDetailsPage } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
+import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
 import type { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
@@ -7,9 +7,11 @@ import {
   USER_DIRECTORY,
   type UserDirectory,
 } from '@/modules/user/public/index.js';
-
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_PAGE_SIZE = 20;
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  type Page,
+} from '@/shared/domain/pagination.js';
 
 export interface ListChemicalShipmentsInput {
   status?: StatusShipment;
@@ -33,15 +35,15 @@ export class ListChemicalShipmentsUseCase {
 
   async execute(
     input: ListChemicalShipmentsInput = {},
-  ): Promise<ChemicalShipmentDetailsPage> {
+  ): Promise<Page<ChemicalShipmentDetails>> {
     try {
       const page = await this.chemicalShipments.list({
         status: input.status,
         productId: input.productId,
         responsibleUserId: input.responsibleUserId,
         documentsIds: input.documentsIds,
-        page: input.page ? Number(input.page) : DEFAULT_PAGE,
-        pageSize: input.pageSize ? Number(input.pageSize) : DEFAULT_PAGE_SIZE,
+        page: input.page ?? DEFAULT_PAGE,
+        pageSize: input.pageSize ?? DEFAULT_PAGE_SIZE,
       });
 
       // Uma única consulta traz os responsáveis de todas as cargas da página.

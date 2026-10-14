@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserPage } from '@/modules/user/domain/repositories/user.repository.js';
 import { UserResponseDto } from './user-response.dto.js';
+import type { User } from '@/modules/user/domain/entities/user.entity.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 export class UserPageResponseDto {
   @ApiProperty({
@@ -34,7 +35,7 @@ export class UserPageResponseDto {
     Object.assign(this, data);
   }
 
-  static fromPage(page: UserPage): UserPageResponseDto {
+  static fromPage(page: Page<User>): UserPageResponseDto {
     return new UserPageResponseDto({
       items: page.items.map((user) => UserResponseDto.from(user)),
       total: page.total,

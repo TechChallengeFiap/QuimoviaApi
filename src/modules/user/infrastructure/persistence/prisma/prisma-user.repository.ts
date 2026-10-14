@@ -2,13 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   UserRepository,
   UserSearchFilters,
-  UserPage,
 } from '@/modules/user/domain/repositories/user.repository.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import type { UserModel as PersistedUser } from '@/generated/prisma/models.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import type { Page } from '@/shared/domain/pagination.js';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -79,7 +79,7 @@ export class PrismaUserRepository implements UserRepository {
     return count === 1;
   }
 
-  async list(filters: UserSearchFilters): Promise<UserPage> {
+  async list(filters: UserSearchFilters): Promise<Page<User>> {
     const where = {
       ...(filters.role ? { role: filters.role } : {}),
       ...(filters.status ? { status: filters.status } : {}),
