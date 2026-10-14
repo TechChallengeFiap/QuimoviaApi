@@ -25,7 +25,7 @@ src/
 ├── main.ts               inicializa a aplicação: ValidationPipe, filtro de erros, Swagger
 ├── app.module.ts         compõe a aplicação a partir dos módulos de contexto
 ├── modules/              um diretório por contexto: é aqui que você vai trabalhar
-├── shared/               erros de domínio, conexão com o banco, filtro, pipe e decorators do Swagger
+├── shared/               erros de domínio, paginação, logError, banco, filtro, pipe e decorators do Swagger
 └── generated/prisma/     Prisma Client gerado (não editar)
 prisma/                   schema.prisma e migrations
 test/                     architecture/, unit/, e2e/ e mocks/
@@ -95,7 +95,7 @@ src/modules/<contexto>/
 | **infrastructure** | Implementar os contratos com uma tecnologia: Prisma, hash, JWT, configuração | Tomar decisões de negócio ou deixar tipos do Prisma escaparem |
 | **presentation** | Receber a requisição, validar o formato, chamar **um** caso de uso, montar a resposta e documentar a rota no Swagger | Conter regra de negócio, tratar erros ou acessar a infraestrutura |
 
-Duas convenções dão forma às camadas internas. As **entidades** têm estado privado (campos `#`), sem setters públicos, e só mudam por métodos com nome de negócio, como `start()` e `complete()`, que lançam `BusinessRuleError` quando algo é proibido. Elas são criadas por `create()`, que valida os dados, ou reconstruídas do banco por `restore()`, sem revalidar, e referenciam outros agregados apenas pelo ID (`cargoId`, `inspectorId`). Os **casos de uso** têm um único método `execute`. Quando a entrada é a mesma da criação da entidade, eles reaproveitam o tipo dela (`CreateInspectionData`); senão, declaram o tipo de entrada no próprio arquivo. Eles também ficam com as regras que dependem de dados fora do agregado, como a unicidade de um e-mail.
+Duas convenções dão forma às camadas internas. As **entidades** têm estado privado (campos `#`), sem setters públicos, e só mudam por métodos com nome de negócio, como `start()` e `complete()`, que lançam `BusinessRuleError` quando algo é proibido. Elas são criadas por `create()`, que valida os dados, ou reconstruídas do banco por `restore()`, sem revalidar, e referenciam outros agregados apenas pelo ID (`cargoId`, `inspectorId`). Os **casos de uso** têm um único método `execute`. Quando a entrada é a mesma da criação da entidade, eles reaproveitam o tipo dela (`CreateInspectionData`); nas listagens, a entrada é `Partial` dos filtros do repositório (`Partial<InspectionSearchFilters>`) e o resultado, um `Page<T>` de `shared/domain/pagination.ts`; nos demais casos, declaram o tipo de entrada no próprio arquivo. Eles também ficam com as regras que dependem de dados fora do agregado, como a unicidade de um e-mail.
 
 A presentation e o domínio validam coisas diferentes. O DTO valida o **formato** ("é um UUID?") e responde 400. A entidade valida a **regra** ("uma inspeção de item exige o ID do item") e lança um erro de domínio, que vira 422. A validação da entidade vale mesmo quando o caso de uso não é chamado por HTTP.
 
@@ -115,7 +115,7 @@ flowchart TB
   APP --> DOM["domain"]
   INF["infrastructure"] --> APP
   INF --> DOM
-  DOM --> SH["shared/domain<br/>erros de domínio"]
+  DOM --> SH["shared/domain<br/>erros de domínio e paginação"]
   INF --> GEN[("Prisma")]
 ```
 
@@ -216,7 +216,7 @@ await Test.createTestingModule({ imports: [InspectionModule] })
 
 ### 3.3. Como os erros atravessam as camadas
 
-O domínio lança erros de negócio sem saber nada de HTTP. O caso de uso registra o erro com o `Logger` e o deixa propagar, e o `DomainExceptionFilter`, registrado globalmente, o traduz na borda. Controller e repositório não capturam erros: cada erro é registrado uma vez e traduzido uma vez. Por isso o mesmo caso de uso funciona para uma requisição, uma fila ou uma tarefa agendada. Use os erros de `shared/domain/errors/domain.error.ts`:
+O domínio lança erros de negócio sem saber nada de HTTP. O caso de uso registra o erro com `logError(this.logger, contexto, error)` e o propaga com `throw error`, e o `DomainExceptionFilter`, registrado globalmente, o traduz na borda. Controller e repositório não capturam erros: cada erro é registrado uma vez e traduzido uma vez. Por isso o mesmo caso de uso funciona para uma requisição, uma fila ou uma tarefa agendada. Use os erros de `shared/domain/errors/domain.error.ts`:
 
 | Erro | Quando usar | HTTP |
 | --- | --- | --- |
@@ -496,6 +496,8 @@ flowchart TD
 | `exports` com repositórios ou contratos técnicos | Exporte só os tokens da API pública |
 | `try/catch` no controller ou no repositório para registrar ou converter erros | Deixe o caso de uso registrar e o filtro global traduzir |
 | Exemplo de erro `{ message, error, statusCode }`, parâmetro `id` ou paginação escritos à mão no Swagger | Use `ApiErrorResponse`, `ApiIdParam` e `ApiPaginationQuery` (`shared/presentation/docs/`) |
+| Interface de página ou de entrada de listagem repetindo campos | Use `Page<T>` e `Partial` dos filtros do repositório |
+| Campo redeclarado num DTO que estende `PartialType` | Não redeclare: o `PartialType` já herda a documentação e a validação |
 | Entidade montada à mão num teste que só precisa de uma entidade válida | Use as fábricas de `test/mocks/entities.mock.ts`, como `buildUser({ status })` |
 | Interface para cada classe, ou adaptador que só repassa chamadas | Crie contratos só nas fronteiras |
 

@@ -422,7 +422,7 @@ A abstração pertence **a quem a usa**: fica junto do domínio ou da aplicaçã
 list(args: Prisma.InspectionFindManyArgs): Promise<InspectionModel[]>;
 
 // Fala a linguagem do domínio
-list(filters: InspectionSearchFilters): Promise<InspectionPage>;
+list(filters: InspectionSearchFilters): Promise<Page<Inspection>>;
 ```
 
 Uma boa porta não usa tipos do ORM nem de bibliotecas, recebe e devolve objetos do domínio ou dados simples e sinaliza falhas com erros de domínio ou `null`. Aplique o DIP nas fronteiras com detalhes que podem mudar ou atrapalham os testes: persistência, criptografia e tokens, sistemas externos e outros contextos. **Não** o aplique entre objetos do próprio domínio, em funções puras ou em DTOs: uma interface fora de uma fronteira é só indireção.
