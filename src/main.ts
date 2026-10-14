@@ -3,7 +3,7 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import { DomainExceptionFilter } from './shared/presentation/filters/domain-exception.filter.js';
-import { buildSwaggerConfig } from './shared/infrastructure/config/swagger.config.js';
+import { buildSwaggerConfig } from './shared/presentation/docs/swagger.config.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

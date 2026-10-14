@@ -28,7 +28,7 @@ describe('Swagger da autenticação (e2e)', () => {
     const { AUTH_CONFIG } =
       await import('@/modules/user/infrastructure/config/auth.config.js');
     const { buildSwaggerConfig } =
-      await import('@/shared/infrastructure/config/swagger.config.js');
+      await import('@/shared/presentation/docs/swagger.config.js');
     const { UserRepositoryMock } =
       await import('../mocks/user-repository.mock.js');
     const { SessionRepositoryMock } =

@@ -1,6 +1,6 @@
 import { applyDecorators, HttpStatus } from '@nestjs/common';
 import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { BEARER_AUTH } from '@/shared/infrastructure/config/swagger.config.js';
+import { BEARER_AUTH } from '@/shared/presentation/docs/swagger.config.js';
 
 export const MISSING_ACCESS_TOKEN_MESSAGE =
   'Token de acesso não informado. Envie o cabeçalho Authorization: Bearer <token>.';

@@ -5,7 +5,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import request from 'supertest';
 import { AppModule } from '@/app.module.ts';
 import { AUTH_CONFIG } from '@/modules/user/infrastructure/config/auth.config.js';
-import { buildSwaggerConfig } from '@/shared/infrastructure/config/swagger.config.js';
+import { buildSwaggerConfig } from '@/shared/presentation/docs/swagger.config.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 
