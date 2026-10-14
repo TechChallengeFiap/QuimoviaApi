@@ -3,18 +3,6 @@ import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/applic
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { UserResponseDto } from '@/modules/user/public/index.js';
 
-interface ChemicalShipmentResponseDtoData {
-  id: string;
-  productId: string;
-  status: StatusShipment;
-  responsibleUserId: string;
-  responsibleUser?: UserResponseDto | null;
-  documentsIds: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt: Date | null;
-}
-
 export class ChemicalShipmentResponseDto {
   @ApiProperty({
     type: String,
@@ -25,7 +13,11 @@ export class ChemicalShipmentResponseDto {
   @ApiProperty({ type: String, example: 'prod-001' })
   productId: string;
 
-  @ApiProperty({ enum: StatusShipment, example: StatusShipment.ANALYZING })
+  @ApiProperty({
+    enum: StatusShipment,
+    enumName: 'StatusShipment',
+    example: StatusShipment.ANALYZING,
+  })
   status: StatusShipment;
 
   @ApiProperty({ type: String, example: 'user-001' })
@@ -50,7 +42,7 @@ export class ChemicalShipmentResponseDto {
   @ApiProperty({ nullable: true, type: Date })
   deletedAt: Date | null;
 
-  private constructor(data: ChemicalShipmentResponseDtoData) {
+  private constructor(data: ChemicalShipmentResponseDto) {
     Object.assign(this, data);
   }
 
