@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
+import type { UserSummary } from '@/modules/user/public/user-directory.contract.js';
 
 /**
  * Representação de um usuário exposta pela API.
  *
- * Deliberadamente não inclui o hash da senha.
+ * Deliberadamente não inclui o hash da senha. Faz parte da API pública do
+ * contexto: outros contextos a usam para expor os dados de um usuário.
  */
 export class UserResponseDto {
   @ApiProperty({
@@ -74,7 +75,8 @@ export class UserResponseDto {
     Object.assign(this, data);
   }
 
-  static fromEntity(user: User): UserResponseDto {
+  /** Aceita a entidade User ou um UserSummary, que têm os mesmos dados públicos. */
+  static from(user: UserSummary): UserResponseDto {
     return new UserResponseDto({
       id: user.id,
       name: user.name,

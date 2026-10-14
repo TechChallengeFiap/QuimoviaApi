@@ -36,7 +36,7 @@ export class UserPageResponseDto {
 
   static fromPage(page: UserPage): UserPageResponseDto {
     return new UserPageResponseDto({
-      items: page.items.map((user) => UserResponseDto.fromEntity(user)),
+      items: page.items.map((user) => UserResponseDto.from(user)),
       total: page.total,
       page: page.page,
       pageSize: page.pageSize,

@@ -4,6 +4,7 @@ import { DeleteUserUseCase } from '@/modules/user/application/use-cases/users/de
 import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/find-user-by-id.use-case.js';
 import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/list-users.use-case.js';
 import { UpdateUserUseCase } from '@/modules/user/application/use-cases/users/update-user.use-case.js';
+import { UserDirectoryService } from '@/modules/user/application/services/user-directory.service.js';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
@@ -11,6 +12,7 @@ import { ScryptPasswordHasher } from '@/modules/user/infrastructure/services/pas
 import { PrismaSessionRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-session.repository.js';
 import { PrismaUserRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-user.repository.js';
 import { UsersController } from '@/modules/user/presentation/controllers/users.controller.js';
+import { USER_DIRECTORY } from '@/modules/user/public/user-directory.contract.js';
 
 @Module({
   controllers: [UsersController],
@@ -23,7 +25,8 @@ import { UsersController } from '@/modules/user/presentation/controllers/users.c
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
     { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },
     { provide: PASSWORD_HASHER, useClass: ScryptPasswordHasher },
+    { provide: USER_DIRECTORY, useClass: UserDirectoryService },
   ],
-  exports: [USER_REPOSITORY, SESSION_REPOSITORY, PASSWORD_HASHER],
+  exports: [USER_REPOSITORY, SESSION_REPOSITORY, PASSWORD_HASHER, USER_DIRECTORY],
 })
 export class UserModule {}

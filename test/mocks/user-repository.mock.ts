@@ -28,6 +28,10 @@ export class UserRepositoryMock implements UserRepository {
     return this.users.get(id) ?? null;
   }
 
+  async findManyByIds(ids: readonly string[]): Promise<User[]> {
+    return ids.flatMap((id) => this.users.get(id) ?? []);
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return (
       [...this.users.values()].find((user) => user.email === email) ?? null

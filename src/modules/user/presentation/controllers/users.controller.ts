@@ -143,7 +143,7 @@ export class UsersController {
     @Body(validationPipeFor(CreateUserDto)) createUserDto: CreateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.createUserUseCase.execute(createUserDto);
-    return UserResponseDto.fromEntity(user);
+    return UserResponseDto.from(user);
   }
 
   @Get()
@@ -233,7 +233,7 @@ export class UsersController {
   })
   async findUserById(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.findUserByIdUseCase.execute(id);
-    return UserResponseDto.fromEntity(user);
+    return UserResponseDto.from(user);
   }
 
   @Patch(':id')
@@ -308,7 +308,7 @@ export class UsersController {
     @Body(validationPipeFor(UpdateUserDto)) updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.updateUserUseCase.execute(id, updateUserDto);
-    return UserResponseDto.fromEntity(user);
+    return UserResponseDto.from(user);
   }
 
   @Delete(':id')

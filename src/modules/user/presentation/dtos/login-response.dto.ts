@@ -44,7 +44,7 @@ export class LoginResponseDto {
       accessToken: result.accessToken,
       tokenType: 'Bearer',
       expiresAt: result.expiresAt,
-      user: UserResponseDto.fromEntity(result.user),
+      user: UserResponseDto.from(result.user),
     });
   }
 }

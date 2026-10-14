@@ -12,6 +12,7 @@ function createPrismaFake() {
   return {
     user: {
       updateMany: jest.fn<PrismaMethod>(),
+      findMany: jest.fn<PrismaMethod>(),
     },
   };
 }
@@ -52,5 +53,31 @@ describe('PrismaUserRepository', () => {
     prisma.user.updateMany.mockResolvedValueOnce({ count: 0 });
 
     await expect(repository.registerLogin(loggedInUser())).resolves.toBe(false);
+  });
+
+  it('busca vários usuários numa única consulta e os converte em entidades', async () => {
+    const createdAt = new Date('2026-10-01T12:00:00.000Z');
+    prisma.user.findMany.mockResolvedValueOnce([
+      {
+        id: 'user-001',
+        name: 'Maria Silva',
+        email: 'maria@quimovia.com',
+        passwordHash: 'hash:S3nhaForte!',
+        role: UserRole.PORT_OPERATOR,
+        status: UserStatus.ACTIVE,
+        lastLoginAt: null,
+        createdAt,
+        updatedAt: createdAt,
+      },
+    ]);
+
+    const users = await repository.findManyByIds(['user-001', 'user-002']);
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['user-001', 'user-002'] } },
+    });
+    expect(users).toHaveLength(1);
+    expect(users[0]).toBeInstanceOf(User);
+    expect(users[0].email).toBe('maria@quimovia.com');
   });
 });

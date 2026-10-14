@@ -61,7 +61,7 @@ export class ChemicalShipmentResponseDto {
       status: shipment.status,
       responsibleUserId: shipment.responsibleUserId,
       responsibleUser: shipment.responsibleUser
-        ? UserResponseDto.fromEntity(shipment.responsibleUser)
+        ? UserResponseDto.from(shipment.responsibleUser)
         : null,
       documentsIds: shipment.documentsIds,
       createdAt: shipment.createdAt,
