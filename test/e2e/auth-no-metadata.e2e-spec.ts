@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
@@ -7,6 +7,7 @@ import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
 import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
 import { buildUser } from '../mocks/entities.mock.js';
+import { configureApp } from '@/configure-app.js';
 
 const PASSWORD = 'S3nhaForte!';
 
@@ -17,8 +18,7 @@ const PASSWORD = 'S3nhaForte!';
  * corpo e a leitura da sessão passam a depender só do que está declarado
  * explicitamente.
  *
- * Assim como no main.ts, apenas o ValidationPipe é global; os erros de domínio
- * são tratados pelo filtro declarado no controller.
+ * A aplicação é configurada pelo mesmo configureApp do main.ts.
  */
 describe('Autenticação sem a metadata de decorators (e2e)', () => {
   let app: INestApplication;
@@ -68,13 +68,7 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
+    configureApp(app);
     await app.init();
 
     users = app.get(USER_REPOSITORY);

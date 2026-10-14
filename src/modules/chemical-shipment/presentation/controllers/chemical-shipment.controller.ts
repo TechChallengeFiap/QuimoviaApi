@@ -9,7 +9,6 @@ import {
   Patch,
   Post,
   Query,
-  UseFilters,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -30,7 +29,6 @@ import { ChemicalShipmentResponseDto } from '@/modules/chemical-shipment/present
 import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.js';
 import { ListChemicalShipmentsQueryDto } from '@/modules/chemical-shipment/presentation/dtos/list-chemical-shipment-query.dto.js';
 import { UpdateChemicalShipmentDto } from '@/modules/chemical-shipment/presentation/dtos/update-chemical-shipment.dto.js';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { ApiErrorResponse } from '@/shared/presentation/docs/api-error-response.decorator.js';
 import { ApiPaginationQuery } from '@/shared/presentation/docs/api-pagination-query.decorator.js';
@@ -43,7 +41,6 @@ const SHIPMENT_NOT_FOUND_MESSAGE =
 
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
-@UseFilters(DomainExceptionFilter)
 export class ChemicalShipmentController {
   constructor(
     @Inject(CreateChemicalShipmentUseCase)

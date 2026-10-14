@@ -1,8 +1,9 @@
 import { jest } from '@jest/globals';
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
+import { configureApp } from '@/configure-app.js';
 
 const SHIPMENT_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 const INSPECTOR_ID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
@@ -12,8 +13,7 @@ const INSPECTOR_ID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
  * não emite a metadata `design:*`: a injeção de dependências, o filtro de
  * erros e a validação dependem só do que está declarado explicitamente.
  *
- * Assim como no main.ts, apenas o ValidationPipe é global; os erros de domínio
- * são tratados pelo filtro declarado no controller.
+ * A aplicação é configurada pelo mesmo configureApp do main.ts.
  */
 describe('InspectionsController sem a metadata de decorators (e2e)', () => {
   let app: INestApplication;
@@ -53,13 +53,7 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
+    configureApp(app);
     await app.init();
   });
 

@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
+import { INestApplication, Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { ChemicalShipmentModule } from '@/modules/chemical-shipment/chemical-shipment.module.js';
@@ -10,7 +9,6 @@ import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain
 import { AUTH_CONFIG } from '@/modules/user/infrastructure/config/auth.config.js';
 import { USER_DIRECTORY } from '@/modules/user/public/index.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 import { ChemicalShipmentRepositoryMock } from '../mocks/chemical-shipment-repository.mock.js';
 import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
@@ -18,6 +16,7 @@ import {
   UserDirectoryMock,
   userSummary,
 } from '../mocks/user-directory.mock.js';
+import { configureApp } from '@/configure-app.js';
 
 /**
  * Monta o ChemicalShipmentModule com as dependências reais: o UserModule,
@@ -59,14 +58,7 @@ describe('ChemicalShipmentController (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    app.useGlobalFilters(new DomainExceptionFilter(app.get(HttpAdapterHost)));
+    configureApp(app);
     await app.init();
   });
 

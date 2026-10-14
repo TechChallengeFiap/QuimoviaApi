@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
+import { INestApplication, Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import request from 'supertest';
@@ -11,7 +10,6 @@ import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import { AUTH_CONFIG } from '@/modules/user/infrastructure/config/auth.config.js';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { ProtectedRouteModule } from '../mocks/protected-route.mock.js';
@@ -19,6 +17,7 @@ import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
 import { buildUser } from '../mocks/entities.mock.js';
+import { configureApp } from '@/configure-app.js';
 
 const PASSWORD = 'S3nhaForte!';
 
@@ -47,14 +46,7 @@ describe('AuthController (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    app.useGlobalFilters(new DomainExceptionFilter(app.get(HttpAdapterHost)));
+    configureApp(app);
     await app.init();
 
     users = app.get(USER_REPOSITORY);

@@ -5,7 +5,6 @@ import {
   HttpStatus,
   Inject,
   Post,
-  UseFilters,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -25,7 +24,6 @@ import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { AuthGuard } from '@/modules/user/presentation/guards/auth.guard.js';
 import { CurrentSession } from '@/modules/user/presentation/decorators/current-session.decorator.js';
 import { ApiRequiresAuthentication } from '@/modules/user/presentation/decorators/api-requires-authentication.decorator.js';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { LoginDto } from '@/modules/user/presentation/dtos/login.dto.js';
 import { LoginResponseDto } from '@/modules/user/presentation/dtos/login-response.dto.js';
@@ -36,7 +34,6 @@ const ACCOUNT_WITHOUT_ACCESS_MESSAGE =
 
 @ApiTags('Autenticação')
 @Controller('auth')
-@UseFilters(DomainExceptionFilter)
 export class AuthController {
   constructor(
     @Inject(LoginUseCase) private readonly loginUseCase: LoginUseCase,

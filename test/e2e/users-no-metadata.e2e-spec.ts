@@ -1,8 +1,9 @@
 import { jest } from '@jest/globals';
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
+import { configureApp } from '@/configure-app.js';
 
 /**
  * Executa os endpoints como no `npm run start:dev` com tsx, que não emite a
@@ -10,8 +11,7 @@ import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
  * validação passam a depender só do que está declarado explicitamente
  * (@Inject e o DTO esperado pelo ValidationPipe).
  *
- * Assim como no main.ts, apenas o ValidationPipe é global; os erros de domínio
- * são tratados pelo filtro declarado no controller.
+ * A aplicação é configurada pelo mesmo configureApp do main.ts.
  */
 describe('UsersController sem a metadata de decorators (e2e)', () => {
   let app: INestApplication;
@@ -66,13 +66,7 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
+    configureApp(app);
     await app.init();
   });
 

@@ -1,23 +1,12 @@
-import { ValidationPipe } from '@nestjs/common';
-import { HttpAdapterHost, NestFactory } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
-import { DomainExceptionFilter } from './shared/presentation/filters/domain-exception.filter.js';
+import { configureApp } from './configure-app.js';
 import { buildSwaggerConfig } from './shared/presentation/docs/swagger.config.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
-  const httpAdapterHost = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new DomainExceptionFilter(httpAdapterHost));
+  configureApp(app);
 
   const config = buildSwaggerConfig();
   const documentFactory = () => SwaggerModule.createDocument(app, config);

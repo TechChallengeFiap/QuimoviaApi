@@ -1,14 +1,13 @@
 import { jest } from '@jest/globals';
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
+import { INestApplication, Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import request from 'supertest';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import { InspectionModule } from '@/modules/inspection/inspection.module.js';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { InspectionRepositoryMock } from '../mocks/inspection-repository.mock.js';
 import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
+import { configureApp } from '@/configure-app.js';
 
 const SHIPMENT_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 const SHIPMENT_ITEM_ID = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
@@ -39,14 +38,7 @@ describe('InspectionsController (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    app.useGlobalFilters(new DomainExceptionFilter(app.get(HttpAdapterHost)));
+    configureApp(app);
     await app.init();
   });
 

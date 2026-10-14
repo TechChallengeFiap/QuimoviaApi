@@ -22,7 +22,8 @@ O Quimovia é um monólito modular: uma única aplicação NestJS, dividida em *
 
 ```text
 src/
-├── main.ts               inicializa a aplicação: ValidationPipe, filtro de erros, Swagger
+├── main.ts               inicializa a aplicação e o Swagger
+├── configure-app.ts      ValidationPipe e filtro de erros globais, usados também nos E2E
 ├── app.module.ts         compõe a aplicação a partir dos módulos de contexto
 ├── modules/              um diretório por contexto: é aqui que você vai trabalhar
 ├── shared/               erros de domínio, paginação, logError, banco, filtro, pipe e decorators do Swagger
@@ -216,7 +217,7 @@ await Test.createTestingModule({ imports: [InspectionModule] })
 
 ### 3.3. Como os erros atravessam as camadas
 
-O domínio lança erros de negócio sem saber nada de HTTP. O caso de uso registra o erro com `logError(this.logger, contexto, error)` e o propaga com `throw error`, e o `DomainExceptionFilter`, registrado globalmente, o traduz na borda. Controller e repositório não capturam erros: cada erro é registrado uma vez e traduzido uma vez. Por isso o mesmo caso de uso funciona para uma requisição, uma fila ou uma tarefa agendada. Use os erros de `shared/domain/errors/domain.error.ts`:
+O domínio lança erros de negócio sem saber nada de HTTP. O caso de uso registra o erro com `logError(this.logger, contexto, error)` e o propaga com `throw error`, e o `DomainExceptionFilter`, registrado globalmente pelo `configureApp`, o traduz na borda. Controller e repositório não capturam erros: cada erro é registrado uma vez e traduzido uma vez. Por isso o mesmo caso de uso funciona para uma requisição, uma fila ou uma tarefa agendada. Use os erros de `shared/domain/errors/domain.error.ts`:
 
 | Erro | Quando usar | HTTP |
 | --- | --- | --- |
