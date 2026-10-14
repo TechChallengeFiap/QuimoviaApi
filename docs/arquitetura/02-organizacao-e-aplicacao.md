@@ -9,13 +9,13 @@ Este é o segundo de dois documentos sobre a arquitetura do Quimovia.
 
 Este documento é prático. Ele não repete as explicações do documento 01: quando um conceito aparece aqui, a referência indica onde ele é explicado.
 
-O código é a fonte de verdade sobre **o que existe**. Este documento é a fonte de verdade sobre **o que deve existir**. Quando os dois divergem, a divergência está marcada e registrada na [seção 12](#12-diagnóstico-e-plano-de-refatoração).
+O código é a fonte de verdade sobre **o que existe**. Este documento é a fonte de verdade sobre **o que deve existir**. Quando os dois divergem, a divergência está marcada e registrada na [seção 12](#12-diagnóstico-situação-e-pendências). As regras de dependência da [seção 6](#6-direção-das-dependências) são verificadas automaticamente por testes.
 
 | Marcador | Significado |
 | --- | --- |
 | ✅ | Implementado e de acordo com a arquitetura |
-| ⚠️ | Implementado, mas em desacordo com a arquitetura. Há uma proposta de correção |
-| 🧭 | Proposta: ainda não existe e é a organização-alvo para as próximas refatorações |
+| ⚠️ | Implementado, mas com uma pendência registrada na seção 12 |
+| 🧭 | Proposta: ainda não existe e será criado quando houver necessidade |
 
 ## Sumário
 
@@ -30,7 +30,7 @@ O código é a fonte de verdade sobre **o que existe**. Este documento é a font
 9. [Persistência com Prisma e MySQL](#9-persistência-com-prisma-e-mysql)
 10. [Testes](#10-testes)
 11. [Manutenção e evolução para microsserviços](#11-manutenção-e-evolução-para-microsserviços)
-12. [Diagnóstico e plano de refatoração](#12-diagnóstico-e-plano-de-refatoração)
+12. [Diagnóstico, situação e pendências](#12-diagnóstico-situação-e-pendências)
 13. [Convenções de nomenclatura](#13-convenções-de-nomenclatura)
 14. [Guia rápido](#14-guia-rápido)
 
@@ -50,6 +50,7 @@ O código é a fonte de verdade sobre **o que existe**. Este documento é a font
 │   ├── schema.prisma           modelos, enums e datasource
 │   └── migrations/             histórico de migrations
 ├── test/
+│   ├── architecture/           regras de dependência entre camadas e contextos
 │   ├── unit/<contexto>/        testes unitários
 │   ├── e2e/                    testes HTTP com supertest
 │   └── mocks/                  fakes e mocks reutilizáveis
@@ -68,7 +69,7 @@ O código é a fonte de verdade sobre **o que existe**. Este documento é a font
 | `src/shared/` | Código transversal, usado por mais de um contexto e sem regra de nenhum | Seção 4.5 |
 | `src/generated/prisma/` | Código gerado pelo Prisma | Nunca editar. Só a infraestrutura de persistência o importa |
 | `test/` | Testes automatizados, fora de `src/` | Seção 10 |
-| `src/app.controller.ts`, `src/app.service.ts` | Scaffold inicial do NestJS (`GET /`) | ⚠️ Não servem de exemplo. Remover em tarefa própria, junto dos testes que os cobrem |
+| `src/app.controller.ts`, `src/app.service.ts` | Scaffold inicial do NestJS (`GET /`) | ⚠️ Não servem de exemplo. Remoção pendente (seção 12) |
 
 ---
 
@@ -78,15 +79,15 @@ Cada bounded context (documento 01, seção 3.4) é um diretório em `src/module
 
 | Contexto | Pasta | Módulo NestJS | Situação |
 | --- | --- | --- | --- |
-| Gestão de Cargas | `chemical-shipment/` | `ChemicalShipmentModule` | ⚠️ Implementado (cadastro, consulta, atualização e remoção lógica), com acoplamentos a Identidade e Acesso |
-| Produtos Químicos | 🧭 `chemical-product/` | — | Não iniciado. Hoje a carga guarda `productId` como texto livre, sem validação |
-| Conformidade Documental | 🧭 `document-compliance/` | — | Não iniciado. Hoje a carga guarda `documentsIds` como um texto |
-| Inspeções | `inspection/` | `InspectionModule` | ✅ Implementado. Referencia a carga e o fiscal apenas por ID |
-| Identidade e Acesso | `user/` | ⚠️ `UserModule` e `AuthModule` | Implementado: usuários, sessões, login, logout e guard. Dividido em dois módulos que expõem providers internos |
+| Gestão de Cargas | `chemical-shipment/` | `ChemicalShipmentModule` | ✅ Cadastro, consulta, atualização e remoção lógica. Usa Identidade e Acesso apenas pelo contrato publicado `USER_DIRECTORY` |
+| Produtos Químicos | 🧭 `chemical-product/` | — | Não iniciado. A carga guarda `productId` como texto livre, sem validação |
+| Conformidade Documental | 🧭 `document-compliance/` | — | Não iniciado. A carga guarda `documentsIds` como um texto |
+| Inspeções | `inspection/` | `InspectionModule` | ✅ Referencia a carga e o fiscal apenas por ID |
+| Identidade e Acesso | `user/` | `UserModule` | ✅ Usuários, sessões, login, logout e guard. Exporta apenas a API pública |
 
 **Nome das pastas.** A pasta tem o nome do conceito central do contexto, em inglês, no singular e em kebab-case. A pasta `user/` abriga todo o contexto de Identidade e Acesso (usuários, sessões e autenticação), e não apenas a entidade usuário.
 
-**Contextos ainda não implementados.** Não se cria pasta, módulo ou camada vazia antecipadamente. O diretório de um contexto nasce com a primeira funcionalidade dele.
+**Contextos ainda não implementados.** Não se cria pasta, módulo ou camada vazia antecipadamente. O diretório de um contexto nasce com a primeira funcionalidade dele. Por isso Produtos Químicos e Conformidade Documental ainda não têm pasta: as fronteiras deles estão definidas (documento 01, seções 3.4 e 3.5), mas não há código a organizar.
 
 ---
 
@@ -105,28 +106,31 @@ src/modules/<contexto>/
 │   ├── events/                🧭 eventos de domínio, quando houver um consumidor
 │   └── errors/                erros específicos do contexto
 ├── application/
-│   ├── use-cases/<agregado>/  um arquivo por ação, com os tipos de entrada e saída no mesmo arquivo
-│   ├── services/              serviços de aplicação que não são uma ação isolada (ex.: implementação de um contrato público)
+│   ├── use-cases/<agregado>/  um arquivo por ação, com o tipo de entrada no mesmo arquivo
+│   ├── dto/                   tipos de entrada ou saída usados por mais de um caso de uso
+│   ├── services/              serviços de aplicação que não são uma ação isolada (ex.: implementação de um contrato publicado)
 │   └── contracts/             contratos para serviços técnicos + tokens
 ├── infrastructure/
 │   ├── persistence/prisma/    repositórios Prisma e mappers
 │   ├── services/              implementações técnicas (hash, token, armazenamento)
-│   ├── integrations/          adaptadores para sistemas externos ou para traduzir outro contexto
+│   ├── integrations/          🧭 adaptadores para sistemas externos, ou para traduzir o contrato de outro contexto
 │   └── config/                leitura e validação de configuração
 ├── presentation/
 │   ├── controllers/
 │   ├── dtos/                  entrada e saída HTTP (class-validator + Swagger)
 │   ├── guards/
 │   └── decorators/
-├── public/                    🧭 API pública: o único ponto que outros contextos podem importar
+├── public/                    API pública: o único ponto que outros contextos podem importar
 │   ├── index.ts
 │   └── *.contract.ts          contratos publicados para outros contextos
 └── <contexto>.module.ts       módulo NestJS do contexto
 ```
 
-**Subpastas por agregado.** Dentro de `application/use-cases/`, os casos de uso são agrupados pelo agregado no plural (`inspections/`, `users/`, `auth/`). Não se repete o nome do contexto em subpastas: `entities/chemical-shipment/chemical-shipment.entity.ts` é redundante, `entities/chemical-shipment.entity.ts` basta.
+**Subpastas por agregado.** Dentro de `application/use-cases/`, os casos de uso são agrupados pelo agregado no plural (`chemical-shipments/`, `inspections/`, `users/`, `auth/`). Não se repete o nome do contexto em subpastas: `entities/chemical-shipment.entity.ts` basta.
 
-**API pública (`public/`).** É o contrato do contexto com o resto do sistema. O arquivo `public/index.ts` lista explicitamente tudo o que outros contextos podem usar: o módulo NestJS, os contratos publicados (interfaces, tokens e tipos), guards e decorators destinados a outros contextos. Os contratos publicados ficam fisicamente em `public/`, para que fique claro que alterá-los afeta outros contextos. Detalhes na seção 8.
+**API pública (`public/`).** ✅ Implementada em Identidade e Acesso, o único contexto usado por outro hoje. Os demais contextos criam a pasta quando outro contexto precisar deles. O arquivo `public/index.ts` lista explicitamente tudo o que outros contextos podem usar: o módulo NestJS, os contratos publicados (interfaces, tokens e tipos), guards e decorators destinados a outros contextos. Os contratos publicados ficam fisicamente em `public/`, para que fique claro que alterá-los afeta outros contextos.
+
+Os arquivos **internos** do contexto não importam o próprio `public/index.ts`. Eles importam o arquivo de origem (por exemplo, `public/user-directory.contract.ts`), porque o índice importa o módulo, que importa os arquivos internos, e isso criaria um ciclo de importação.
 
 ---
 
@@ -138,18 +142,20 @@ O papel conceitual de cada camada está no documento 01, seção 4. Aqui está c
 
 **Contém:** entidades e raízes de agregado, value objects, enums, contratos de repositório, serviços de domínio e erros.
 
-**Padrão das entidades** (✅ seguido em `Inspection`, `User` e `Session`):
+**Padrão das entidades** (✅ seguido em `ChemicalShipment`, `Inspection`, `User` e `Session`):
 
-- estado privado com campos `#`, exposto apenas por getters;
+- estado privado com campos `#`, exposto apenas por getters, sem setters públicos;
 - `static create(data)` para criar, validando os dados e aplicando as regras de nascimento;
 - `static restore(properties)` para reconstruir a partir da persistência, sem revalidar;
-- métodos com nome de intenção de negócio (`start()`, `complete()`, `block()`, `unblock()`), que verificam as regras e lançam `BusinessRuleError`;
-- `toObject()` para facilitar o mapeamento na infraestrutura.
+- métodos com nome de intenção de negócio (`changeStatus()`, `complete()`, `block()`), que verificam as regras e lançam `BusinessRuleError`;
+- `toObject()` para facilitar o mapeamento na infraestrutura;
+- outros agregados, inclusive de outros contextos, são referenciados apenas pelo ID (`ChemicalShipment.responsibleUserId`, `Inspection.cargoId`).
 
 **Bons exemplos no código:**
 
 - `Inspection` (`inspection/domain/entities/inspection.entity.ts`) protege as invariantes de escopo e item, exige o resultado de todas as verificações para concluir e impede alterações depois da conclusão.
 - `User` (`user/domain/entities/user.entity.ts`) controla as transições de situação. Um usuário bloqueado não volta a ficar ativo sem um desbloqueio explícito.
+- `ChemicalShipment` (`chemical-shipment/domain/entities/chemical-shipment.entity.ts`) impede alterações numa carga aprovada ou reprovada e valida os identificadores obrigatórios.
 
 **Erros de domínio.** A hierarquia genérica está em `shared/domain/errors/domain.error.ts`:
 
@@ -163,32 +169,34 @@ O papel conceitual de cada camada está no documento 01, seção 4. Aqui está c
 
 Um erro específico de contexto (em `domain/errors/`) só é criado quando quem chama precisa distingui-lo dos demais. Nesse caso, ele estende uma dessas classes, e o mapeamento HTTP continua funcionando.
 
-**Pode importar:** o próprio domínio, `shared/domain` e APIs da plataforma Node.js (por exemplo, `randomUUID`).
+**Pode importar:** o próprio domínio, `shared/domain` e APIs da plataforma Node.js, sempre com o prefixo `node:` (por exemplo, `node:crypto`).
 
-**Não pode importar:** `@nestjs/*`, `@/generated/prisma`, as camadas application, infrastructure e presentation, nem qualquer arquivo de outro contexto.
+**Não pode importar:** `@nestjs/*`, `@/generated/prisma`, as camadas application, infrastructure e presentation, pacotes externos, nem qualquer arquivo de outro contexto.
 
 ### 4.2. Application
 
-**Casos de uso.** Uma classe por ação, com um método `execute`. O tipo de entrada fica no mesmo arquivo (por exemplo, `CreateInspectionInput`). Só se extrai para `application/dto/` um tipo usado por mais de um caso de uso. O caso de uso devolve entidades ou dados simples. A conversão para o formato HTTP é feita pela presentation.
+**Casos de uso.** Uma classe por ação, com um método `execute`. O tipo de entrada fica no mesmo arquivo (por exemplo, `CreateInspectionInput`). Um tipo usado por mais de um caso de uso vai para `application/dto/`. É o caso de `ChemicalShipmentDetails`, a carga junto com o resumo do responsável, devolvida por quatro casos de uso de cargas. A conversão para o formato HTTP é feita pela presentation.
 
-**O que um caso de uso faz:** busca agregados pelos contratos de repositório, aciona os métodos do domínio, salva o resultado e coordena outros contratos. Regras que dependem de dados fora do agregado ficam aqui. Por exemplo, a unicidade do e-mail em `CreateUserUseCase` e `UpdateUserUseCase`.
+**O que um caso de uso faz:** busca agregados pelos contratos de repositório, aciona os métodos do domínio, salva o resultado e coordena outros contratos. Regras que dependem de dados fora do agregado ficam aqui. Por exemplo, a unicidade do e-mail em `CreateUserUseCase` e `UpdateUserUseCase`, ou a existência do responsável em `CreateChemicalShipmentUseCase`.
 
 **Contratos (`application/contracts/`).** São portas para serviços técnicos, com o token no mesmo arquivo. Exemplos ✅: `PasswordHasher`, `AccessTokenService`, `SessionSettings`, no contexto de Identidade e Acesso.
 
-**Bom exemplo:** `ValidateSessionUseCase` usa três contratos (token de acesso, sessões e usuários) sem conhecer JWT nem Prisma.
+**Serviços de aplicação (`application/services/`).** Implementam um contrato publicado para outros contextos. Exemplo ✅: `UserDirectoryService`, que implementa `UserDirectory` a partir do repositório de usuários.
+
+**Bons exemplos:** `ValidateSessionUseCase` usa três contratos (token de acesso, sessões e usuários) sem conhecer JWT nem Prisma. `ListChemicalShipmentsUseCase` lista as cargas pelo repositório e obtém os responsáveis da página numa única chamada ao contrato `UserDirectory`.
 
 **Uso permitido do NestJS:** somente `@Injectable()`, `@Inject()` e `Logger` (documento 01, seção 4.7).
 
-**Não pode importar:** infrastructure, presentation, `@/generated/prisma`, `PrismaService`, exceções HTTP do NestJS, nem arquivos internos de outro contexto. Pode depender de **contratos publicados** por outro contexto em `public/` (seção 8).
+**Não pode importar:** infrastructure, presentation, `shared/infrastructure`, `shared/presentation`, `@/generated/prisma`, exceções HTTP do NestJS, pacotes externos, nem arquivos internos de outro contexto. Pode depender dos **contratos publicados** por outro contexto em `public/` (seção 8).
 
 ### 4.3. Infrastructure
 
 | Pasta | Conteúdo | Exemplos |
 | --- | --- | --- |
-| `persistence/prisma/` | Repositórios que implementam os contratos do domínio com o Prisma, e mappers | ✅ `PrismaInspectionRepository`, `PrismaUserRepository`, `PrismaSessionRepository` |
+| `persistence/prisma/` | Repositórios que implementam os contratos do domínio com o Prisma, e mappers | ✅ `PrismaChemicalShipmentRepository`, `PrismaInspectionRepository`, `PrismaUserRepository`, `PrismaSessionRepository` |
 | `services/` | Implementações de contratos técnicos | ✅ `ScryptPasswordHasher`, `JwtAccessTokenService` |
-| `config/` | Leitura e validação de configuração, falhando na inicialização se algo estiver inválido | ⚠️ `auth.config.ts`, hoje em `infrastructure/auth/` |
-| `integrations/` | Adaptadores para sistemas externos, ou para traduzir o contrato de outro contexto quando ele não serve como está | 🧭 |
+| `config/` | Leitura e validação de configuração, falhando na inicialização se algo estiver inválido | ✅ `user/infrastructure/config/auth.config.ts` |
+| `integrations/` | Adaptadores para sistemas externos, ou para traduzir o contrato de outro contexto quando ele não serve como está | 🧭 Nenhum caso hoje |
 
 A infraestrutura não toma decisões de negócio. Por exemplo, um repositório não decide se uma carga pode ser liberada.
 
@@ -196,13 +204,13 @@ A infraestrutura não toma decisões de negócio. Por exemplo, um repositório n
 
 | Elemento | Responsabilidade | Exemplos |
 | --- | --- | --- |
-| Controllers | Receber a requisição, chamar **um** caso de uso e converter o resultado em DTO de resposta | ✅ `InspectionsController`, `UsersController` |
+| Controllers | Receber a requisição, chamar **um** caso de uso e converter o resultado em DTO de resposta | ✅ `InspectionsController`, `UsersController`, `ChemicalShipmentController` |
 | DTOs de entrada | Validar o formato com class-validator e documentar com Swagger | ✅ `CreateInspectionDto` |
-| DTOs de resposta | Escolher explicitamente os campos expostos (`fromEntity`) | ✅ `UserResponseDto` não expõe o hash da senha |
-| Guards | Verificar condições de acesso da requisição HTTP | ⚠️ `AuthGuard`, hoje em `user/infrastructure/auth/` |
-| Decorators | Extrair dados da requisição ou documentar rotas | ⚠️ `@CurrentSession()`, hoje em `user/infrastructure/auth/`. ⚠️ `@ApiRequiresAuthentication()`, hoje em `shared/`, embora documente o guard de Identidade e Acesso |
+| DTOs de resposta | Escolher explicitamente os campos expostos | ✅ `UserResponseDto` não expõe o hash da senha |
+| Guards | Verificar condições de acesso da requisição HTTP | ✅ `user/presentation/guards/auth.guard.ts` |
+| Decorators | Extrair dados da requisição ou documentar rotas | ✅ `@CurrentSession()` e `@ApiRequiresAuthentication()`, em `user/presentation/decorators/` |
 
-**Tradução de erros.** O `DomainExceptionFilter` (`shared/presentation/filters/`) é registrado globalmente em `main.ts` e converte os erros de domínio em respostas HTTP (tabela da seção 4.1). Exceções HTTP do NestJS só são lançadas na presentation.
+**Tradução de erros.** O `DomainExceptionFilter` (`shared/presentation/filters/`) é registrado globalmente em `main.ts` e também declarado nos controllers com `@UseFilters`. A declaração nos controllers garante a tradução quando a aplicação é montada sem o `main.ts`, como nos testes `*-no-metadata`. O filtro converte os erros de domínio em respostas HTTP (tabela da seção 4.1). Exceções HTTP do NestJS só são lançadas na presentation.
 
 **Validação.** O `ValidationPipe` global está em `main.ts`. Como o ambiente de desenvolvimento (`tsx`) não emite metadados de tipo, cada parâmetro validado informa o DTO esperado com `validationPipeFor(Dto)` (`shared/presentation/pipes/validation.pipe.ts`) ou com `expectedType`.
 
@@ -213,12 +221,10 @@ src/shared/
 ├── domain/errors/domain.error.ts             ✅ hierarquia de erros de domínio
 ├── infrastructure/
 │   ├── config/swagger.config.ts              ✅ configuração do Swagger
-│   └── persistence/prisma/                   ✅ PrismaService; ⚠️ PrismaModule marcado como @Global()
-├── presentation/
-│   ├── decorators/api-requires-authentication.decorator.ts  ⚠️ pertence a Identidade e Acesso
-│   ├── filters/domain-exception.filter.ts    ✅
-│   └── pipes/validation.pipe.ts              ✅ validationPipeFor()
-└── types/chemical-shipment.types.ts          ⚠️ arquivo vazio e específico de um contexto
+│   └── persistence/prisma/                   ✅ PrismaModule (não global) e PrismaService
+└── presentation/
+    ├── filters/domain-exception.filter.ts    ✅
+    └── pipes/validation.pipe.ts              ✅ validationPipeFor()
 ```
 
 Algo só entra em `shared/` quando cumpre **todos** os critérios:
@@ -228,9 +234,9 @@ Algo só entra em `shared/` quando cumpre **todos** os critérios:
 3. é transversal (erros-base, conexão com o banco, filtros e pipes globais, configuração);
 4. não cria acoplamento desnecessário entre contextos.
 
-Uma pergunta ajuda: *se eu remover um contexto, este código ainda faz sentido?* Se a resposta for não, ele pertence ao contexto.
+Uma pergunta ajuda: *se eu remover um contexto, este código ainda faz sentido?* Se a resposta for não, ele pertence ao contexto. Foi por esse critério que `@ApiRequiresAuthentication()`, que documenta o guard de Identidade e Acesso, saiu de `shared/` e foi para o contexto.
 
-Tudo o que está em `shared/` é um contrato entre todos os contextos. Mudá-lo afeta todos. Numa extração futura, esse código é duplicado ou vira uma biblioteca. Por isso `shared/` deve continuar pequeno.
+Tudo o que está em `shared/` é um contrato entre todos os contextos. Mudá-lo afeta todos. Numa extração futura, esse código é duplicado ou vira uma biblioteca. Por isso `shared/` deve continuar pequeno. `shared/` nunca importa nada de `src/modules/`.
 
 ---
 
@@ -245,7 +251,8 @@ Tudo o que está em `shared/` é um contrato entre todos os contextos. Mudá-lo 
 | Erro específico do contexto | `domain/errors/<nome>.error.ts` |
 | Serviço de domínio | `domain/services/<nome>.service.ts` |
 | Contrato de repositório + token | `domain/repositories/<agregado>.repository.ts` |
-| Caso de uso + tipos de entrada | `application/use-cases/<agregado>/<ação>.use-case.ts` |
+| Caso de uso + tipo de entrada | `application/use-cases/<agregado>/<ação>.use-case.ts` |
+| Tipo compartilhado por casos de uso | `application/dto/<nome>.dto.ts` |
 | Contrato de serviço técnico + token | `application/contracts/<nome>.contract.ts` |
 | Implementação de contrato publicado | `application/services/<nome>.service.ts` |
 | Contrato publicado para outros contextos | `public/<nome>.contract.ts` |
@@ -261,7 +268,7 @@ Tudo o que está em `shared/` é um contrato entre todos os contextos. Mudá-lo 
 | Decorator HTTP | `presentation/decorators/<nome>.decorator.ts` |
 | Módulo NestJS do contexto | `<contexto>.module.ts` |
 | Teste unitário | `test/unit/<contexto>/` |
-| Teste de arquitetura | 🧭 `test/architecture/` |
+| Teste de arquitetura | `test/architecture/` |
 | Teste de integração | 🧭 `test/integration/<contexto>/` |
 | Teste E2E | `test/e2e/` |
 | Mock ou fake reutilizável | `test/mocks/` |
@@ -271,7 +278,7 @@ Tudo o que está em `shared/` é um contrato entre todos os contextos. Mudá-lo 
 ## 6. Direção das dependências
 
 ```text
-                 presentation
+                 presentation ─────────► public/ de outro contexto (guard, decorators, representação HTTP publicada)
                       │
                       ▼
                  application ──────────► public/ de outro contexto (somente contratos publicados)
@@ -297,11 +304,26 @@ Regras complementares:
 
 - `shared/` nunca importa nada de `src/modules/`.
 - Somente `infrastructure/persistence/` (dos contextos e de `shared/`) importa `PrismaService` e `@/generated/prisma`.
+- Os arquivos internos de um contexto não importam o próprio `public/index.ts` (seção 3).
+- As dependências entre contextos não formam ciclos.
 - Interfaces são importadas com `import type`. Tokens são importados como valor.
 
 ### Verificação automática
 
-🧭 As regras acima devem ser verificadas por um teste de arquitetura em `test/architecture/`, executado no `npm test` e, portanto, no CI. O teste lê os arquivos de `src/` e valida os imports de cada um. Sem essa verificação, nada impede um import proibido: o TypeScript e o NestJS não conhecem as fronteiras dos contextos.
+✅ As regras acima são verificadas por `test/architecture/layer-boundaries.spec.ts`, executado no `npm test` e, portanto, no CI. O teste lê os imports de todos os arquivos de `src/` (`test/architecture/import-graph.ts`, só com a biblioteca padrão do Node) e falha indicando cada import proibido, no formato `arquivo -> import`.
+
+| Regra verificada | O que falha |
+| --- | --- |
+| Domínio só depende do próprio domínio, de `shared/domain` e de `node:*` | Import de NestJS, Prisma, outra camada, outro contexto ou pacote externo no domínio |
+| Aplicação não depende de infraestrutura, presentation, Prisma ou HTTP | Import dessas camadas, de `shared/infrastructure` ou `shared/presentation`, ou de algo do NestJS além de `Inject`, `Injectable` e `Logger` |
+| Presentation não acessa a infraestrutura dos contextos | Controller, DTO, guard ou decorator importando `infrastructure/` |
+| Um contexto usa outro só pela API pública | Import de qualquer arquivo de outro contexto que não seja `public/index` |
+| Arquivos internos não importam a própria API pública | Import do próprio `public/index` |
+| `shared/` não depende de contextos | Import de `src/modules/` em `shared/` |
+| Só a persistência acessa o Prisma | Import de `PrismaService` ou `@/generated/prisma` fora de `infrastructure/persistence/` |
+| Sem ciclos entre contextos | Contexto A dependendo de B e B dependendo de A |
+
+Se uma regra precisar mudar, a mudança é feita primeiro nesta seção e depois no teste.
 
 ---
 
@@ -315,6 +337,8 @@ O `InspectionModule` é um bom modelo:
 
 ```ts
 @Module({
+  // Dependências explícitas: só a conexão com o banco
+  imports: [PrismaModule],
   controllers: [InspectionsController],
   providers: [
     // Casos de uso: registrados pela própria classe
@@ -350,7 +374,7 @@ constructor(
 ) {}
 ```
 
-O token é um `Symbol` exportado no mesmo arquivo da interface. Um `Symbol` é único, o que evita colisões entre tokens, e só pode ser referenciado por quem importa o arquivo que o declara.
+O token é um `Symbol` exportado no mesmo arquivo da interface. Um `Symbol` é único, o que evita colisões entre tokens, e só pode ser referenciado por quem importa o arquivo que o declara. Combinado com o teste de arquitetura, isso impede que um contexto injete um token interno de outro.
 
 ### 7.3. Injeção explícita
 
@@ -361,7 +385,7 @@ O token é um `Symbol` exportado no mesmo arquivo da interface. Um `Symbol` é �
 | Forma | Uso no projeto | Exemplo |
 | --- | --- | --- |
 | Classe | Casos de uso e guards | `CreateInspectionUseCase`, `AuthGuard` |
-| `useClass` | Contrato → implementação | `{ provide: USER_REPOSITORY, useClass: PrismaUserRepository }` |
+| `useClass` | Contrato → implementação | `{ provide: USER_DIRECTORY, useClass: UserDirectoryService }` |
 | `useFactory` | Valor calculado na inicialização | `{ provide: AUTH_CONFIG, useFactory: () => loadAuthConfig() }` |
 | `useFactory` + `inject` | Valor derivado de outro provider | `SESSION_SETTINGS`, calculado a partir de `AUTH_CONFIG` |
 | `useValue` | Substituição nos testes | `.overrideProvider(INSPECTION_REPOSITORY).useValue(mock)` |
@@ -374,25 +398,22 @@ O token é um `Symbol` exportado no mesmo arquivo da interface. Um `Symbol` é �
 | Guards destinados a outros contextos e as dependências que eles exigem (seção 7.7) | Contratos técnicos internos (hash, token de acesso) |
 | | Casos de uso usados apenas pelos próprios controllers |
 
-⚠️ **Estado atual:** o `UserModule` exporta `USER_REPOSITORY`, `SESSION_REPOSITORY` e `PASSWORD_HASHER`. Ele faz isso para atender o `AuthModule`, do mesmo contexto, mas a exportação vale para qualquer módulo que o importe. O `ChemicalShipmentModule` o importa e usa `USER_REPOSITORY` diretamente.
-
-🧭 **Proposta:** um único módulo para Identidade e Acesso (`UserModule`, absorvendo o `AuthModule`). Os providers internos deixam de ser exportados, e o módulo exporta apenas a sua API pública.
+✅ O `UserModule` reúne usuários, sessões e autenticação num único módulo e exporta apenas `USER_DIRECTORY`, `AuthGuard` e `ValidateSessionUseCase`. Os repositórios, o hash de senha e o serviço de tokens são privados. `ChemicalShipmentModule` e `InspectionModule` não exportam nada.
 
 ### 7.6. Infraestrutura compartilhada
 
-⚠️ **Estado atual:** o `PrismaModule` é `@Global()`. Qualquer módulo pode injetar `PrismaService` sem declarar essa dependência.
-
-🧭 **Proposta:** o `PrismaModule` deixa de ser global e é importado explicitamente pelos módulos de contexto que têm persistência. A conexão continua centralizada numa única instância (o NestJS reaproveita o mesmo módulo em todos os imports), e cada módulo passa a declarar do que depende.
+✅ O `PrismaModule` **não é global**. Cada módulo de contexto com persistência o importa (`imports: [PrismaModule, ...]`), declarando a dependência. A conexão continua centralizada numa única instância, porque o NestJS reaproveita o mesmo módulo em todos os imports.
 
 ### 7.7. Raiz da aplicação, dependências entre módulos e guards
 
-- `app.module.ts` importa os módulos de contexto. `main.ts` registra o `ValidationPipe` e o `DomainExceptionFilter` globais e configura o Swagger.
-- Quando o módulo de um contexto importa o módulo de outro, essa é uma dependência explícita entre contextos. O grafo de imports deve continuar **acíclico**. Se surgir um ciclo (A precisa de B e B precisa de A), é um sinal de desenho: a responsabilidade está no lugar errado ou a comunicação deveria ser por evento. `forwardRef` não deve ser usado para esconder o ciclo.
-- Um guard usado em `@UseGuards(AuthGuard)` é resolvido no módulo do controller que o usa. Por isso o módulo que fornece o guard exporta também as dependências dele: hoje, `AuthGuard` e `ValidateSessionUseCase`.
+- `app.module.ts` importa apenas os módulos de contexto. `main.ts` registra o `ValidationPipe` e o `DomainExceptionFilter` globais e configura o Swagger.
+- Quando o módulo de um contexto importa o módulo de outro, essa é uma dependência explícita entre contextos, feita pela API pública: `ChemicalShipmentModule` importa `UserModule` de `@/modules/user/public/index.js`. O grafo de imports deve continuar **acíclico**. Se surgir um ciclo (A precisa de B e B precisa de A), é um sinal de desenho: a responsabilidade está no lugar errado ou a comunicação deveria ser por evento. `forwardRef` não deve ser usado para esconder o ciclo.
+- Um guard usado em `@UseGuards(AuthGuard)` é resolvido no módulo do controller que o usa. Por isso o `UserModule` exporta também a dependência do guard, o `ValidateSessionUseCase`.
 
 ### 7.8. DI nos testes
 
-✅ Os testes E2E importam apenas o módulo do contexto e substituem os repositórios pelos tokens (`overrideProvider(INSPECTION_REPOSITORY).useValue(mock)`). Assim, testam a rota HTTP completa sem banco de dados. Os testes unitários instanciam os casos de uso diretamente, passando mocks de `test/mocks/` pelo construtor.
+- ✅ Os testes E2E importam apenas o módulo do contexto e substituem, pelos tokens, os repositórios ou contratos (`overrideProvider(INSPECTION_REPOSITORY).useValue(mock)`, `overrideProvider(USER_DIRECTORY).useValue(...)`), a configuração (`AUTH_CONFIG`) e o `PrismaService` (`createPrismaServiceStub()`, em `test/mocks/`). Assim, testam a rota HTTP completa e a composição real dos módulos, sem banco de dados.
+- ✅ Os testes unitários instanciam os casos de uso diretamente, passando fakes pelo construtor. Os casos de uso de cargas recebem um `UserDirectoryMock` (`test/mocks/user-directory.mock.ts`) e não dependem da implementação de Identidade e Acesso.
 
 ---
 
@@ -411,15 +432,15 @@ Um contexto **nunca**:
 
 | Mecanismo | Quando usar | Exemplo |
 | --- | --- | --- |
-| **Referência por ID** | Sempre que um contexto menciona algo de outro | ✅ `Inspection.cargoId` e `Inspection.inspectorId` |
+| **Referência por ID** | Sempre que um contexto menciona algo de outro | ✅ `ChemicalShipment.responsibleUserId`, `Inspection.cargoId`, `Inspection.inspectorId` |
 | **Identidade da requisição** | Saber quem está chamando e com qual perfil | ✅ `@UseGuards(AuthGuard)` e `@CurrentSession()`, que entrega `{ userId, sessionId, role }` |
-| **Contrato publicado** | Obter de outro contexto uma informação necessária agora | 🧭 Gestão de Cargas consultando o responsável pela carga em Identidade e Acesso |
+| **Contrato publicado** | Obter de outro contexto uma informação necessária agora | ✅ Gestão de Cargas consulta o responsável pela carga com `USER_DIRECTORY` |
 | **Cópia de dados** | Guardar a informação de outro contexto como ela era num momento | ✅ `compositionVersion` na inspeção registra qual versão da composição da carga foi avaliada |
 | **Evento** | Outro contexto precisa reagir a um fato, e o emissor não precisa da resposta | 🧭 Ainda não há caso real (seção 8.5) |
 
 ### 8.3. Contrato publicado: o padrão
 
-O contexto **fornecedor** publica, em `public/`, uma interface com um token e os tipos que ela usa. Ele também implementa a interface e exporta o token pelo seu módulo. O contexto **consumidor** injeta o contrato pelo token e nunca conhece a implementação.
+O contexto **fornecedor** publica, em `public/`, uma interface com um token e os tipos que ela usa. Ele também implementa a interface e exporta o token pelo seu módulo. O contexto **consumidor** injeta o contrato pelo token e nunca conhece a implementação. O exemplo implementado é a consulta do responsável pela carga:
 
 ```ts
 // user/public/user-directory.contract.ts — contrato publicado por Identidade e Acesso
@@ -429,7 +450,10 @@ export interface UserSummary {
   email: string;
   role: UserRole;
   status: UserStatus;
-  /* ... somente dados que podem sair do contexto. Nunca o hash da senha */
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  // Nunca o hash da senha nem as sessões
 }
 
 export interface UserDirectory {
@@ -443,31 +467,35 @@ export const USER_DIRECTORY = Symbol('UserDirectory');
 ```ts
 // user/user.module.ts — o fornecedor liga o contrato à implementação e o exporta
 providers: [{ provide: USER_DIRECTORY, useClass: UserDirectoryService }],
-exports: [USER_DIRECTORY],
+exports: [USER_DIRECTORY, AuthGuard, ValidateSessionUseCase],
 
-// chemical-shipment/chemical-shipment.module.ts — o consumidor importa o módulo
-imports: [UserModule],
+// chemical-shipment/chemical-shipment.module.ts — o consumidor importa o módulo pela API pública
+imports: [PrismaModule, UserModule],
 
 // chemical-shipment/application/use-cases/... — o consumidor depende só do contrato
 constructor(@Inject(USER_DIRECTORY) private readonly users: UserDirectory) {}
 ```
+
+Os casos de uso de cargas devolvem `ChemicalShipmentDetails` (a carga e o `UserSummary` do responsável). A listagem busca os responsáveis de toda a página numa única chamada a `findByIds`. Na presentation, o `ChemicalShipmentResponseDto` monta o campo `responsibleUser` com o `UserResponseDto`, a representação HTTP de usuário publicada por Identidade e Acesso. Assim o formato da resposta é o mesmo nos dois contextos, sem duplicar o DTO.
 
 Por que essa forma:
 
 - **DIP:** o caso de uso do consumidor depende de uma abstração, e não da implementação do fornecedor (documento 01, seção 6.7).
 - **Encapsulamento:** o fornecedor expõe um resumo serializável, nunca a entidade nem o repositório.
 - **Testabilidade:** o teste do caso de uso usa um fake do contrato, sem precisar de Identidade e Acesso.
-- **Extração futura:** se o fornecedor virar um serviço, o consumidor registra uma implementação remota para o mesmo token (`{ provide: USER_DIRECTORY, useClass: HttpUserDirectory }`) e deixa de importar o módulo. Os casos de uso não mudam. Para isso, os métodos do contrato devem ser assíncronos e trafegar apenas dados serializáveis.
+- **Extração futura:** se o fornecedor virar um serviço, o consumidor registra uma implementação remota para o mesmo token (`{ provide: USER_DIRECTORY, useClass: HttpUserDirectory }`) e deixa de importar o módulo. Os casos de uso não mudam. Para isso, os métodos do contrato são assíncronos e trafegam apenas dados serializáveis.
 
-**Quando o consumidor define a própria porta.** Se o contrato publicado não serve ao consumidor como está, porque exige tradução de conceitos, o consumidor define uma porta em `application/contracts/`, na sua linguagem, e um adaptador em `infrastructure/integrations/` que a implementa usando o contrato publicado (documento 01, seção 6.7). Esse adaptador só deve existir se fizer uma tradução real. Um adaptador que apenas repassa chamadas é uma indireção sem benefício.
+**Quando o consumidor define a própria porta.** Se o contrato publicado não serve ao consumidor como está, porque exige tradução de conceitos, o consumidor define uma porta em `application/contracts/`, na sua linguagem, e um adaptador em `infrastructure/integrations/` que a implementa usando o contrato publicado (documento 01, seção 6.7). Esse adaptador só deve existir se fizer uma tradução real. No caso do responsável pela carga, Gestão de Cargas usa os dados do usuário como estão, então um adaptador só repassaria chamadas e não foi criado.
 
 ### 8.4. Identidade e Acesso para os outros contextos
 
 Para exigir autenticação numa rota de outro contexto:
 
-1. o módulo do contexto importa o `UserModule`;
-2. o controller usa `@UseGuards(AuthGuard)` e `@ApiRequiresAuthentication()`;
+1. o módulo do contexto importa o `UserModule` de `@/modules/user/public/index.js`;
+2. o controller usa `@UseGuards(AuthGuard)` e `@ApiRequiresAuthentication()`, também importados da API pública;
 3. o método recebe a sessão com `@CurrentSession()` e o tipo `AuthenticatedSession`.
+
+O módulo `ProtectedRouteModule`, em `test/mocks/protected-route.mock.ts`, é um exemplo executável desse uso: ele simula outro contexto usando apenas a API pública.
 
 Hoje o guard é aplicado apenas no logout. A proteção das demais rotas e a autorização por perfil ainda serão implementadas. Quando forem, a divisão de responsabilidades é esta:
 
@@ -487,19 +515,19 @@ Hoje o guard é aplicado apenas no logout. A proteção das demais rotas e a aut
 
 | Passo do negócio | Contextos | Mecanismo |
 | --- | --- | --- |
-| Registrar carga com produtos | Gestão de Cargas consulta Produtos Químicos | Contrato publicado |
-| Indicar o responsável pela carga | Gestão de Cargas consulta Identidade e Acesso | Contrato publicado |
-| Abrir inspeção de uma carga | Inspeções guarda `cargoId` e `compositionVersion` | Referência por ID e cópia de dados (✅ atual). Validar a carga exigirá um contrato publicado por Gestão de Cargas |
+| Registrar carga com produtos | Gestão de Cargas consulta Produtos Químicos | Contrato publicado (futuro) |
+| Indicar o responsável pela carga | Gestão de Cargas consulta Identidade e Acesso | ✅ Contrato publicado `USER_DIRECTORY` |
+| Abrir inspeção de uma carga | Inspeções guarda `cargoId` e `compositionVersion` | ✅ Referência por ID e cópia de dados. Validar a carga exigirá um contrato publicado por Gestão de Cargas |
 | Registrar resultado ou parecer | Inspeções ou Conformidade Documental → Gestão de Cargas | Evento (preferível, porque não cria dependência de Gestão de Cargas para Inspeções) |
 | Decidir a liberação | Gestão de Cargas | Regra no agregado da carga |
 
-Grafo de dependências entre módulos esperado, sem ciclos:
+Grafo de dependências entre módulos, sem ciclos:
 
 ```text
-chemical-shipment ──► user
-chemical-shipment ──► chemical-product     (futuro)
-inspection        ──► chemical-shipment    (futuro: validar a carga)
-document-compliance ─► chemical-shipment   (futuro)
+chemical-shipment ──► user                     ✅
+chemical-shipment ──► chemical-product         (futuro)
+inspection        ──► chemical-shipment        (futuro: validar a carga)
+document-compliance ─► chemical-shipment       (futuro)
 inspection, document-compliance ··► chemical-shipment   (eventos: sem import de módulo)
 ```
 
@@ -512,14 +540,15 @@ inspection, document-compliance ··► chemical-shipment   (eventos: sem import
 - ✅ Um único `prisma/schema.prisma`, com `provider = "mysql"`.
 - ✅ Client gerado em `src/generated/prisma` (generator `prisma-client`).
 - ✅ `PrismaService` estende o `PrismaClient` usando o adaptador `PrismaMariaDb` e a variável `DATABASE_URL`.
-- ✅ Um repositório Prisma por agregado, dentro do contexto dono.
+- ✅ `PrismaModule` não global, importado pelos módulos de contexto que têm persistência.
+- ✅ Um repositório Prisma por agregado, dentro do contexto dono, que lê e grava apenas as tabelas desse contexto.
 - ✅ Conversão entre registros e entidades com `toDomain` (privado, no repositório) e `Entity.restore()`.
 - ✅ Migrations em `prisma/migrations/` e configuração em `prisma7.config.ts`.
 - ✅ MySQL 8.4 pelo `docker-compose.yml`, exposto na porta 3333.
 
 ### 9.2. A fronteira do Prisma
 
-- O Prisma só aparece em `infrastructure/persistence/prisma/` de cada contexto e em `shared/infrastructure/persistence/prisma/`.
+- O Prisma só aparece em `infrastructure/persistence/prisma/` de cada contexto e em `shared/infrastructure/persistence/prisma/`. O teste de arquitetura verifica essa regra.
 - Os tipos gerados (`@/generated/prisma/models`) não saem do repositório. Os contratos de repositório recebem e devolvem entidades.
 - O domínio tem os seus próprios enums. O repositório converte os enums do Prisma para os do domínio.
 - A exclusão lógica (`deletedAt`) é implementada no repositório.
@@ -532,7 +561,7 @@ inspection, document-compliance ··► chemical-shipment   (eventos: sem import
 | `ChemicalShipment` | Gestão de Cargas |
 | `Inspection`, `InspectionItem` | Inspeções |
 
-Só os repositórios do contexto dono leem e alteram a tabela. O `PrismaService` dá acesso técnico a todos os modelos, então essa regra depende de convenção, de revisão e do teste de arquitetura.
+Só os repositórios do contexto dono leem e alteram a tabela. O `PrismaService` dá acesso técnico a todos os modelos, então essa regra depende de convenção e de revisão de código. O teste de arquitetura garante que só a persistência acessa o Prisma, mas não identifica qual modelo cada repositório usa.
 
 ### 9.4. Relações e integridade referencial
 
@@ -546,7 +575,7 @@ Só os repositórios do contexto dono leem e alteram a tabela. O `PrismaService`
 
 | Chave estrangeira entre contextos | De → Para | Situação |
 | --- | --- | --- |
-| `ChemicalShipment.responsibleUserId` | Gestão de Cargas → Identidade e Acesso | ⚠️ Existe e é navegada no código (`include: { responsibleUser: true }` e reconstrução de `User` no repositório de cargas). 🧭 Manter apenas a chave física, sem navegação. O schema não precisa mudar |
+| `ChemicalShipment.responsibleUserId` | Gestão de Cargas → Identidade e Acesso | ✅ Mantida no banco, sem cascata (`ON DELETE RESTRICT` na migration `add_relation_user_chemical_shipment`). Não é mais navegada pelo código: os dados do responsável vêm do contrato `USER_DIRECTORY`. O campo de relação continua no `schema.prisma` porque o Prisma exige os dois lados da relação |
 
 ### 9.5. Transações
 
@@ -564,21 +593,22 @@ Só os repositórios do contexto dono leem e alteram a tabela. O `PrismaService`
 
 ### 10.1. Estado atual
 
-- ✅ `test/unit/<contexto>/` cobre entidades e value objects (puros), casos de uso (com mocks), repositórios Prisma (com um fake do `PrismaService`, sem banco), guard, configuração e filtro.
-- ✅ `test/e2e/` testa as rotas HTTP com supertest. Cada teste importa só o módulo do contexto e substitui os repositórios pelos tokens, sem banco. As variantes `*-swagger` verificam a documentação, e `*-no-metadata` verificam a execução sem metadados de tipo.
-- ✅ `test/mocks/` reúne fakes reutilizáveis.
-- ✅ O CI executa, nesta ordem: lint, `prisma generate`, build, testes unitários, testes E2E e cobertura.
+- ✅ `test/architecture/` verifica as regras de dependência da seção 6.
+- ✅ `test/unit/<contexto>/` cobre entidades e value objects (puros), casos de uso (com fakes dos contratos), repositórios Prisma (com um fake do `PrismaService`, sem banco), serviços de aplicação, guard, configuração e filtro.
+- ✅ `test/e2e/` testa as rotas HTTP com supertest. Cada teste importa só o módulo do contexto, que traz as suas dependências reais de módulo, e substitui repositórios, contratos externos e o `PrismaService` pelos tokens, sem banco. As variantes `*-swagger` verificam a documentação, e `*-no-metadata` verificam a execução sem metadados de tipo.
+- ✅ `test/mocks/` reúne fakes reutilizáveis, como `UserDirectoryMock` e `createPrismaServiceStub()`.
+- ✅ O CI executa, nesta ordem: lint, `prisma generate`, build, testes unitários e de arquitetura, testes E2E e cobertura.
 - Nenhum teste fica em `src/`.
 
 ### 10.2. O que cada nível testa
 
 | Nível | Alvo | Dependências |
 | --- | --- | --- |
+| Arquitetura | Regras de dependência da seção 6 | Leitura dos arquivos de `src/` |
 | Unitário de domínio | Entidades, value objects, serviços de domínio | Nenhuma |
-| Unitário de aplicação | Casos de uso | Mocks dos contratos, pelo construtor |
+| Unitário de aplicação | Casos de uso e serviços de aplicação | Fakes dos contratos, pelo construtor |
 | Unitário de infraestrutura | Repositórios, serviços técnicos, configuração | Fake do `PrismaService` ou da biblioteca |
-| E2E | Rotas HTTP, validação, tradução de erros, Swagger | Módulo real com os repositórios substituídos |
-| 🧭 Arquitetura | Regras de dependência da seção 6 | Leitura dos arquivos de `src/` |
+| E2E | Rotas HTTP, validação, tradução de erros, composição dos módulos, Swagger | Módulo real com repositórios e contratos externos substituídos |
 | 🧭 Integração | Repositórios contra MySQL real | Banco de teste em Docker |
 
 Hoje nenhum teste executa SQL de verdade. O fake do Prisma verifica as chamadas feitas, mas não o resultado das consultas nem as migrations. Os testes de integração preencheriam essa lacuna.
@@ -595,17 +625,18 @@ Hoje nenhum teste executa SQL de verdade. O fake do Prisma verifica as chamadas 
 | Trocar o algoritmo de hash de senha | `infrastructure/services/` e o registro no módulo |
 | Um novo endpoint para uma ação existente | Presentation |
 | Trocar o ORM ou o banco | `infrastructure/persistence/` de cada contexto. Domínio e aplicação não mudam |
+| Um novo dado de usuário exposto a outros contextos | `UserSummary` e `UserDirectoryService` (contrato publicado: avaliar os consumidores) |
 | Um novo contexto | Nova pasta em `src/modules/`, módulo próprio e import em `app.module.ts` |
 
 ### 11.2. Prontidão de cada contexto para extração
 
-Avaliação do estado atual, segundo as condições do documento 01, seção 5.4:
+Avaliação segundo as condições do documento 01, seção 5.4:
 
-| Contexto | Importa internos de outro contexto? | Tem internos importados por outro? | Relação de banco navegada entre contextos? | Prontidão |
+| Contexto | Importa internos de outro contexto? | Tem internos importados por outro? | Relação de banco entre contextos | Prontidão |
 | --- | --- | --- | --- | --- |
 | Inspeções | Não | Não | Não | Alta |
-| Identidade e Acesso | Não | Sim: Gestão de Cargas usa o repositório, a entidade, os enums e o DTO de usuário | Sim, a partir de `ChemicalShipment` | Média |
-| Gestão de Cargas | Sim, de Identidade e Acesso | Não | Sim | Baixa |
+| Identidade e Acesso | Não | Não. Outros contextos usam só a API pública | Recebe a chave estrangeira de `ChemicalShipment` (não navegada) | Alta no código. A chave estrangeira precisa ser removida na extração |
+| Gestão de Cargas | Não. Usa Identidade e Acesso só pelo contrato `USER_DIRECTORY`, substituível por uma implementação remota | Não | Chave estrangeira para `User` (não navegada) | Média. A extração exige uma implementação remota de `UserDirectory` e a remoção da chave estrangeira |
 
 ### 11.3. Passos de uma extração
 
@@ -622,38 +653,44 @@ O que **não** muda: o domínio e os casos de uso do contexto extraído e dos co
 
 ---
 
-## 12. Diagnóstico e plano de refatoração
+## 12. Diagnóstico, situação e pendências
 
-Inconsistências encontradas na análise do código, ordenadas por prioridade.
+### 12.1. Inconsistências corrigidas
 
-| # | Inconsistência | Onde | Impacto | Proposta |
-| --- | --- | --- | --- | --- |
-| A1 | Casos de uso de cargas injetam o repositório de usuários de outro contexto | `create-` e `update-chemical-shipment.use-case.ts` | Gestão de Cargas depende dos internos de Identidade e Acesso. A extração exigiria reescrita | Contrato publicado `UserDirectory` (seção 8.3) |
-| A2 | A entidade `ChemicalShipment` contém a entidade `User` | `chemical-shipment.entity.ts` | Um agregado atravessa a fronteira de contexto. O repositório de cargas reconstrói `User`, incluindo o hash da senha | A carga guarda só `responsibleUserId`. O caso de uso obtém o resumo do responsável pelo contrato |
-| A3 | O módulo de usuários exporta providers internos | `user.module.ts` | Qualquer módulo que o importe pode ler e alterar usuários e sessões | Um módulo por contexto, que exporta só a API pública (seção 7.5) |
-| A4 | Relação do Prisma navegada entre contextos | `prisma-chemical-shipment.repository.ts` (`include: { responsibleUser: true }`) | Acoplamento de dados entre contextos | Remover a navegação. Manter a chave física como exceção registrada (seção 9.4) |
-| A5 | Exceção HTTP na camada de aplicação | `create-chemical-shipment.use-case.ts` (`BadRequestException`) | O caso de uso pressupõe HTTP | Formato validado no DTO. Regra validada na entidade com `BusinessRuleError` |
-| A6 | Representação HTTP de outro contexto importada diretamente | `chemical-shipment-response.dto.ts` importa `UserResponseDto` | Presentation acoplada a um arquivo interno de outro contexto | Publicar a representação do usuário na API pública de Identidade e Acesso |
-| M1 | Entidade `ChemicalShipment` anêmica: setters públicos para todos os campos e métodos que recebem a própria instância como parâmetro | `chemical-shipment.entity.ts` | Qualquer código altera o estado sem passar pelas regras | Remover os setters e usar métodos de intenção que aplicam as regras existentes |
-| M2 | Componentes de Identidade e Acesso fora do lugar | `AuthGuard` e `@CurrentSession()` em `infrastructure/auth/`; `@ApiRequiresAuthentication()` em `shared/` | Presentation misturada com infraestrutura. Código de um contexto em `shared/` | Mover para `user/presentation/` e publicar pela API pública |
-| M3 | `PrismaModule` global | `shared/infrastructure/persistence/prisma/prisma.module.ts` | Dependências de persistência ficam implícitas | Importar explicitamente nos módulos de contexto (seção 7.6) |
-| M4 | Nenhuma verificação automática das fronteiras | — | Violações passam despercebidas | Teste de arquitetura (seção 6) |
-| M5 | Linguagem ubíqua inconsistente: a carga é `ChemicalShipment` em Gestão de Cargas, `cargoId` em Inspeções e "Carga Química" na API | Vários arquivos | Leitores supõem conceitos diferentes | Decisão de domínio pendente (seção 13.2) |
-| M6 | Nenhum teste executa SQL real | `test/` | Consultas e migrations não são verificadas | Testes de integração com MySQL em Docker |
-| B1 | Estrutura de pastas diferente para responsabilidades equivalentes | `chemical-shipment/`: `entities/chemical-shipment/`, `value-objects/chemical-shipment/status-shipment.vo.ts` (um enum), `use-cases/chemical-shipment/` | Convenção diferente da dos outros contextos | `entities/`, `enums/` e `use-cases/chemical-shipments/` |
-| B2 | Arquivos vazios | `chemical-shipment/application/contracts/.../chemical-shipment-repository.contract.ts` e `shared/types/chemical-shipment.types.ts` | Sugerem abstrações inexistentes | Remover |
-| B3 | Dois módulos NestJS no mesmo contexto | `user.module.ts` e `auth.module.ts` | Exige exportar providers internos entre eles (A3) | Unificar no `UserModule` |
-| B4 | Extensões de import mistas (`.ts` e `.js`) | `chemical-shipment/`, `main.ts`, `app.module.ts`, `prisma.*` | Inconsistência de estilo | Padronizar em `.js` |
-| B5 | Schema Prisma num único arquivo | `prisma/schema.prisma` | O dono de cada tabela não é visível | Um arquivo por contexto (seção 9.6) |
-| B6 | Scaffold do NestJS na raiz | `app.controller.ts`, `app.service.ts` | Rota `GET /` sem função de negócio | Remover em tarefa própria |
+Inconsistências encontradas na análise do código e corrigidas na refatoração arquitetural:
 
-**Ordem sugerida:**
+| # | Inconsistência | Correção |
+| --- | --- | --- |
+| A1 | Casos de uso de cargas injetavam o repositório de usuários de outro contexto | ✅ Dependem do contrato publicado `UserDirectory` (seção 8.3) |
+| A2 | A entidade `ChemicalShipment` continha a entidade `User`, e o repositório de cargas reconstruía o usuário com o hash da senha | ✅ A carga guarda só `responsibleUserId`. O resumo do responsável vem do contrato |
+| A3 | O módulo de usuários exportava repositórios e o hash de senha para qualquer módulo que o importasse | ✅ Um módulo por contexto, que exporta só a API pública (seção 7.5) |
+| A4 | Relação do Prisma navegada entre contextos (`include: { responsibleUser: true }`) | ✅ Navegação removida. A chave física continua como exceção registrada (seção 9.4) |
+| A5 | `BadRequestException` na camada de aplicação | ✅ A validação dos identificadores foi para a entidade, com `BusinessRuleError`. O formato continua validado pelo DTO |
+| A6 | DTO de cargas importava um DTO interno de Identidade e Acesso | ✅ `UserResponseDto` é publicado na API pública e construído a partir de um `UserSummary` |
+| M1 | Entidade `ChemicalShipment` anêmica: setters públicos e métodos que recebiam a própria instância | ✅ Estado privado e métodos de intenção, com as mesmas regras |
+| M2 | Guard e decorator em `infrastructure/auth/`; `@ApiRequiresAuthentication()` em `shared/` | ✅ Movidos para `user/presentation/` e publicados pela API pública |
+| M3 | `PrismaModule` global | ✅ Importado explicitamente pelos módulos de contexto (seção 7.6) |
+| M4 | Nenhuma verificação automática das fronteiras | ✅ Teste de arquitetura (seção 6) |
+| B1 | Estrutura de pastas de cargas diferente da dos outros contextos | ✅ `entities/`, `enums/` e `use-cases/chemical-shipments/` |
+| B2 | Arquivos vazios: um contrato duplicado e um arquivo de tipos de cargas em `shared/` | ✅ Removidos |
+| B3 | Dois módulos NestJS no mesmo contexto | ✅ `AuthModule` incorporado ao `UserModule` |
+| B4 | Extensões de import mistas (`.ts` e `.js`) | ✅ `.js` em todo `src/` |
 
-1. Desacoplar Gestão de Cargas de Identidade e Acesso (A1 a A4, A6, B3), porque é o maior risco arquitetural.
-2. Retirar HTTP da aplicação e enriquecer a entidade de cargas (A5, M1, B1, B2).
-3. Corrigir a localização dos componentes de Identidade e Acesso e o módulo do Prisma (M2, M3).
-4. Proteger as fronteiras com o teste de arquitetura (M4).
-5. Itens que dependem de decisão do time ou de infraestrutura de teste: M5, M6, B5 e B6.
+A refatoração não alterou rotas, payloads nem o schema do banco. Há uma diferença de resposta: `POST /chemical-shipment` passou a devolver os dados do responsável em `responsibleUser`, como já faziam a consulta, a listagem e a atualização. Antes o campo vinha nulo nessa rota.
+
+### 12.2. Pendências
+
+| # | Pendência | Onde | Por que não foi resolvida na refatoração |
+| --- | --- | --- | --- |
+| P1 | ⚠️ `PATCH /chemical-shipment/:id` não valida o corpo como os demais endpoints. Ele não informa o DTO esperado (`expectedType`), e o campo `status` de `UpdateChemicalShipmentDto` não tem decorators do class-validator. Com o `tsx` o corpo não é validado. No build com metadados, o `ValidationPipe` global rejeitaria o campo `status` (`forbidNonWhitelisted`) | `chemical-shipment.controller.ts`, `update-chemical-shipment.dto.ts` | Problema preexistente de comportamento. Corrigir muda a resposta da rota e merece uma tarefa própria, com teste E2E da atualização de status |
+| P2 | ⚠️ A carga aceita qualquer transição de status, desde que não esteja aprovada ou reprovada. O README descreve uma máquina de estados | `chemical-shipment.entity.ts` | Definir as transições permitidas é uma decisão de negócio, não uma refatoração |
+| P3 | ⚠️ `ChemicalShipmentController` repete, em cada endpoint, um `try/catch` que registra o erro e converte erros inesperados em 500 com mensagem própria. Os casos de uso e o repositório também registram o mesmo erro | `chemical-shipment.controller.ts` | Remover muda a mensagem das respostas 500. Recomenda-se centralizar o tratamento de erros inesperados num único filtro ou interceptor |
+| P4 | ⚠️ Remover um usuário que é responsável por cargas viola a chave estrangeira no banco e resulta em erro 500, sem uma regra de domínio que explique o motivo | `DeleteUserUseCase` | Decidir se usuários com histórico são removidos ou apenas inativados é uma regra de negócio |
+| P5 | ⚠️ Linguagem ubíqua: a carga é `ChemicalShipment` em Gestão de Cargas e `cargo` em Inspeções | Vários arquivos | Unificar exige alterar contratos públicos (seção 13.2) |
+| P6 | Os documentos da carga são um texto (`documentsIds`) dentro de Gestão de Cargas | `ChemicalShipment` | Pertencem a Conformidade Documental, que ainda não foi implementada. Mudar o campo altera payloads e o schema |
+| P7 | Nenhum teste executa SQL real | `test/` | Exige infraestrutura de teste com MySQL em Docker (seção 10.2) |
+| P8 | Schema Prisma num único arquivo | `prisma/schema.prisma` | Mudança de configuração do Prisma que deve ser validada com o banco (seção 9.6) |
+| P9 | Scaffold do NestJS na raiz (`GET /`) | `app.controller.ts`, `app.service.ts` | Remover elimina uma rota e os testes que a cobrem. Tarefa própria |
 
 ---
 
@@ -680,20 +717,20 @@ Sufixos:
 .enum.ts         enum de domínio
 .error.ts        erro de domínio específico
 .repository.ts   contrato ou implementação de repositório
-.contract.ts     contrato (porta) que não é repositório
+.contract.ts     contrato (porta) que não é repositório, interno ou publicado
 .use-case.ts     caso de uso
 .service.ts      serviço de domínio, de aplicação ou técnico
+.dto.ts          tipo de entrada ou saída (HTTP ou de casos de uso)
 .mapper.ts       conversor entre formatos
 .adapter.ts      adaptador de integração
 .config.ts       leitura de configuração
 .controller.ts   controller HTTP
-.dto.ts          objeto de entrada ou saída HTTP
 .guard.ts        guard HTTP
 .decorator.ts    decorator
 .filter.ts       filtro de exceção
 .pipe.ts         pipe
 .module.ts       módulo NestJS
-.spec.ts         teste unitário
+.spec.ts         teste unitário ou de arquitetura
 .e2e-spec.ts     teste E2E
 .mock.ts         fake ou mock de teste
 ```
@@ -714,7 +751,7 @@ Evite nomes genéricos como `carga.service.ts`, `utils.ts` ou `helpers.ts`. Um c
 | Item de inspeção | `InspectionItem` | Inspeções |
 | Conforme / não conforme | `InspectionItemResult.COMPLIANT` / `NON_COMPLIANT` | Inspeções |
 | Fiscal | `inspectorId` | Inspeções |
-| Usuário | `User` | Identidade e Acesso |
+| Usuário | `User`; para outros contextos, `UserSummary` | Identidade e Acesso |
 | Perfil de acesso | `UserRole` | Identidade e Acesso |
 | Situação do usuário | `UserStatus` | Identidade e Acesso |
 | Sessão | `Session` | Identidade e Acesso |
@@ -775,15 +812,14 @@ Nem toda funcionalidade passa por todas as etapas.
 
 ```text
 [ ] Nenhuma regra de negócio em controller, DTO, mapper ou repositório?
-[ ] Nenhum import de NestJS, Prisma ou HTTP no domínio?
-[ ] Nenhuma exceção HTTP na camada de aplicação?
-[ ] Nenhum import de arquivo interno de outro contexto?
 [ ] Nenhuma relação do Prisma navegada entre contextos?
 [ ] O módulo exporta apenas a API pública?
 [ ] Os contratos novos têm token e são injetados com @Inject?
 [ ] Os casos de uso têm testes com dependências substituídas?
-[ ] Lint, build, testes unitários e E2E passaram?
+[ ] Lint, build, testes unitários, de arquitetura e E2E passaram?
 ```
+
+As regras de import (NestJS e Prisma fora do domínio, nenhuma exceção HTTP na aplicação, nenhum import interno de outro contexto) não estão na lista porque o teste de arquitetura as verifica.
 
 ### 14.5. Evite complexidade prematura
 

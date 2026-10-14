@@ -498,6 +498,8 @@ Com DIP, Cargas depende de uma **abstração** e nunca da implementação do out
 
 Nas duas formas, o caso de uso consumidor depende só de uma interface. Se o fornecedor for extraído para outro serviço, basta registrar uma implementação remota (por exemplo, um cliente HTTP) para o mesmo contrato. Os casos de uso não mudam.
 
+No projeto, Gestão de Cargas consulta o responsável pela carga com o contrato `UserDirectory`, publicado por Identidade e Acesso (documento 02, seção 8.3). Não há porta do consumidor nesse caso porque os dados publicados servem a Gestão de Cargas como estão. Um adaptador apenas repassaria as chamadas.
+
 ---
 
 ## 7. Injeção de Dependência (DI)
