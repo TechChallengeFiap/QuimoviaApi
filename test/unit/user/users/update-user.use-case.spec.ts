@@ -12,6 +12,7 @@ import { Session } from '@/modules/user/domain/entities/session.entity.js';
 import { PasswordHasherMock } from '../../../mocks/password-hasher.mock.js';
 import { SessionRepositoryMock } from '../../../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
+import { buildSession, buildUser } from '../../../mocks/entities.mock.js';
 
 describe('UpdateUserUseCase', () => {
   let users: UserRepositoryMock;
@@ -29,7 +30,7 @@ describe('UpdateUserUseCase', () => {
   });
 
   function startSession(userId: string): Promise<Session> {
-    return sessions.create(Session.start({ userId, durationInSeconds: 3600 }));
+    return sessions.create(buildSession({ userId }));
   }
 
   afterEach(() => {
@@ -37,12 +38,7 @@ describe('UpdateUserUseCase', () => {
   });
 
   async function registerUser(email = 'maria@quimovia.com'): Promise<User> {
-    const user = User.create({
-      name: 'Maria Silva',
-      email,
-      passwordHash: 'hash:old',
-      role: UserRole.PORT_OPERATOR,
-    });
+    const user = buildUser({ email, passwordHash: 'hash:old' });
 
     return users.create(user);
   }

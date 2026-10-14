@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { Session } from '@/modules/user/domain/entities/session.entity.js';
 import { PrismaSessionRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-session.repository.js';
 import type { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import { buildSession } from '../../mocks/entities.mock.js';
 
 type PrismaMethod = (args: unknown) => Promise<unknown>;
 
@@ -37,11 +38,7 @@ describe('PrismaSessionRepository', () => {
   });
 
   it('grava a sessão com o usuário, o início e o prazo', async () => {
-    const session = Session.start({
-      userId: 'user-001',
-      durationInSeconds: 3600,
-      startedAt: persisted.createdAt,
-    });
+    const session = buildSession({ startedAt: persisted.createdAt });
     prisma.session.create.mockResolvedValueOnce({
       ...persisted,
       id: session.id,

@@ -2,7 +2,6 @@ import { jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { LoginUseCase } from '@/modules/user/application/use-cases/auth/login.use-case.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import {
   AccessDeniedError,
@@ -12,6 +11,7 @@ import { AccessTokenServiceMock } from '../../../mocks/access-token-service.mock
 import { PasswordHasherMock } from '../../../mocks/password-hasher.mock.js';
 import { SessionRepositoryMock } from '../../../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
+import { buildUser } from '../../../mocks/entities.mock.js';
 
 describe('LoginUseCase', () => {
   let users: UserRepositoryMock;
@@ -40,13 +40,7 @@ describe('LoginUseCase', () => {
 
   async function registerUser(status = UserStatus.ACTIVE): Promise<User> {
     return users.create(
-      User.create({
-        name: 'Maria Silva',
-        email: 'maria@quimovia.com',
-        passwordHash: 'hash:S3nhaForte!',
-        role: UserRole.PORT_OPERATOR,
-        status,
-      }),
+      buildUser({ status }),
     );
   }
 

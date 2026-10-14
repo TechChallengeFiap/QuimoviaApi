@@ -6,6 +6,7 @@ import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
 import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
+import { buildUser } from '../mocks/entities.mock.js';
 
 const PASSWORD = 'S3nhaForte!';
 
@@ -86,8 +87,7 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
 
   async function registerUser(email: string): Promise<User> {
     return users.create(
-      User.create({
-        name: 'Maria Silva',
+      buildUser({
         email,
         passwordHash: `hash:${PASSWORD}`,
         role: UserRole.SYSTEM_ADMIN,

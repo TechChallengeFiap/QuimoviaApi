@@ -2,13 +2,12 @@ import { jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { DeleteInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/delete-inspection.use-case.js';
 import { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
-import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
-import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import {
   BusinessRuleError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import { InspectionRepositoryMock } from '../../../mocks/inspection-repository.mock.js';
+import { buildInspection } from '../../../mocks/entities.mock.js';
 
 describe('DeleteInspectionUseCase', () => {
   let inspections: InspectionRepositoryMock;
@@ -29,13 +28,7 @@ describe('DeleteInspectionUseCase', () => {
 
   async function registerInspection(): Promise<Inspection> {
     return inspections.create(
-      Inspection.create({
-        cargoId: 'cargo-001',
-        compositionVersion: 1,
-        scope: InspectionScope.CARGO,
-        inspectorId: 'fiscal-001',
-        requirements: [InspectionRequirement.NO_LEAKAGE],
-      }),
+      buildInspection(),
     );
   }
 

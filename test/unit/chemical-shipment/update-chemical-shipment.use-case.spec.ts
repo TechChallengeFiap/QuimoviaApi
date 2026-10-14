@@ -12,6 +12,7 @@ import {
   UserDirectoryMock,
   userSummary,
 } from '../../mocks/user-directory.mock.js';
+import { buildChemicalShipment } from '../../mocks/entities.mock.js';
 
 describe('UpdateChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
@@ -39,11 +40,7 @@ describe('UpdateChemicalShipmentUseCase', () => {
   async function createSampleShipment(
     status: StatusShipment = StatusShipment.ANALYZING,
   ): Promise<ChemicalShipment> {
-    const shipment = ChemicalShipment.create({
-      productId: 'prod-001',
-      responsibleUserId: 'user-001',
-      documentsIds: 'doc-001',
-    });
+    const shipment = buildChemicalShipment();
     if (status !== StatusShipment.ANALYZING) {
       shipment.changeStatus(status);
     }

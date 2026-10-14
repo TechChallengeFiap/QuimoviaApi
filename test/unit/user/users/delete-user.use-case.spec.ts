@@ -2,9 +2,9 @@ import { jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { DeleteUserUseCase } from '@/modules/user/application/use-cases/users/delete-user.use-case.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
+import { buildUser } from '../../../mocks/entities.mock.js';
 
 describe('DeleteUserUseCase', () => {
   let users: UserRepositoryMock;
@@ -25,12 +25,7 @@ describe('DeleteUserUseCase', () => {
 
   async function registerUser(): Promise<User> {
     return users.create(
-      User.create({
-        name: 'Maria Silva',
-        email: 'maria@quimovia.com',
-        passwordHash: 'hash',
-        role: UserRole.PORT_OPERATOR,
-      }),
+      buildUser({ passwordHash: 'hash' }),
     );
   }
 

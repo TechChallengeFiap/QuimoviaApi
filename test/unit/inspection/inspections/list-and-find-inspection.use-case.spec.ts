@@ -2,12 +2,10 @@ import { jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { FindInspectionByIdUseCase } from '@/modules/inspection/application/use-cases/inspections/find-inspection-by-id.use-case.js';
 import { ListInspectionsUseCase } from '@/modules/inspection/application/use-cases/inspections/list-inspections.use-case.js';
-import { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
-import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
-import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { InspectionRepositoryMock } from '../../../mocks/inspection-repository.mock.js';
+import { buildInspection } from '../../../mocks/entities.mock.js';
 
 let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
@@ -22,13 +20,7 @@ afterEach(() => {
 });
 
 function newInspection(cargoId = 'cargo-001', inspectorId = 'fiscal-001') {
-  return Inspection.create({
-    cargoId,
-    compositionVersion: 1,
-    scope: InspectionScope.CARGO,
-    inspectorId,
-    requirements: [InspectionRequirement.NO_LEAKAGE],
-  });
+  return buildInspection({ cargoId, inspectorId });
 }
 
 describe('FindInspectionByIdUseCase', () => {

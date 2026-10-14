@@ -2,10 +2,10 @@ import { jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/find-user-by-id.use-case.js';
 import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/list-users.use-case.js';
-import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
+import { buildUser } from '../../../mocks/entities.mock.js';
 
 let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
@@ -31,12 +31,7 @@ describe('FindUserByIdUseCase', () => {
   it('retorna o usuário quando ele existe', async () => {
     const users = new UserRepositoryMock();
     const user = await users.create(
-      User.create({
-        name: 'Maria Silva',
-        email: 'maria@quimovia.com',
-        passwordHash: 'hash',
-        role: UserRole.PORT_OPERATOR,
-      }),
+      buildUser({ passwordHash: 'hash' }),
     );
 
     const useCase = new FindUserByIdUseCase(users);
@@ -72,15 +67,14 @@ describe('ListUsersUseCase', () => {
   it('filtra por perfil', async () => {
     const users = new UserRepositoryMock();
     await users.create(
-      User.create({
+      buildUser({
         name: 'Operador',
         email: 'operador@quimovia.com',
         passwordHash: 'hash',
-        role: UserRole.PORT_OPERATOR,
       }),
     );
     await users.create(
-      User.create({
+      buildUser({
         name: 'Gestor',
         email: 'gestor@quimovia.com',
         passwordHash: 'hash',

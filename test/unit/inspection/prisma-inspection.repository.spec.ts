@@ -1,11 +1,11 @@
 import { jest } from '@jest/globals';
-import { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
 import { InspectionItemResult } from '@/modules/inspection/domain/enums/inspection-item-result.enum.js';
 import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { PrismaInspectionRepository } from '@/modules/inspection/infrastructure/persistence/prisma/prisma-inspection.repository.js';
 import type { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import { buildInspection } from '../../mocks/entities.mock.js';
 
 type PrismaMethod = (args: unknown) => Promise<unknown>;
 
@@ -67,13 +67,7 @@ describe('PrismaInspectionRepository', () => {
   });
 
   it('grava a inspeção junto com as verificações previstas', async () => {
-    const inspection = Inspection.create({
-      cargoId: 'cargo-001',
-      compositionVersion: 1,
-      scope: InspectionScope.CARGO,
-      inspectorId: 'fiscal-001',
-      requirements: [InspectionRequirement.NO_LEAKAGE],
-    });
+    const inspection = buildInspection();
     prisma.inspection.create.mockResolvedValueOnce(persisted);
 
     await repository.create(inspection);

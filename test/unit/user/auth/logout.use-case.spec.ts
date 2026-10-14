@@ -4,6 +4,7 @@ import { LogoutUseCase } from '@/modules/user/application/use-cases/auth/logout.
 import { Session } from '@/modules/user/domain/entities/session.entity.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { SessionRepositoryMock } from '../../../mocks/session-repository.mock.js';
+import { buildSession } from '../../../mocks/entities.mock.js';
 
 describe('LogoutUseCase', () => {
   let sessions: SessionRepositoryMock;
@@ -24,7 +25,7 @@ describe('LogoutUseCase', () => {
 
   function startSession(): Promise<Session> {
     return sessions.create(
-      Session.start({ userId: 'user-001', durationInSeconds: 3600 }),
+      buildSession(),
     );
   }
 

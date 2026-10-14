@@ -4,13 +4,13 @@ import { ChemicalShipmentController } from '@/modules/chemical-shipment/presenta
 import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/create-chemical-shipment.use-case.js';
 import { ListChemicalShipmentsUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/list-chemical-shipments.use-case.js';
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/find-chemical-shipment-by-id.use-case.js';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { BadRequestException } from '@nestjs/common';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
 import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
 import { userSummary } from '../../mocks/user-directory.mock.js';
+import { buildChemicalShipment } from '../../mocks/entities.mock.js';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
@@ -20,11 +20,7 @@ describe('ChemicalShipmentController', () => {
   let updateUseCase: jest.Mocked<UpdateChemicalShipmentUseCase>;
   let deleteUseCase: jest.Mocked<DeleteChemicalShipmentUseCase>;
 
-  const mockShipment = ChemicalShipment.create({
-    productId: 'prod-001',
-    responsibleUserId: 'user-001',
-    documentsIds: 'doc-001',
-  });
+  const mockShipment = buildChemicalShipment();
 
   const mockDetails: ChemicalShipmentDetails = {
     shipment: mockShipment,

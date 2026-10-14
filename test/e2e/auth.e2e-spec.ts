@@ -18,6 +18,7 @@ import { ProtectedRouteModule } from '../mocks/protected-route.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
+import { buildUser } from '../mocks/entities.mock.js';
 
 const PASSWORD = 'S3nhaForte!';
 
@@ -70,13 +71,7 @@ describe('AuthController (e2e)', () => {
     status = UserStatus.ACTIVE,
   ): Promise<User> {
     return users.create(
-      User.create({
-        name: 'Maria Silva',
-        email,
-        passwordHash: `hash:${PASSWORD}`,
-        role: UserRole.PORT_OPERATOR,
-        status,
-      }),
+      buildUser({ email, passwordHash: `hash:${PASSWORD}`, status }),
     );
   }
 

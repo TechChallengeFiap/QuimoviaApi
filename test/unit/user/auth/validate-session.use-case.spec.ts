@@ -12,6 +12,7 @@ import { AuthenticationError } from '@/shared/domain/errors/domain.error.js';
 import { AccessTokenServiceMock } from '../../../mocks/access-token-service.mock.js';
 import { SessionRepositoryMock } from '../../../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
+import { buildSession, buildUser } from '../../../mocks/entities.mock.js';
 
 describe('ValidateSessionUseCase', () => {
   let users: UserRepositoryMock;
@@ -40,15 +41,10 @@ describe('ValidateSessionUseCase', () => {
     token: string;
   }> {
     const user = await users.create(
-      User.create({
-        name: 'Maria Silva',
-        email: 'maria@quimovia.com',
-        passwordHash: 'hash:S3nhaForte!',
-        role: UserRole.TECHNICAL_MANAGER,
-      }),
+      buildUser({ role: UserRole.TECHNICAL_MANAGER }),
     );
     const session = await sessions.create(
-      Session.start({ userId: user.id, durationInSeconds: 3600 }),
+      buildSession({ userId: user.id }),
     );
     const token = await accessTokens.issue(
       { userId: user.id, sessionId: session.id },
@@ -98,7 +94,7 @@ describe('ValidateSessionUseCase', () => {
   it('recusa o token de uma sessão expirada', async () => {
     const { user } = await loggedInUser();
     const expired = await sessions.create(
-      Session.start({
+      buildSession({
         userId: user.id,
         durationInSeconds: 60,
         startedAt: new Date(Date.now() - 120_000),

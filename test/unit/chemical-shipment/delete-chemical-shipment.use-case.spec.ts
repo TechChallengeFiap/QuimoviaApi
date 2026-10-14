@@ -1,9 +1,9 @@
 import { jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import { buildChemicalShipment } from '../../mocks/entities.mock.js';
 
 describe('DeleteChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
@@ -30,11 +30,7 @@ describe('DeleteChemicalShipmentUseCase', () => {
 
   it('deve remover a carga química quando encontrada', async () => {
     const shipment = await chemicalShipments.create(
-      ChemicalShipment.create({
-        productId: 'prod-001',
-        responsibleUserId: 'user-001',
-        documentsIds: 'doc-001',
-      }),
+      buildChemicalShipment(),
     );
 
     await useCase.execute(shipment.id);
@@ -44,11 +40,7 @@ describe('DeleteChemicalShipmentUseCase', () => {
 
   it('registra o erro no log e o propaga quando a remoção falha', async () => {
     const shipment = await chemicalShipments.create(
-      ChemicalShipment.create({
-        productId: 'prod-001',
-        responsibleUserId: 'user-001',
-        documentsIds: 'doc-001',
-      }),
+      buildChemicalShipment(),
     );
     const failure = new Error('Falha de conexão com o banco');
     jest.spyOn(chemicalShipments, 'delete').mockRejectedValueOnce(failure);

@@ -4,6 +4,7 @@ import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { PrismaUserRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-user.repository.js';
 import type { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import { buildUser } from '../../mocks/entities.mock.js';
 
 type PrismaMethod = (args: unknown) => Promise<unknown>;
 
@@ -27,12 +28,7 @@ describe('PrismaUserRepository', () => {
   });
 
   function loggedInUser(): User {
-    const user = User.create({
-      name: 'Maria Silva',
-      email: 'maria@quimovia.com',
-      passwordHash: 'hash:S3nhaForte!',
-      role: UserRole.PORT_OPERATOR,
-    });
+    const user = buildUser();
     user.registerLogin(new Date('2026-10-07T12:00:00.000Z'));
 
     return user;

@@ -4,13 +4,13 @@ import { UpdateInspectionUseCase } from '@/modules/inspection/application/use-ca
 import { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
 import { InspectionItemResult } from '@/modules/inspection/domain/enums/inspection-item-result.enum.js';
 import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
-import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import {
   BusinessRuleError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import { InspectionRepositoryMock } from '../../../mocks/inspection-repository.mock.js';
+import { buildInspection } from '../../../mocks/entities.mock.js';
 
 describe('UpdateInspectionUseCase', () => {
   let inspections: InspectionRepositoryMock;
@@ -31,11 +31,7 @@ describe('UpdateInspectionUseCase', () => {
 
   async function registerInspection(): Promise<Inspection> {
     return inspections.create(
-      Inspection.create({
-        cargoId: 'cargo-001',
-        compositionVersion: 1,
-        scope: InspectionScope.CARGO,
-        inspectorId: 'fiscal-001',
+      buildInspection({
         requirements: [
           InspectionRequirement.PACKAGING_INTEGRITY,
           InspectionRequirement.NO_LEAKAGE,

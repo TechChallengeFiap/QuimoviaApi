@@ -1,11 +1,11 @@
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/find-chemical-shipment-by-id.use-case.js';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
 import {
   UserDirectoryMock,
   userSummary,
 } from '../../mocks/user-directory.mock.js';
+import { buildChemicalShipment } from '../../mocks/entities.mock.js';
 
 describe('FindChemicalShipmentByIdUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
@@ -27,11 +27,7 @@ describe('FindChemicalShipmentByIdUseCase', () => {
 
   it('deve retornar a carga química e o responsável quando encontrada', async () => {
     const shipment = await chemicalShipments.create(
-      ChemicalShipment.create({
-        productId: 'prod-001',
-        responsibleUserId: 'user-001',
-        documentsIds: 'doc-001',
-      }),
+      buildChemicalShipment(),
     );
 
     const result = await useCase.execute(shipment.id);
@@ -42,11 +38,7 @@ describe('FindChemicalShipmentByIdUseCase', () => {
 
   it('devolve o responsável nulo quando ele não é encontrado', async () => {
     const shipment = await chemicalShipments.create(
-      ChemicalShipment.create({
-        productId: 'prod-001',
-        responsibleUserId: 'user-removido',
-        documentsIds: 'doc-001',
-      }),
+      buildChemicalShipment({ responsibleUserId: 'user-removido' }),
     );
 
     const result = await useCase.execute(shipment.id);
