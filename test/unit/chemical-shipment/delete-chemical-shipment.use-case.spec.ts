@@ -2,11 +2,11 @@ import { jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import { ChemicalShipmentRepositoryMock } from '../../mocks/chemical-shipment-repository.mock.js';
 import { buildChemicalShipment } from '../../mocks/entities.mock.js';
 
 describe('DeleteChemicalShipmentUseCase', () => {
-  let chemicalShipments: ChemicalShipmentMock;
+  let chemicalShipments: ChemicalShipmentRepositoryMock;
   let useCase: DeleteChemicalShipmentUseCase;
   let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
@@ -14,7 +14,7 @@ describe('DeleteChemicalShipmentUseCase', () => {
     loggerError = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
-    chemicalShipments = new ChemicalShipmentMock();
+    chemicalShipments = new ChemicalShipmentRepositoryMock();
     useCase = new DeleteChemicalShipmentUseCase(chemicalShipments);
   });
 

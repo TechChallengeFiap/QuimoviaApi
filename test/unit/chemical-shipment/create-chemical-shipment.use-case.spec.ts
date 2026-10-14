@@ -4,18 +4,18 @@ import {
   BusinessRuleError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import { ChemicalShipmentRepositoryMock } from '../../mocks/chemical-shipment-repository.mock.js';
 import {
   UserDirectoryMock,
   userSummary,
 } from '../../mocks/user-directory.mock.js';
 
 describe('CreateChemicalShipmentUseCase', () => {
-  let chemicalShipments: ChemicalShipmentMock;
+  let chemicalShipments: ChemicalShipmentRepositoryMock;
   let useCase: CreateChemicalShipmentUseCase;
 
   beforeEach(() => {
-    chemicalShipments = new ChemicalShipmentMock();
+    chemicalShipments = new ChemicalShipmentRepositoryMock();
     useCase = new CreateChemicalShipmentUseCase(
       chemicalShipments,
       new UserDirectoryMock([

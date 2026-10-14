@@ -3,14 +3,14 @@ import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/ch
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/shared/domain/pagination.js';
 import { jest } from '@jest/globals';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import { ChemicalShipmentRepositoryMock } from '../../mocks/chemical-shipment-repository.mock.js';
 import {
   UserDirectoryMock,
   userSummary,
 } from '../../mocks/user-directory.mock.js';
 
 describe('ListChemicalShipmentsUseCase', () => {
-  let chemicalShipments: ChemicalShipmentMock;
+  let chemicalShipments: ChemicalShipmentRepositoryMock;
   let users: UserDirectoryMock;
   let useCase: ListChemicalShipmentsUseCase;
 
@@ -35,7 +35,7 @@ describe('ListChemicalShipmentsUseCase', () => {
   };
 
   beforeEach(() => {
-    chemicalShipments = new ChemicalShipmentMock();
+    chemicalShipments = new ChemicalShipmentRepositoryMock();
     users = new UserDirectoryMock([
       userSummary({ id: 'user-001', name: 'Operador Teste' }),
       userSummary({ id: 'user-002', name: 'Segundo Operador' }),

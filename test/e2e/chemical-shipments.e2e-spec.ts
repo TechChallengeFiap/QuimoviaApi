@@ -12,7 +12,7 @@ import { USER_DIRECTORY } from '@/modules/user/public/index.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
-import { ChemicalShipmentMock } from '../mocks/chemical-shipment.mock.js';
+import { ChemicalShipmentRepositoryMock } from '../mocks/chemical-shipment-repository.mock.js';
 import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
 import {
   UserDirectoryMock,
@@ -27,7 +27,7 @@ import {
  */
 describe('ChemicalShipmentController (e2e)', () => {
   let app: INestApplication;
-  let shipments: ChemicalShipmentMock;
+  let shipments: ChemicalShipmentRepositoryMock;
 
   const payload = {
     productId: 'prod-001',
@@ -38,7 +38,7 @@ describe('ChemicalShipmentController (e2e)', () => {
   beforeEach(async () => {
     // Os casos de uso registram os erros esperados (404, 422) no log.
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    shipments = new ChemicalShipmentMock();
+    shipments = new ChemicalShipmentRepositoryMock();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [ChemicalShipmentModule],

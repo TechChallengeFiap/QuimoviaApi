@@ -7,7 +7,7 @@ import {
   BusinessRuleError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import { ChemicalShipmentRepositoryMock } from '../../mocks/chemical-shipment-repository.mock.js';
 import {
   UserDirectoryMock,
   userSummary,
@@ -15,7 +15,7 @@ import {
 import { buildChemicalShipment } from '../../mocks/entities.mock.js';
 
 describe('UpdateChemicalShipmentUseCase', () => {
-  let chemicalShipments: ChemicalShipmentMock;
+  let chemicalShipments: ChemicalShipmentRepositoryMock;
   let useCase: UpdateChemicalShipmentUseCase;
   let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
@@ -23,7 +23,7 @@ describe('UpdateChemicalShipmentUseCase', () => {
     loggerError = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
-    chemicalShipments = new ChemicalShipmentMock();
+    chemicalShipments = new ChemicalShipmentRepositoryMock();
     useCase = new UpdateChemicalShipmentUseCase(
       chemicalShipments,
       new UserDirectoryMock([

@@ -5,7 +5,8 @@ import type {
 } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import type { Page } from '@/shared/domain/pagination.js';
 
-export class ChemicalShipmentMock implements ChemicalShipmentRepository {
+/** Implementação em memória de ChemicalShipmentRepository, para uso nos testes. */
+export class ChemicalShipmentRepositoryMock implements ChemicalShipmentRepository {
   private readonly chemicalShipments = new Map<string, ChemicalShipment>();
 
   async create(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {

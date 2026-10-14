@@ -1,6 +1,6 @@
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/find-chemical-shipment-by-id.use-case.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
+import { ChemicalShipmentRepositoryMock } from '../../mocks/chemical-shipment-repository.mock.js';
 import {
   UserDirectoryMock,
   userSummary,
@@ -8,11 +8,11 @@ import {
 import { buildChemicalShipment } from '../../mocks/entities.mock.js';
 
 describe('FindChemicalShipmentByIdUseCase', () => {
-  let chemicalShipments: ChemicalShipmentMock;
+  let chemicalShipments: ChemicalShipmentRepositoryMock;
   let useCase: FindChemicalShipmentByIdUseCase;
 
   beforeEach(() => {
-    chemicalShipments = new ChemicalShipmentMock();
+    chemicalShipments = new ChemicalShipmentRepositoryMock();
     useCase = new FindChemicalShipmentByIdUseCase(
       chemicalShipments,
       new UserDirectoryMock([userSummary({ id: 'user-001' })]),
