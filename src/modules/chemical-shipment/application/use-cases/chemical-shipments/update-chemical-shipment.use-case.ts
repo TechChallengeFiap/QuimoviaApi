@@ -41,7 +41,7 @@ export class UpdateChemicalShipmentUseCase {
       const chemicalShipment = await this.chemicalShipments.findById(id);
 
       if (!chemicalShipment) {
-        throw new ResourceNotFoundError('Carga Química', id);
+        throw new ResourceNotFoundError('Carga química', id);
       }
 
       if (input.status) {

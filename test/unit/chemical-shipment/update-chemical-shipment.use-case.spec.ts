@@ -84,7 +84,7 @@ describe('UpdateChemicalShipmentUseCase', () => {
       }),
     ).rejects.toThrow(ResourceNotFoundError);
     expect(loggerError).toHaveBeenCalledWith(
-      'Erro ao atualizar a carga química com id shipment-inexistente: Carga Química não encontrado(a) para o identificador "shipment-inexistente".',
+      'Erro ao atualizar a carga química com id shipment-inexistente: Carga química não encontrado(a) para o identificador "shipment-inexistente".',
       expect.any(String),
     );
   });

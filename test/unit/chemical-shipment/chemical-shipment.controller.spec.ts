@@ -179,7 +179,7 @@ describe('ChemicalShipmentController', () => {
 
     it('deve repassar ResourceNotFoundError para ser tratado pelo filtro de domínio', async () => {
       findByIdUseCase.execute.mockRejectedValue(
-        new ResourceNotFoundError('Carga Química', 'inexistente'),
+        new ResourceNotFoundError('Carga química', 'inexistente'),
       );
 
       await expect(

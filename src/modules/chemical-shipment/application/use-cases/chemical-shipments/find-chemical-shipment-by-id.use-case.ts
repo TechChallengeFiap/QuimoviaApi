@@ -24,7 +24,7 @@ export class FindChemicalShipmentByIdUseCase {
       const shipment = await this.chemicalShipments.findById(id);
 
       if (!shipment) {
-        throw new ResourceNotFoundError('Carga Química', id);
+        throw new ResourceNotFoundError('Carga química', id);
       }
 
       const responsibleUser = await this.users.findById(
