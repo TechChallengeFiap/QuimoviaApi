@@ -1,9 +1,9 @@
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import type {
   ChemicalShipmentPage,
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
-} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
 export class ChemicalShipmentMock implements ChemicalShipmentRepository {
   private readonly chemicalShipments = new Map<string, ChemicalShipment>();

@@ -1,13 +1,13 @@
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import {
   USER_REPOSITORY,
   type UserRepository,
 } from '@/modules/user/domain/repositories/user.repository.js';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { Inject, Injectable } from '@nestjs/common';
-import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
 export interface UpdateChemicalShipmentInput {
   status?: StatusShipment;

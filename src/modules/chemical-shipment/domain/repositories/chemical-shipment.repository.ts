@@ -1,5 +1,5 @@
-import { ChemicalShipment } from '../entities/chemical-shipment/chemical-shipment.entity.ts';
-import { StatusShipment } from '../value-objects/chemical-shipment/status-shipment.vo.ts';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 
 export interface ChemicalShipmentPage {
   items: ChemicalShipment[];

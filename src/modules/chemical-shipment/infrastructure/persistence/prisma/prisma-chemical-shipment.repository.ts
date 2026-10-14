@@ -1,18 +1,18 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import type {
   ChemicalShipmentModel as PersistedChemicalShipment,
   UserModel as PersistedUser,
-} from '@/generated/prisma/models.ts';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { User } from '@/modules/user/domain/entities/user.entity.ts';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.ts';
-import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.ts';
+} from '@/generated/prisma/models.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import type {
   ChemicalShipmentPage,
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
-} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
 type PersistedChemicalShipmentWithRelations = PersistedChemicalShipment & {
   responsibleUser?: PersistedUser | null;

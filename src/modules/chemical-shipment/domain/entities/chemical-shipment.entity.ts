@@ -1,8 +1,8 @@
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { BusinessRuleError } from '@/shared/domain/errors/domain.error.ts';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
+import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
 import { randomUUID } from 'crypto';
 
-import { User } from '@/modules/user/domain/entities/user.entity.ts';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
 
 export interface CreateChemicalShipmentData {
   productId: string;

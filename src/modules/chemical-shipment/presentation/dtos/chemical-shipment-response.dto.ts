@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.ts';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
+import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.js';
 
 interface ChemicalShipmentResponseDtoData {
   id: string;

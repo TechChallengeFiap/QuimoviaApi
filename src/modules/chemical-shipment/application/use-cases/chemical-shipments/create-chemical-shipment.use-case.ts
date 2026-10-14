@@ -1,20 +1,20 @@
 import {
   ChemicalShipment,
   CreateChemicalShipmentData,
-} from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+} from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import {
   USER_REPOSITORY,
   type UserRepository,
 } from '@/modules/user/domain/repositories/user.repository.js';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import {
   BadRequestException,
   Inject,
   Injectable,
   Logger,
 } from '@nestjs/common';
-import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
 @Injectable()
 export class CreateChemicalShipmentUseCase {

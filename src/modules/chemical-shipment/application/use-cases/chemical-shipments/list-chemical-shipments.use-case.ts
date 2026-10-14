@@ -1,15 +1,15 @@
-import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type {
   ChemicalShipmentPage,
   ChemicalShipmentRepository,
-} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 20;
 
-export interface ListChemicalShipmentInput {
+export interface ListChemicalShipmentsInput {
   status?: StatusShipment;
   productId?: string;
   responsibleUserId?: string;
@@ -19,8 +19,8 @@ export interface ListChemicalShipmentInput {
 }
 
 @Injectable()
-export class ListChemicalShipmentUseCase {
-  private readonly logger = new Logger(ListChemicalShipmentUseCase.name);
+export class ListChemicalShipmentsUseCase {
+  private readonly logger = new Logger(ListChemicalShipmentsUseCase.name);
 
   constructor(
     @Inject(CHEMICAL_SHIPMENT_REPOSITORY)
@@ -28,7 +28,7 @@ export class ListChemicalShipmentUseCase {
   ) {}
 
   async execute(
-    input: ListChemicalShipmentInput = {},
+    input: ListChemicalShipmentsInput = {},
   ): Promise<ChemicalShipmentPage> {
     try {
       return await this.chemicalShipments.list({

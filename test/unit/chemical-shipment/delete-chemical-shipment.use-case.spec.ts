@@ -1,7 +1,7 @@
-import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.ts';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.ts';
+import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
 
 describe('DeleteChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;

@@ -1,15 +1,15 @@
 import {
-  ListChemicalShipmentUseCase,
+  ListChemicalShipmentsUseCase,
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
-} from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.ts';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.ts';
+} from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/list-chemical-shipments.use-case.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
+import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
 
-describe('ListChemicalShipmentUseCase', () => {
+describe('ListChemicalShipmentsUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
-  let useCase: ListChemicalShipmentUseCase;
+  let useCase: ListChemicalShipmentsUseCase;
 
   const createShipment = (props: {
     id: string;
@@ -33,7 +33,7 @@ describe('ListChemicalShipmentUseCase', () => {
 
   beforeEach(() => {
     chemicalShipments = new ChemicalShipmentMock();
-    useCase = new ListChemicalShipmentUseCase(chemicalShipments);
+    useCase = new ListChemicalShipmentsUseCase(chemicalShipments);
   });
 
   describe('Paginação e conversão de parâmetros', () => {

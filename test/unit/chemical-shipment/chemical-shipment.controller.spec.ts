@@ -1,25 +1,25 @@
 import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ChemicalShipmentController } from '@/modules/chemical-shipment/presentation/controllers/chemical-shipment.controller.ts';
-import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
-import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.ts';
-import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { User } from '@/modules/user/domain/entities/user.entity.ts';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.ts';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
+import { ChemicalShipmentController } from '@/modules/chemical-shipment/presentation/controllers/chemical-shipment.controller.js';
+import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/create-chemical-shipment.use-case.js';
+import { ListChemicalShipmentsUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/list-chemical-shipments.use-case.js';
+import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/find-chemical-shipment-by-id.use-case.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
-import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.ts';
+import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
+import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
   let createUseCase: jest.Mocked<CreateChemicalShipmentUseCase>;
-  let listUseCase: jest.Mocked<ListChemicalShipmentUseCase>;
+  let listUseCase: jest.Mocked<ListChemicalShipmentsUseCase>;
   let findByIdUseCase: jest.Mocked<FindChemicalShipmentByIdUseCase>;
   let updateUseCase: jest.Mocked<UpdateChemicalShipmentUseCase>;
   let deleteUseCase: jest.Mocked<DeleteChemicalShipmentUseCase>;
@@ -37,7 +37,7 @@ describe('ChemicalShipmentController', () => {
 
     listUseCase = {
       execute: jest.fn(),
-    } as unknown as jest.Mocked<ListChemicalShipmentUseCase>;
+    } as unknown as jest.Mocked<ListChemicalShipmentsUseCase>;
 
     findByIdUseCase = {
       execute: jest.fn(),
@@ -55,7 +55,7 @@ describe('ChemicalShipmentController', () => {
       controllers: [ChemicalShipmentController],
       providers: [
         { provide: CreateChemicalShipmentUseCase, useValue: createUseCase },
-        { provide: ListChemicalShipmentUseCase, useValue: listUseCase },
+        { provide: ListChemicalShipmentsUseCase, useValue: listUseCase },
         { provide: FindChemicalShipmentByIdUseCase, useValue: findByIdUseCase },
         { provide: UpdateChemicalShipmentUseCase, useValue: updateUseCase },
         { provide: DeleteChemicalShipmentUseCase, useValue: deleteUseCase },

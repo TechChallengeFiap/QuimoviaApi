@@ -1,6 +1,6 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { CreateChemicalShipmentDTO } from './create-chemical-shipment.dto.ts';
-import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 
 export class UpdateChemicalShipmentDto extends PartialType(
   CreateChemicalShipmentDTO,
