@@ -25,7 +25,7 @@ src/
 ├── main.ts               inicializa a aplicação: ValidationPipe, filtro de erros, Swagger
 ├── app.module.ts         compõe a aplicação a partir dos módulos de contexto
 ├── modules/              um diretório por contexto: é aqui que você vai trabalhar
-├── shared/               erros de domínio, conexão com o banco, filtro e pipe globais
+├── shared/               erros de domínio, conexão com o banco, filtro, pipe e decorators do Swagger
 └── generated/prisma/     Prisma Client gerado (não editar)
 prisma/                   schema.prisma e migrations
 test/                     architecture/, unit/, e2e/ e mocks/
@@ -93,9 +93,9 @@ src/modules/<contexto>/
 | **domain** | Entidades, value objects, enums e contratos de repositório. Garante as regras que valem sempre | Importar NestJS, Prisma, outras camadas ou outro contexto |
 | **application** | Casos de uso: buscar pelos contratos, acionar o domínio, salvar e devolver o resultado | Importar infraestrutura, presentation, Prisma ou exceções HTTP. Do NestJS, só `@Injectable`, `@Inject` e `Logger` |
 | **infrastructure** | Implementar os contratos com uma tecnologia: Prisma, hash, JWT, configuração | Tomar decisões de negócio ou deixar tipos do Prisma escaparem |
-| **presentation** | Receber a requisição, validar o formato, chamar **um** caso de uso e montar a resposta | Conter regra de negócio ou acessar a infraestrutura |
+| **presentation** | Receber a requisição, validar o formato, chamar **um** caso de uso, montar a resposta e documentar a rota no Swagger | Conter regra de negócio, tratar erros ou acessar a infraestrutura |
 
-Duas convenções dão forma às camadas internas. As **entidades** têm estado privado (campos `#`), sem setters públicos, e só mudam por métodos com nome de negócio, como `start()` e `complete()`, que lançam `BusinessRuleError` quando algo é proibido. Elas são criadas por `create()`, que valida os dados, ou reconstruídas do banco por `restore()`, sem revalidar, e referenciam outros agregados apenas pelo ID (`cargoId`, `inspectorId`). Os **casos de uso** têm um único método `execute`, com o tipo de entrada declarado no mesmo arquivo, e ficam com as regras que dependem de dados fora do agregado, como a unicidade de um e-mail.
+Duas convenções dão forma às camadas internas. As **entidades** têm estado privado (campos `#`), sem setters públicos, e só mudam por métodos com nome de negócio, como `start()` e `complete()`, que lançam `BusinessRuleError` quando algo é proibido. Elas são criadas por `create()`, que valida os dados, ou reconstruídas do banco por `restore()`, sem revalidar, e referenciam outros agregados apenas pelo ID (`cargoId`, `inspectorId`). Os **casos de uso** têm um único método `execute`. Quando a entrada é a mesma da criação da entidade, eles reaproveitam o tipo dela (`CreateInspectionData`); senão, declaram o tipo de entrada no próprio arquivo. Eles também ficam com as regras que dependem de dados fora do agregado, como a unicidade de um e-mail.
 
 A presentation e o domínio validam coisas diferentes. O DTO valida o **formato** ("é um UUID?") e responde 400. A entidade valida a **regra** ("uma inspeção de item exige o ID do item") e lança um erro de domínio, que vira 422. A validação da entidade vale mesmo quando o caso de uso não é chamado por HTTP.
 
@@ -216,7 +216,7 @@ await Test.createTestingModule({ imports: [InspectionModule] })
 
 ### 3.3. Como os erros atravessam as camadas
 
-O domínio lança erros de negócio sem saber nada de HTTP, o caso de uso os deixa propagar, e o `DomainExceptionFilter`, registrado globalmente, os traduz na borda. Por isso o mesmo caso de uso funciona para uma requisição, uma fila ou uma tarefa agendada. Use os erros de `shared/domain/errors/domain.error.ts`:
+O domínio lança erros de negócio sem saber nada de HTTP. O caso de uso registra o erro com o `Logger` e o deixa propagar, e o `DomainExceptionFilter`, registrado globalmente, o traduz na borda. Controller e repositório não capturam erros: cada erro é registrado uma vez e traduzido uma vez. Por isso o mesmo caso de uso funciona para uma requisição, uma fila ou uma tarefa agendada. Use os erros de `shared/domain/errors/domain.error.ts`:
 
 | Erro | Quando usar | HTTP |
 | --- | --- | --- |
@@ -264,7 +264,7 @@ export class CreateInspectionUseCase {
     private readonly inspections: InspectionRepository,
   ) {}
 
-  async execute(input: CreateInspectionInput): Promise<Inspection> {
+  async execute(input: CreateInspectionData): Promise<Inspection> {
     const inspection = Inspection.create(input);
     return this.inspections.create(inspection);
   }
@@ -324,7 +324,7 @@ async createInspection(
 
 Repare nas duas validações trabalhando juntas. O DTO aceita `cargoItemId` ausente, porque o formato está correto, mas `Inspection.create()` o exige quando o escopo é `CARGO_ITEM`. O `validationPipeFor(Dto)` informa ao pipe qual DTO validar, já que o `tsx` não emite metadados de tipo.
 
-**6. Registre no módulo e teste.** Registre o caso de uso, o controller e, se o contrato for novo, o `useClass` no `InspectionModule` (seção 3.2). Depois escreva três testes: o da entidade, sem mocks (`test/unit/inspection/inspection.entity.spec.ts`); o do caso de uso, com o `InspectionRepositoryMock`; e o da rota, em `test/e2e/inspections.e2e-spec.ts`, que espera 201 para um cadastro válido, 400 para um payload malformado e 422 para uma regra violada.
+**6. Registre no módulo e teste.** Registre o caso de uso, o controller e, se o contrato for novo, o `useClass` no `InspectionModule` (seção 3.2). Depois escreva três testes: o da entidade, sem mocks (`test/unit/inspection/inspection.entity.spec.ts`); o do caso de uso, com o `InspectionRepositoryMock` e a fábrica `buildInspection()` (`test/mocks/entities.mock.ts`), que monta uma inspeção válida; e o da rota, em `test/e2e/inspections.e2e-spec.ts`, que espera 201 para um cadastro válido, 400 para um payload malformado e 422 para uma regra violada.
 
 Quando a funcionalidade **altera** um agregado existente, o roteiro muda pouco: o caso de uso busca o agregado, chama os métodos de negócio e salva. É o que faz o `UpdateInspectionUseCase` (simplificado):
 
@@ -494,7 +494,9 @@ flowchart TD
 | Import de `@/modules/<outro>/domain/...` ou `include` de tabela de outro contexto | Guarde o ID e use a API pública do outro contexto |
 | Construtor sem `@Inject(...)` | Declare `@Inject(TOKEN)` ou `@Inject(Classe)` em todo parâmetro |
 | `exports` com repositórios ou contratos técnicos | Exporte só os tokens da API pública |
-| `try/catch` no controller para converter erros | Deixe o erro propagar até o filtro global |
+| `try/catch` no controller ou no repositório para registrar ou converter erros | Deixe o caso de uso registrar e o filtro global traduzir |
+| Exemplo de erro `{ message, error, statusCode }`, parâmetro `id` ou paginação escritos à mão no Swagger | Use `ApiErrorResponse`, `ApiIdParam` e `ApiPaginationQuery` (`shared/presentation/docs/`) |
+| Entidade montada à mão num teste que só precisa de uma entidade válida | Use as fábricas de `test/mocks/entities.mock.ts`, como `buildUser({ status })` |
 | Interface para cada classe, ou adaptador que só repassa chamadas | Crie contratos só nas fronteiras |
 
 ### 6.3. Como verificar
@@ -512,7 +514,7 @@ Além dele, cada componente novo tem o seu teste:
 | O que você criou | Teste | Com o quê |
 | --- | --- | --- |
 | Entidade ou value object | Unitário, em `test/unit/<contexto>/` | Nada: o domínio é puro |
-| Caso de uso | Unitário | Fakes dos contratos, entregues pelo construtor (`test/mocks/`) |
+| Caso de uso | Unitário | Fakes dos contratos, entregues pelo construtor, e entidades das fábricas (`test/mocks/`) |
 | Repositório Prisma | Unitário | Fake do `PrismaService` |
 | Rota HTTP | E2E, em `test/e2e/` | Módulo real, com repositórios, contratos externos e `PrismaService` trocados pelo token |
 
