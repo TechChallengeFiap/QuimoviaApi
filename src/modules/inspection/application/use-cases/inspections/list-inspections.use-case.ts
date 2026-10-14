@@ -1,7 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
-import type { InspectionRepository } from '@/modules/inspection/domain/repositories/inspection.repository.js';
+import type {
+  InspectionRepository,
+  InspectionSearchFilters,
+} from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import type { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
 import {
   DEFAULT_PAGE,
@@ -10,13 +12,7 @@ import {
 } from '@/shared/domain/pagination.js';
 import { logError } from '@/shared/application/log-error.js';
 
-export interface ListInspectionsInput {
-  cargoId?: string;
-  inspectorId?: string;
-  status?: InspectionStatus;
-  page?: number;
-  pageSize?: number;
-}
+export type ListInspectionsInput = Partial<InspectionSearchFilters>;
 
 @Injectable()
 export class ListInspectionsUseCase {
@@ -30,9 +26,7 @@ export class ListInspectionsUseCase {
   async execute(input: ListInspectionsInput = {}): Promise<Page<Inspection>> {
     try {
       return await this.inspections.list({
-        cargoId: input.cargoId,
-        inspectorId: input.inspectorId,
-        status: input.status,
+        ...input,
         page: input.page ?? DEFAULT_PAGE,
         pageSize: input.pageSize ?? DEFAULT_PAGE_SIZE,
       });

@@ -1,8 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
-import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
-import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import type {
+  UserRepository,
+  UserSearchFilters,
+} from '@/modules/user/domain/repositories/user.repository.js';
 import type { User } from '@/modules/user/domain/entities/user.entity.js';
 import {
   DEFAULT_PAGE,
@@ -11,12 +12,7 @@ import {
 } from '@/shared/domain/pagination.js';
 import { logError } from '@/shared/application/log-error.js';
 
-export interface ListUsersInput {
-  role?: UserRole;
-  status?: UserStatus;
-  page?: number;
-  pageSize?: number;
-}
+export type ListUsersInput = Partial<UserSearchFilters>;
 
 @Injectable()
 export class ListUsersUseCase {
@@ -29,8 +25,7 @@ export class ListUsersUseCase {
   async execute(input: ListUsersInput = {}): Promise<Page<User>> {
     try {
       return await this.users.list({
-        role: input.role,
-        status: input.status,
+        ...input,
         page: input.page ?? DEFAULT_PAGE,
         pageSize: input.pageSize ?? DEFAULT_PAGE_SIZE,
       });

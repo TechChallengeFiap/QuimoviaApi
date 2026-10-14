@@ -1,8 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
-import type { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
-import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import type {
+  ChemicalShipmentRepository,
+  ChemicalShipmentSearchFilters,
+} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import {
   USER_DIRECTORY,
   type UserDirectory,
@@ -14,14 +16,7 @@ import {
 } from '@/shared/domain/pagination.js';
 import { logError } from '@/shared/application/log-error.js';
 
-export interface ListChemicalShipmentsInput {
-  status?: StatusShipment;
-  productId?: string;
-  responsibleUserId?: string;
-  documentsIds?: string;
-  page?: number;
-  pageSize?: number;
-}
+export type ListChemicalShipmentsInput = Partial<ChemicalShipmentSearchFilters>;
 
 @Injectable()
 export class ListChemicalShipmentsUseCase {
@@ -39,10 +34,7 @@ export class ListChemicalShipmentsUseCase {
   ): Promise<Page<ChemicalShipmentDetails>> {
     try {
       const page = await this.chemicalShipments.list({
-        status: input.status,
-        productId: input.productId,
-        responsibleUserId: input.responsibleUserId,
-        documentsIds: input.documentsIds,
+        ...input,
         page: input.page ?? DEFAULT_PAGE,
         pageSize: input.pageSize ?? DEFAULT_PAGE_SIZE,
       });
