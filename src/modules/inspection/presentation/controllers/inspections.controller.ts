@@ -13,17 +13,13 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
   ApiNoContentResponse,
-  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiTags,
-  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { CreateInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/create-inspection.use-case.js';
 import { DeleteInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/delete-inspection.use-case.js';
@@ -41,17 +37,17 @@ import { InspectionPageResponseDto } from '@/modules/inspection/presentation/dto
 import { InspectionResponseDto } from '@/modules/inspection/presentation/dtos/inspection-response.dto.js';
 import { ListInspectionsQueryDto } from '@/modules/inspection/presentation/dtos/list-inspections-query.dto.js';
 import { UpdateInspectionDto } from '@/modules/inspection/presentation/dtos/update-inspection.dto.js';
+import { ApiErrorResponse } from '@/shared/presentation/docs/api-error-response.decorator.js';
+import { ApiPaginationQuery } from '@/shared/presentation/docs/api-pagination-query.decorator.js';
+import { ApiIdParam } from '@/shared/presentation/docs/api-id-param.decorator.js';
 
 const INSPECTION_ID_EXAMPLE = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 const CARGO_ID_EXAMPLE = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 const CARGO_ITEM_ID_EXAMPLE = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
 const INSPECTOR_ID_EXAMPLE = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
 
-const INSPECTION_NOT_FOUND_EXAMPLE = {
-  message: `Inspeção não encontrado(a) para o identificador "${INSPECTION_ID_EXAMPLE}".`,
-  error: 'Not Found',
-  statusCode: HttpStatus.NOT_FOUND,
-};
+const INSPECTION_NOT_FOUND_MESSAGE =
+  `Inspeção não encontrado(a) para o identificador "${INSPECTION_ID_EXAMPLE}".`;
 
 @ApiTags('Inspeções')
 @Controller('inspecoes')
@@ -117,31 +113,20 @@ export class InspectionsController {
     description: 'Inspeção cadastrada com sucesso.',
     type: InspectionResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'cargoId must be a UUID',
-          'compositionVersion must not be less than 1',
-          'requirements should not be empty',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
-  @ApiUnprocessableEntityResponse({
-    description: 'Os dados violam uma regra de negócio da inspeção.',
-    schema: {
-      example: {
-        message:
-          'A inspeção de um item da carga exige o identificador do item.',
-        error: 'Unprocessable Entity',
-        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-      },
-    },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Dados inválidos no corpo da requisição.',
+    [
+      'cargoId must be a UUID',
+      'compositionVersion must not be less than 1',
+      'requirements should not be empty',
+    ],
+  )
+  @ApiErrorResponse(
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    'Os dados violam uma regra de negócio da inspeção.',
+    'A inspeção de um item da carga exige o identificador do item.',
+  )
   async createInspection(
     @Body(validationPipeFor(CreateInspectionDto))
     createInspectionDto: CreateInspectionDto,
@@ -181,42 +166,19 @@ export class InspectionsController {
     description: 'Filtra as inspeções pela situação atual',
     example: InspectionStatus.PENDING,
   })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    minimum: 1,
-    default: 1,
-    description: 'Número da página desejada',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'pageSize',
-    required: false,
-    type: Number,
-    minimum: 1,
-    maximum: 100,
-    default: 20,
-    description: 'Quantidade de inspeções por página (máximo 100)',
-    example: 20,
-  })
+  @ApiPaginationQuery('inspeções')
   @ApiOkResponse({
     description: 'Lista de inspeções retornada com sucesso.',
     type: InspectionPageResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Filtros ou parâmetros de paginação inválidos.',
-    schema: {
-      example: {
-        message: [
-          'cargoId must be a UUID',
-          'pageSize must not be greater than 100',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Filtros ou parâmetros de paginação inválidos.',
+    [
+      'cargoId must be a UUID',
+      'pageSize must not be greater than 100',
+    ],
+  )
   async listInspections(
     @Query(validationPipeFor(ListInspectionsQueryDto))
     query: ListInspectionsQueryDto,
@@ -231,20 +193,16 @@ export class InspectionsController {
     description:
       'Retorna os dados de uma inspeção, com as verificações previstas e seus resultados.',
   })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    description: 'Identificador da inspeção',
-    example: INSPECTION_ID_EXAMPLE,
-  })
+  @ApiIdParam('Identificador da inspeção', INSPECTION_ID_EXAMPLE)
   @ApiOkResponse({
     description: 'Inspeção encontrada com sucesso.',
     type: InspectionResponseDto,
   })
-  @ApiNotFoundResponse({
-    description: 'Inspeção não encontrada.',
-    schema: { example: INSPECTION_NOT_FOUND_EXAMPLE },
-  })
+  @ApiErrorResponse(
+    HttpStatus.NOT_FOUND,
+    'Inspeção não encontrada.',
+    INSPECTION_NOT_FOUND_MESSAGE,
+  )
   async findInspectionById(
     @Param('id') id: string,
   ): Promise<InspectionResponseDto> {
@@ -258,12 +216,7 @@ export class InspectionsController {
     description:
       'Reatribui o Fiscal, registra os resultados das verificações e avança o status: IN_PROGRESS inicia a inspeção e COMPLETED a conclui, o que exige resultado em todas as verificações. Uma inspeção concluída não pode mais ser alterada.',
   })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    description: 'Identificador da inspeção',
-    example: INSPECTION_ID_EXAMPLE,
-  })
+  @ApiIdParam('Identificador da inspeção', INSPECTION_ID_EXAMPLE)
   @ApiBody({
     type: UpdateInspectionDto,
     description: 'Alterações a aplicar; todos os campos são opcionais.',
@@ -307,34 +260,23 @@ export class InspectionsController {
     description: 'Inspeção atualizada com sucesso.',
     type: InspectionResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'status must be one of the following values: PENDING, IN_PROGRESS, COMPLETED',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
-  @ApiNotFoundResponse({
-    description: 'Inspeção não encontrada.',
-    schema: { example: INSPECTION_NOT_FOUND_EXAMPLE },
-  })
-  @ApiUnprocessableEntityResponse({
-    description:
-      'A alteração viola uma regra da inspeção, como concluir com verificações pendentes ou alterar uma inspeção concluída.',
-    schema: {
-      example: {
-        message:
-          'A inspeção só pode ser concluída com o resultado de todas as verificações. Pendentes: NO_LEAKAGE.',
-        error: 'Unprocessable Entity',
-        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-      },
-    },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Dados inválidos no corpo da requisição.',
+    [
+      'status must be one of the following values: PENDING, IN_PROGRESS, COMPLETED',
+    ],
+  )
+  @ApiErrorResponse(
+    HttpStatus.NOT_FOUND,
+    'Inspeção não encontrada.',
+    INSPECTION_NOT_FOUND_MESSAGE,
+  )
+  @ApiErrorResponse(
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    'A alteração viola uma regra da inspeção, como concluir com verificações pendentes ou alterar uma inspeção concluída.',
+    'A inspeção só pode ser concluída com o resultado de todas as verificações. Pendentes: NO_LEAKAGE.',
+  )
   async updateInspection(
     @Param('id') id: string,
     @Body(validationPipeFor(UpdateInspectionDto))
@@ -354,28 +296,18 @@ export class InspectionsController {
     description:
       'Remove uma inspeção que ainda não foi iniciada. Inspeções em andamento ou concluídas fazem parte do histórico da carga e não podem ser removidas.',
   })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    description: 'Identificador da inspeção',
-    example: INSPECTION_ID_EXAMPLE,
-  })
+  @ApiIdParam('Identificador da inspeção', INSPECTION_ID_EXAMPLE)
   @ApiNoContentResponse({ description: 'Inspeção removida com sucesso.' })
-  @ApiNotFoundResponse({
-    description: 'Inspeção não encontrada.',
-    schema: { example: INSPECTION_NOT_FOUND_EXAMPLE },
-  })
-  @ApiUnprocessableEntityResponse({
-    description: 'A inspeção já foi iniciada e não pode ser removida.',
-    schema: {
-      example: {
-        message:
-          'Somente inspeções pendentes podem ser removidas; as demais fazem parte do histórico da carga.',
-        error: 'Unprocessable Entity',
-        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-      },
-    },
-  })
+  @ApiErrorResponse(
+    HttpStatus.NOT_FOUND,
+    'Inspeção não encontrada.',
+    INSPECTION_NOT_FOUND_MESSAGE,
+  )
+  @ApiErrorResponse(
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    'A inspeção já foi iniciada e não pode ser removida.',
+    'Somente inspeções pendentes podem ser removidas; as demais fazem parte do histórico da carga.',
+  )
   async deleteInspection(@Param('id') id: string): Promise<void> {
     await this.deleteInspectionUseCase.execute(id);
   }

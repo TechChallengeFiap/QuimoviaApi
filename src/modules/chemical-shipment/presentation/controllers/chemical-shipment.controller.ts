@@ -17,14 +17,10 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
-  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
-  ApiNotFoundResponse,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
@@ -42,6 +38,9 @@ import { DomainError } from '@/shared/domain/errors/domain.error.js';
 import { UpdateChemicalShipmentDto } from '@/modules/chemical-shipment/presentation/dtos/update-chemical-shipment.dto.js';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
+import { ApiErrorResponse } from '@/shared/presentation/docs/api-error-response.decorator.js';
+import { ApiPaginationQuery } from '@/shared/presentation/docs/api-pagination-query.decorator.js';
+import { ApiIdParam } from '@/shared/presentation/docs/api-id-param.decorator.js';
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
 @UseFilters(DomainExceptionFilter)
@@ -88,29 +87,19 @@ export class ChemicalShipmentController {
     description: 'Carga química cadastrada com sucesso.',
     type: ChemicalShipmentResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos fornecidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'O productId não pode estar vazio',
-          'O productId deve ser uma string',
-        ],
-        error: 'Bad Request',
-        statusCode: 400,
-      },
-    },
-  })
-  @ApiNotFoundResponse({
-    description: 'Usuário responsável não encontrado.',
-    schema: {
-      example: {
-        message: 'Usuário não encontrado(a) para o identificador "user-001".',
-        error: 'Not Found',
-        statusCode: 404,
-      },
-    },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Dados inválidos fornecidos no corpo da requisição.',
+    [
+      'O productId não pode estar vazio',
+      'O productId deve ser uma string',
+    ],
+  )
+  @ApiErrorResponse(
+    HttpStatus.NOT_FOUND,
+    'Usuário responsável não encontrado.',
+    'Usuário não encontrado(a) para o identificador "user-001".',
+  )
   @ApiInternalServerErrorResponse({
     description:
       'Erro interno do servidor ao processar a criação da carga química.',
@@ -177,18 +166,7 @@ export class ChemicalShipmentController {
     description:
       'Filtra as cargas químicas pelo identificador do documento anexado',
   })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    description: 'Número da página desejada',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'pageSize',
-    required: false,
-    description: 'Quantidade de registros por página',
-    example: 20,
-  })
+  @ApiPaginationQuery('registros')
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Lista de cargas químicas retornada com sucesso.',
@@ -230,12 +208,7 @@ export class ChemicalShipmentController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiParam({
-    name: 'id',
-    required: true,
-    description: 'ID da carga química',
-    example: '1234567890a1b2c3d4e5f6',
-  })
+  @ApiIdParam('ID da carga química', '1234567890a1b2c3d4e5f6')
   @ApiOperation({
     summary: 'Busca uma carga química pelo ID',
     description: 'Retorna uma carga química pelo ID.',
@@ -277,12 +250,7 @@ export class ChemicalShipmentController {
   }
 
   @Patch(':id')
-  @ApiParam({
-    name: 'id',
-    required: true,
-    description: 'ID da carga química',
-    example: '1234567890a1b2c3d4e5f6',
-  })
+  @ApiIdParam('ID da carga química', '1234567890a1b2c3d4e5f6')
   @ApiBody({
     type: UpdateChemicalShipmentDto,
     description: 'Dados necessários para a atualização da carga química.',
@@ -302,39 +270,28 @@ export class ChemicalShipmentController {
     description: 'Carga química atualizada com sucesso.',
     type: ChemicalShipmentResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos fornecidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'O productId não pode estar vazio',
-          'O productId deve ser uma string',
-        ],
-        error: 'Bad Request',
-        statusCode: 400,
-      },
-    },
-  })
-  @ApiForbiddenResponse({
-    description: 'Você não tem permissão para realizar esta ação.',
-    schema: {
-      example: {
-        message: ['Você não tem permissão para realizar esta ação.'],
-        error: 'Forbidden',
-        statusCode: 403,
-      },
-    },
-  })
-  @ApiNotFoundResponse({
-    description: 'Carga química não encontrada.',
-    schema: {
-      example: {
-        message: ['Carga química não encontrada.'],
-        error: 'Not Found',
-        statusCode: 404,
-      },
-    },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Dados inválidos fornecidos no corpo da requisição.',
+    [
+      'O productId não pode estar vazio',
+      'O productId deve ser uma string',
+    ],
+  )
+  @ApiErrorResponse(
+    HttpStatus.FORBIDDEN,
+    'Você não tem permissão para realizar esta ação.',
+    [
+      'Você não tem permissão para realizar esta ação.',
+    ],
+  )
+  @ApiErrorResponse(
+    HttpStatus.NOT_FOUND,
+    'Carga química não encontrada.',
+    [
+      'Carga química não encontrada.',
+    ],
+  )
   async updateChemicalShipment(
     @Param('id') id: string,
     @Body() updateChemicalShipmentDto: UpdateChemicalShipmentDto,
@@ -364,12 +321,7 @@ export class ChemicalShipmentController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiParam({
-    name: 'id',
-    required: true,
-    description: 'ID da carga química',
-    example: '1234567890a1b2c3d4e5f6',
-  })
+  @ApiIdParam('ID da carga química', '1234567890a1b2c3d4e5f6')
   @ApiOperation({
     summary: 'Remove uma carga química',
     description: 'Remove uma carga química pelo ID.',

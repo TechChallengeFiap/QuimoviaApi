@@ -13,18 +13,13 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
   ApiBody,
-  ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
-  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiTags,
-  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { CreateUserUseCase } from '@/modules/user/application/use-cases/users/create-user.use-case.js';
 import { DeleteUserUseCase } from '@/modules/user/application/use-cases/users/delete-user.use-case.js';
@@ -40,27 +35,20 @@ import { ListUsersQueryDto } from '@/modules/user/presentation/dtos/list-users-q
 import { UpdateUserDto } from '@/modules/user/presentation/dtos/update-user.dto.js';
 import { UserPageResponseDto } from '@/modules/user/presentation/dtos/user-page-response.dto.js';
 import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.js';
+import { ApiErrorResponse } from '@/shared/presentation/docs/api-error-response.decorator.js';
+import { ApiPaginationQuery } from '@/shared/presentation/docs/api-pagination-query.decorator.js';
+import { ApiIdParam } from '@/shared/presentation/docs/api-id-param.decorator.js';
 
 const USER_ID_EXAMPLE = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 
-const USER_NOT_FOUND_EXAMPLE = {
-  message: `Usuário não encontrado(a) para o identificador "${USER_ID_EXAMPLE}".`,
-  error: 'Not Found',
-  statusCode: HttpStatus.NOT_FOUND,
-};
+const USER_NOT_FOUND_MESSAGE =
+  `Usuário não encontrado(a) para o identificador "${USER_ID_EXAMPLE}".`;
 
-const EMAIL_CONFLICT_EXAMPLE = {
-  message:
-    'Já existe um usuário cadastrado com o e-mail "maria.silva@quimovia.com".',
-  error: 'Conflict',
-  statusCode: HttpStatus.CONFLICT,
-};
+const EMAIL_CONFLICT_MESSAGE =
+  'Já existe um usuário cadastrado com o e-mail "maria.silva@quimovia.com".';
 
-const BUSINESS_RULE_EXAMPLE = {
-  message: 'O nome do usuário deve ter ao menos 3 caracteres.',
-  error: 'Unprocessable Entity',
-  statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-};
+const BUSINESS_RULE_MESSAGE =
+  'O nome do usuário deve ter ao menos 3 caracteres.';
 
 @ApiTags('Operações dos usuários')
 @Controller('usuarios')
@@ -117,28 +105,25 @@ export class UsersController {
     description: 'Usuário cadastrado com sucesso.',
     type: UserResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'name must be longer than or equal to 3 characters',
-          'email must be an email',
-          'password must be longer than or equal to 8 characters',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
-  @ApiConflictResponse({
-    description: 'Já existe um usuário cadastrado com o e-mail informado.',
-    schema: { example: EMAIL_CONFLICT_EXAMPLE },
-  })
-  @ApiUnprocessableEntityResponse({
-    description: 'Os dados violam uma regra de negócio do usuário.',
-    schema: { example: BUSINESS_RULE_EXAMPLE },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Dados inválidos no corpo da requisição.',
+    [
+      'name must be longer than or equal to 3 characters',
+      'email must be an email',
+      'password must be longer than or equal to 8 characters',
+    ],
+  )
+  @ApiErrorResponse(
+    HttpStatus.CONFLICT,
+    'Já existe um usuário cadastrado com o e-mail informado.',
+    EMAIL_CONFLICT_MESSAGE,
+  )
+  @ApiErrorResponse(
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    'Os dados violam uma regra de negócio do usuário.',
+    BUSINESS_RULE_MESSAGE,
+  )
   async createUser(
     @Body(validationPipeFor(CreateUserDto)) createUserDto: CreateUserDto,
   ): Promise<UserResponseDto> {
@@ -168,42 +153,19 @@ export class UsersController {
     description: 'Filtra os usuários pela situação atual',
     example: UserStatus.ACTIVE,
   })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    minimum: 1,
-    default: 1,
-    description: 'Número da página desejada',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'pageSize',
-    required: false,
-    type: Number,
-    minimum: 1,
-    maximum: 100,
-    default: 20,
-    description: 'Quantidade de usuários por página (máximo 100)',
-    example: 20,
-  })
+  @ApiPaginationQuery('usuários')
   @ApiOkResponse({
     description: 'Lista de usuários retornada com sucesso.',
     type: UserPageResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Filtros ou parâmetros de paginação inválidos.',
-    schema: {
-      example: {
-        message: [
-          'page must not be less than 1',
-          'pageSize must not be greater than 100',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Filtros ou parâmetros de paginação inválidos.',
+    [
+      'page must not be less than 1',
+      'pageSize must not be greater than 100',
+    ],
+  )
   async listUsers(
     @Query(validationPipeFor(ListUsersQueryDto)) query: ListUsersQueryDto,
   ): Promise<UserPageResponseDto> {
@@ -217,20 +179,16 @@ export class UsersController {
     description:
       'Retorna os dados de um usuário a partir do seu identificador.',
   })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    description: 'Identificador do usuário',
-    example: USER_ID_EXAMPLE,
-  })
+  @ApiIdParam('Identificador do usuário', USER_ID_EXAMPLE)
   @ApiOkResponse({
     description: 'Usuário encontrado com sucesso.',
     type: UserResponseDto,
   })
-  @ApiNotFoundResponse({
-    description: 'Usuário não encontrado.',
-    schema: { example: USER_NOT_FOUND_EXAMPLE },
-  })
+  @ApiErrorResponse(
+    HttpStatus.NOT_FOUND,
+    'Usuário não encontrado.',
+    USER_NOT_FOUND_MESSAGE,
+  )
   async findUserById(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.findUserByIdUseCase.execute(id);
     return UserResponseDto.from(user);
@@ -242,12 +200,7 @@ export class UsersController {
     description:
       'Atualiza apenas os campos enviados. As mudanças de status respeitam as regras de bloqueio: enviar ACTIVE para um usuário bloqueado realiza o desbloqueio.',
   })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    description: 'Identificador do usuário',
-    example: USER_ID_EXAMPLE,
-  })
+  @ApiIdParam('Identificador do usuário', USER_ID_EXAMPLE)
   @ApiBody({
     type: UpdateUserDto,
     description: 'Campos a serem atualizados; todos são opcionais.',
@@ -279,30 +232,28 @@ export class UsersController {
     description: 'Usuário atualizado com sucesso.',
     type: UserResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'status must be one of the following values: ACTIVE, INACTIVE, BLOCKED',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
-  @ApiNotFoundResponse({
-    description: 'Usuário não encontrado.',
-    schema: { example: USER_NOT_FOUND_EXAMPLE },
-  })
-  @ApiConflictResponse({
-    description: 'O novo e-mail já pertence a outro usuário.',
-    schema: { example: EMAIL_CONFLICT_EXAMPLE },
-  })
-  @ApiUnprocessableEntityResponse({
-    description: 'A alteração viola uma regra de negócio do usuário.',
-    schema: { example: BUSINESS_RULE_EXAMPLE },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Dados inválidos no corpo da requisição.',
+    [
+      'status must be one of the following values: ACTIVE, INACTIVE, BLOCKED',
+    ],
+  )
+  @ApiErrorResponse(
+    HttpStatus.NOT_FOUND,
+    'Usuário não encontrado.',
+    USER_NOT_FOUND_MESSAGE,
+  )
+  @ApiErrorResponse(
+    HttpStatus.CONFLICT,
+    'O novo e-mail já pertence a outro usuário.',
+    EMAIL_CONFLICT_MESSAGE,
+  )
+  @ApiErrorResponse(
+    HttpStatus.UNPROCESSABLE_ENTITY,
+    'A alteração viola uma regra de negócio do usuário.',
+    BUSINESS_RULE_MESSAGE,
+  )
   async updateUser(
     @Param('id') id: string,
     @Body(validationPipeFor(UpdateUserDto)) updateUserDto: UpdateUserDto,
@@ -317,17 +268,13 @@ export class UsersController {
     summary: 'Remove um usuário',
     description: 'Remove definitivamente o usuário informado.',
   })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    description: 'Identificador do usuário',
-    example: USER_ID_EXAMPLE,
-  })
+  @ApiIdParam('Identificador do usuário', USER_ID_EXAMPLE)
   @ApiNoContentResponse({ description: 'Usuário removido com sucesso.' })
-  @ApiNotFoundResponse({
-    description: 'Usuário não encontrado.',
-    schema: { example: USER_NOT_FOUND_EXAMPLE },
-  })
+  @ApiErrorResponse(
+    HttpStatus.NOT_FOUND,
+    'Usuário não encontrado.',
+    USER_NOT_FOUND_MESSAGE,
+  )
   async deleteUser(@Param('id') id: string): Promise<void> {
     await this.deleteUserUseCase.execute(id);
   }

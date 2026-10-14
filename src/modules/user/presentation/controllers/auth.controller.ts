@@ -9,14 +9,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
   ApiBody,
-  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
   INVALID_CREDENTIALS_MESSAGE,
@@ -32,18 +29,10 @@ import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exce
 import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { LoginDto } from '@/modules/user/presentation/dtos/login.dto.js';
 import { LoginResponseDto } from '@/modules/user/presentation/dtos/login-response.dto.js';
+import { ApiErrorResponse } from '@/shared/presentation/docs/api-error-response.decorator.js';
 
-const INVALID_CREDENTIALS_EXAMPLE = {
-  message: INVALID_CREDENTIALS_MESSAGE,
-  error: 'Unauthorized',
-  statusCode: HttpStatus.UNAUTHORIZED,
-};
-
-const ACCOUNT_WITHOUT_ACCESS_EXAMPLE = {
-  message: `Usuário com status ${UserStatus.BLOCKED} não pode autenticar-se no sistema.`,
-  error: 'Forbidden',
-  statusCode: HttpStatus.FORBIDDEN,
-};
+const ACCOUNT_WITHOUT_ACCESS_MESSAGE =
+  `Usuário com status ${UserStatus.BLOCKED} não pode autenticar-se no sistema.`;
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -79,25 +68,24 @@ export class AuthController {
     description: 'Usuário autenticado e sessão iniciada.',
     type: LoginResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: ['email must be an email', 'password should not be empty'],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
-  @ApiUnauthorizedResponse({
-    description:
-      'E-mail ou senha inválidos; a resposta não indica qual dos dois está errado.',
-    schema: { example: INVALID_CREDENTIALS_EXAMPLE },
-  })
-  @ApiForbiddenResponse({
-    description: 'A conta está inativa ou bloqueada.',
-    schema: { example: ACCOUNT_WITHOUT_ACCESS_EXAMPLE },
-  })
+  @ApiErrorResponse(
+    HttpStatus.BAD_REQUEST,
+    'Dados inválidos no corpo da requisição.',
+    [
+      'email must be an email',
+      'password should not be empty',
+    ],
+  )
+  @ApiErrorResponse(
+    HttpStatus.UNAUTHORIZED,
+    'E-mail ou senha inválidos; a resposta não indica qual dos dois está errado.',
+    INVALID_CREDENTIALS_MESSAGE,
+  )
+  @ApiErrorResponse(
+    HttpStatus.FORBIDDEN,
+    'A conta está inativa ou bloqueada.',
+    ACCOUNT_WITHOUT_ACCESS_MESSAGE,
+  )
   async login(
     @Body(validationPipeFor(LoginDto)) loginDto: LoginDto,
   ): Promise<LoginResponseDto> {
