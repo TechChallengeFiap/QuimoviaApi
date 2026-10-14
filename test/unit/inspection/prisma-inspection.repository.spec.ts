@@ -27,10 +27,10 @@ const INCLUDE_ITEMS = { items: { orderBy: { requirement: 'asc' } } };
 
 const persisted = {
   id: 'inspection-001',
-  cargoId: 'cargo-001',
+  shipmentId: 'shipment-001',
   compositionVersion: 2,
-  scope: 'CARGO_ITEM',
-  cargoItemId: 'item-001',
+  scope: 'SHIPMENT_ITEM',
+  shipmentItemId: 'item-001',
   inspectorId: 'fiscal-001',
   status: 'IN_PROGRESS',
   startedAt: new Date('2026-09-30T13:00:00Z'),
@@ -75,10 +75,10 @@ describe('PrismaInspectionRepository', () => {
     expect(prisma.inspection.create).toHaveBeenCalledWith({
       data: {
         id: inspection.id,
-        cargoId: 'cargo-001',
+        shipmentId: 'shipment-001',
         compositionVersion: 1,
-        scope: InspectionScope.CARGO,
-        cargoItemId: null,
+        scope: InspectionScope.SHIPMENT,
+        shipmentItemId: null,
         inspectorId: 'fiscal-001',
         status: InspectionStatus.PENDING,
         startedAt: null,
@@ -108,8 +108,8 @@ describe('PrismaInspectionRepository', () => {
     });
     expect(inspection?.toObject()).toMatchObject({
       id: 'inspection-001',
-      scope: InspectionScope.CARGO_ITEM,
-      cargoItemId: 'item-001',
+      scope: InspectionScope.SHIPMENT_ITEM,
+      shipmentItemId: 'item-001',
       status: InspectionStatus.IN_PROGRESS,
     });
     expect(inspection?.items.map((item) => item.toObject())).toEqual([
@@ -188,14 +188,14 @@ describe('PrismaInspectionRepository', () => {
     prisma.inspection.count.mockResolvedValueOnce(21);
 
     const page = await repository.list({
-      cargoId: 'cargo-001',
+      shipmentId: 'shipment-001',
       status: InspectionStatus.IN_PROGRESS,
       page: 2,
       pageSize: 20,
     });
 
     const where = {
-      cargoId: 'cargo-001',
+      shipmentId: 'shipment-001',
       status: InspectionStatus.IN_PROGRESS,
     };
     expect(prisma.inspection.findMany).toHaveBeenCalledWith({

@@ -30,9 +30,9 @@ export class InspectionRepositoryMock implements InspectionRepository {
   async list(filters: InspectionSearchFilters): Promise<Page<Inspection>> {
     let items = [...this.inspections.values()];
 
-    if (filters.cargoId) {
+    if (filters.shipmentId) {
       items = items.filter(
-        (inspection) => inspection.cargoId === filters.cargoId,
+        (inspection) => inspection.shipmentId === filters.shipmentId,
       );
     }
 

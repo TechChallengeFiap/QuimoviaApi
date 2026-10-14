@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
 
-const CARGO_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+const SHIPMENT_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 const INSPECTOR_ID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
 
 /**
@@ -19,9 +19,9 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
   let app: INestApplication;
 
   const payload = {
-    cargoId: CARGO_ID,
+    shipmentId: SHIPMENT_ID,
     compositionVersion: 1,
-    scope: 'CARGO',
+    scope: 'SHIPMENT',
     inspectorId: INSPECTOR_ID,
     requirements: ['PACKAGING_INTEGRITY', 'NO_LEAKAGE'],
   };
@@ -109,7 +109,7 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
       .expect(404);
     await request(app.getHttpServer())
       .post('/inspecoes')
-      .send({ ...payload, scope: 'CARGO_ITEM' })
+      .send({ ...payload, scope: 'SHIPMENT_ITEM' })
       .expect(422);
 
     const created = await request(app.getHttpServer())
@@ -126,7 +126,7 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
   it('valida o corpo do cadastro e os resultados aninhados da atualização', async () => {
     await request(app.getHttpServer())
       .post('/inspecoes')
-      .send({ ...payload, cargoId: 'nao-e-uuid' })
+      .send({ ...payload, shipmentId: 'nao-e-uuid' })
       .expect(400);
     await request(app.getHttpServer())
       .post('/inspecoes')
@@ -148,7 +148,9 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
     await request(app.getHttpServer()).get('/inspecoes?page=0').expect(400);
 
     const response = await request(app.getHttpServer())
-      .get(`/inspecoes?cargoId=${CARGO_ID}&status=PENDING&page=1&pageSize=20`)
+      .get(
+        `/inspecoes?shipmentId=${SHIPMENT_ID}&status=PENDING&page=1&pageSize=20`,
+      )
       .expect(200);
 
     expect(response.body).toMatchObject({ page: 1, pageSize: 20 });

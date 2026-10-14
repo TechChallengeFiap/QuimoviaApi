@@ -19,8 +19,11 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-function newInspection(cargoId = 'cargo-001', inspectorId = 'fiscal-001') {
-  return buildInspection({ cargoId, inspectorId });
+function newInspection(
+  shipmentId = 'shipment-001',
+  inspectorId = 'fiscal-001',
+) {
+  return buildInspection({ shipmentId, inspectorId });
 }
 
 describe('FindInspectionByIdUseCase', () => {
@@ -69,16 +72,16 @@ describe('ListInspectionsUseCase', () => {
 
   it('filtra por carga, Fiscal e status', async () => {
     const inspections = new InspectionRepositoryMock();
-    await inspections.create(newInspection('cargo-001', 'fiscal-001'));
-    await inspections.create(newInspection('cargo-002', 'fiscal-001'));
-    const started = newInspection('cargo-002', 'fiscal-002');
+    await inspections.create(newInspection('shipment-001', 'fiscal-001'));
+    await inspections.create(newInspection('shipment-002', 'fiscal-001'));
+    const started = newInspection('shipment-002', 'fiscal-002');
     started.start();
     await inspections.create(started);
 
     const useCase = new ListInspectionsUseCase(inspections);
 
     await expect(
-      useCase.execute({ cargoId: 'cargo-002' }),
+      useCase.execute({ shipmentId: 'shipment-002' }),
     ).resolves.toMatchObject({
       total: 2,
     });

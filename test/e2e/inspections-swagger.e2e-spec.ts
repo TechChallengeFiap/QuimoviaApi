@@ -102,10 +102,10 @@ describe('Swagger do módulo inspection (e2e)', () => {
     expect(document.components?.schemas?.InspectionResponseDto).toMatchObject({
       properties: {
         id: { type: 'string' },
-        cargoId: { type: 'string' },
+        shipmentId: { type: 'string' },
         compositionVersion: { type: 'number' },
         scope: { allOf: [{ $ref: '#/components/schemas/InspectionScope' }] },
-        cargoItemId: { type: 'string', nullable: true },
+        shipmentItemId: { type: 'string', nullable: true },
         inspectorId: { type: 'string' },
         status: { allOf: [{ $ref: '#/components/schemas/InspectionStatus' }] },
         items: {
@@ -138,22 +138,22 @@ describe('Swagger do módulo inspection (e2e)', () => {
     expect(jsonRequestBodyOf('/inspecoes', 'post')).toMatchObject({
       schema: { $ref: '#/components/schemas/CreateInspectionDto' },
       examples: {
-        cargaInteira: { value: { scope: 'CARGO' } },
-        itemDaCarga: { value: { scope: 'CARGO_ITEM' } },
+        cargaInteira: { value: { scope: 'SHIPMENT' } },
+        itemDaCarga: { value: { scope: 'SHIPMENT_ITEM' } },
       },
     });
     expect(document.components?.schemas?.CreateInspectionDto).toMatchObject({
       required: [
-        'cargoId',
+        'shipmentId',
         'compositionVersion',
         'scope',
         'inspectorId',
         'requirements',
       ],
       properties: {
-        cargoId: { type: 'string', format: 'uuid' },
+        shipmentId: { type: 'string', format: 'uuid' },
         compositionVersion: { type: 'number', minimum: 1 },
-        cargoItemId: { type: 'string', format: 'uuid' },
+        shipmentItemId: { type: 'string', format: 'uuid' },
         requirements: {
           type: 'array',
           minItems: 1,
@@ -224,7 +224,7 @@ describe('Swagger do módulo inspection (e2e)', () => {
     expect(parameters).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          name: 'cargoId',
+          name: 'shipmentId',
           in: 'query',
           required: false,
           schema: expect.objectContaining({ type: 'string', format: 'uuid' }),

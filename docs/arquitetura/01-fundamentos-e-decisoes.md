@@ -163,7 +163,7 @@ flowchart LR
     I["<b>Inspection</b><br/>raiz do agregado"] --> IT1["InspectionItem"]
     I --> IT2["InspectionItem"]
   end
-  I -.->|"cargoId: só o ID"| C["Carga<br/>outro contexto"]
+  I -.->|"shipmentId: só o ID"| C["Carga<br/>outro contexto"]
   I -.->|"inspectorId: só o ID"| U["Usuário<br/>outro contexto"]
 ```
 

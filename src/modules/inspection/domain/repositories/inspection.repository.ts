@@ -3,7 +3,7 @@ import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-s
 import type { Page } from '@/shared/domain/pagination.js';
 
 export interface InspectionSearchFilters {
-  cargoId?: string;
+  shipmentId?: string;
   inspectorId?: string;
   status?: InspectionStatus;
   page: number;

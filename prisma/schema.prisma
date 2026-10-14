@@ -12,9 +12,10 @@ datasource db {
   provider = "mysql"
 }
 
+// Os valores e colunas mapeados mantêm os nomes já gravados no banco.
 enum InspectionScope {
-  CARGO
-  CARGO_ITEM
+  SHIPMENT      @map("CARGO")
+  SHIPMENT_ITEM @map("CARGO_ITEM")
 }
 
 enum InspectionStatus {
@@ -39,10 +40,10 @@ enum InspectionItemResult {
 
 model Inspection {
   id                 String           @id @default(uuid())
-  cargoId            String
+  shipmentId         String           @map("cargoId")
   compositionVersion Int
   scope              InspectionScope
-  cargoItemId        String?
+  shipmentItemId     String?          @map("cargoItemId")
   inspectorId        String
   status             InspectionStatus @default(PENDING)
   items              InspectionItem[]
@@ -51,7 +52,7 @@ model Inspection {
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
-  @@index([cargoId])
+  @@index([shipmentId], map: "Inspection_cargoId_idx")
   @@index([inspectorId, status])
 }
 

@@ -9,9 +9,9 @@ function createValidInspection(
   override: Partial<Parameters<typeof Inspection.create>[0]> = {},
 ) {
   return Inspection.create({
-    cargoId: 'cargo-001',
+    shipmentId: 'shipment-001',
     compositionVersion: 1,
-    scope: InspectionScope.CARGO,
+    scope: InspectionScope.SHIPMENT,
     inspectorId: 'fiscal-001',
     requirements: [
       InspectionRequirement.PACKAGING_INTEGRITY,
@@ -34,7 +34,7 @@ describe('Inspection', () => {
 
       expect(inspection.id).toEqual(expect.any(String));
       expect(inspection.status).toBe(InspectionStatus.PENDING);
-      expect(inspection.cargoItemId).toBeNull();
+      expect(inspection.shipmentItemId).toBeNull();
       expect(inspection.items.map((item) => item.toObject())).toEqual([
         {
           requirement: InspectionRequirement.PACKAGING_INTEGRITY,
@@ -51,21 +51,21 @@ describe('Inspection', () => {
 
     it('exige o identificador do item na inspeção de um item da carga', () => {
       expect(() =>
-        createValidInspection({ scope: InspectionScope.CARGO_ITEM }),
+        createValidInspection({ scope: InspectionScope.SHIPMENT_ITEM }),
       ).toThrow(BusinessRuleError);
 
       const inspection = createValidInspection({
-        scope: InspectionScope.CARGO_ITEM,
-        cargoItemId: 'item-001',
+        scope: InspectionScope.SHIPMENT_ITEM,
+        shipmentItemId: 'item-001',
       });
 
-      expect(inspection.cargoItemId).toBe('item-001');
+      expect(inspection.shipmentItemId).toBe('item-001');
     });
 
     it('rejeita item da carga na inspeção da carga inteira', () => {
-      expect(() => createValidInspection({ cargoItemId: 'item-001' })).toThrow(
-        BusinessRuleError,
-      );
+      expect(() =>
+        createValidInspection({ shipmentItemId: 'item-001' }),
+      ).toThrow(BusinessRuleError);
     });
 
     it('exige ao menos uma verificação, sem repetições', () => {
@@ -92,7 +92,7 @@ describe('Inspection', () => {
     });
 
     it('rejeita identificadores vazios de carga e Fiscal', () => {
-      expect(() => createValidInspection({ cargoId: '  ' })).toThrow(
+      expect(() => createValidInspection({ shipmentId: '  ' })).toThrow(
         BusinessRuleError,
       );
       expect(() => createValidInspection({ inspectorId: '' })).toThrow(

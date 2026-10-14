@@ -13,9 +13,9 @@ describe('CreateInspectionUseCase', () => {
   let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
   const input = {
-    cargoId: 'cargo-001',
+    shipmentId: 'shipment-001',
     compositionVersion: 1,
-    scope: InspectionScope.CARGO,
+    scope: InspectionScope.SHIPMENT,
     inspectorId: 'fiscal-001',
     requirements: [InspectionRequirement.NO_LEAKAGE],
   };
@@ -41,7 +41,7 @@ describe('CreateInspectionUseCase', () => {
 
   it('rejeita escopo de item da carga sem o identificador do item', async () => {
     await expect(
-      useCase.execute({ ...input, scope: InspectionScope.CARGO_ITEM }),
+      useCase.execute({ ...input, scope: InspectionScope.SHIPMENT_ITEM }),
     ).rejects.toThrow(BusinessRuleError);
   });
 

@@ -20,7 +20,7 @@ export class CreateInspectionDto {
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   })
   @IsUUID()
-  cargoId!: string;
+  shipmentId!: string;
 
   @ApiProperty({
     type: Number,
@@ -36,7 +36,7 @@ export class CreateInspectionDto {
     enum: InspectionScope,
     enumName: 'InspectionScope',
     description: 'Escopo da inspeção: a carga inteira ou um item da carga',
-    example: InspectionScope.CARGO,
+    example: InspectionScope.SHIPMENT,
   })
   @IsEnum(InspectionScope)
   scope!: InspectionScope;
@@ -46,12 +46,12 @@ export class CreateInspectionDto {
     format: 'uuid',
     required: false,
     description:
-      'Item da carga avaliado; obrigatório quando o escopo é CARGO_ITEM e proibido quando é CARGO',
+      'Item da carga avaliado; obrigatório quando o escopo é SHIPMENT_ITEM e proibido quando é SHIPMENT',
     example: '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed',
   })
   @IsOptional()
   @IsUUID()
-  cargoItemId?: string;
+  shipmentItemId?: string;
 
   @ApiProperty({
     type: String,

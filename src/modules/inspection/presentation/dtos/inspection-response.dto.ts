@@ -18,7 +18,7 @@ export class InspectionResponseDto {
     description: 'Identificador da carga inspecionada',
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   })
-  cargoId: string;
+  shipmentId: string;
 
   @ApiProperty({
     type: Number,
@@ -31,7 +31,7 @@ export class InspectionResponseDto {
     enum: InspectionScope,
     enumName: 'InspectionScope',
     description: 'Escopo avaliado: a carga inteira ou um item da carga',
-    example: InspectionScope.CARGO,
+    example: InspectionScope.SHIPMENT,
   })
   scope: InspectionScope;
 
@@ -41,7 +41,7 @@ export class InspectionResponseDto {
     description: 'Item da carga avaliado; nulo na inspeção da carga inteira',
     example: null,
   })
-  cargoItemId: string | null;
+  shipmentItemId: string | null;
 
   @ApiProperty({
     type: String,
@@ -101,10 +101,10 @@ export class InspectionResponseDto {
   static fromEntity(inspection: Inspection): InspectionResponseDto {
     return new InspectionResponseDto({
       id: inspection.id,
-      cargoId: inspection.cargoId,
+      shipmentId: inspection.shipmentId,
       compositionVersion: inspection.compositionVersion,
       scope: inspection.scope,
-      cargoItemId: inspection.cargoItemId,
+      shipmentItemId: inspection.shipmentItemId,
       inspectorId: inspection.inspectorId,
       status: inspection.status,
       items: inspection.items.map((item) =>

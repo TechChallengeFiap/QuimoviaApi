@@ -95,7 +95,7 @@ src/modules/<contexto>/
 | **infrastructure** | Implementar os contratos com uma tecnologia: Prisma, hash, JWT, configuração | Tomar decisões de negócio ou deixar tipos do Prisma escaparem |
 | **presentation** | Receber a requisição, validar o formato, chamar **um** caso de uso, montar a resposta e documentar a rota no Swagger | Conter regra de negócio, tratar erros ou acessar a infraestrutura |
 
-Duas convenções dão forma às camadas internas. As **entidades** têm estado privado (campos `#`), sem setters públicos, e só mudam por métodos com nome de negócio, como `start()` e `complete()`, que lançam `BusinessRuleError` quando algo é proibido. Elas são criadas por `create()`, que valida os dados, ou reconstruídas do banco por `restore()`, sem revalidar, e referenciam outros agregados apenas pelo ID (`cargoId`, `inspectorId`). Os **casos de uso** têm um único método `execute`. Quando a entrada é a mesma da criação da entidade, eles reaproveitam o tipo dela (`CreateInspectionData`); nas listagens, a entrada é `Partial` dos filtros do repositório (`Partial<InspectionSearchFilters>`) e o resultado, um `Page<T>` de `shared/domain/pagination.ts`; nos demais casos, declaram o tipo de entrada no próprio arquivo. Eles também ficam com as regras que dependem de dados fora do agregado, como a unicidade de um e-mail.
+Duas convenções dão forma às camadas internas. As **entidades** têm estado privado (campos `#`), sem setters públicos, e só mudam por métodos com nome de negócio, como `start()` e `complete()`, que lançam `BusinessRuleError` quando algo é proibido. Elas são criadas por `create()`, que valida os dados, ou reconstruídas do banco por `restore()`, sem revalidar, e referenciam outros agregados apenas pelo ID (`shipmentId`, `inspectorId`). Os **casos de uso** têm um único método `execute`. Quando a entrada é a mesma da criação da entidade, eles reaproveitam o tipo dela (`CreateInspectionData`); nas listagens, a entrada é `Partial` dos filtros do repositório (`Partial<InspectionSearchFilters>`) e o resultado, um `Page<T>` de `shared/domain/pagination.ts`; nos demais casos, declaram o tipo de entrada no próprio arquivo. Eles também ficam com as regras que dependem de dados fora do agregado, como a unicidade de um e-mail.
 
 A presentation e o domínio validam coisas diferentes. O DTO valida o **formato** ("é um UUID?") e responde 400. A entidade valida a **regra** ("uma inspeção de item exige o ID do item") e lança um erro de domínio, que vira 422. A validação da entidade vale mesmo quando o caso de uso não é chamado por HTTP.
 
@@ -240,9 +240,9 @@ static create(data: CreateInspectionData): Inspection {
 
   return new Inspection({
     id: randomUUID(),
-    cargoId: Inspection.validateIdentifier(data.cargoId, 'da carga'),
+    shipmentId: Inspection.validateIdentifier(data.shipmentId, 'da carga'),
     scope: data.scope,
-    cargoItemId: Inspection.validateCargoItem(data.scope, data.cargoItemId),
+    shipmentItemId: Inspection.validateShipmentItem(data.scope, data.shipmentItemId),
     inspectorId: Inspection.validateIdentifier(data.inspectorId, 'do Fiscal'),
     status: InspectionStatus.PENDING,
     items: Inspection.createItems(data.requirements), // ao menos uma, sem repetição
@@ -283,7 +283,7 @@ export class PrismaInspectionRepository implements InspectionRepository {
     const record = await this.prisma.inspection.create({
       data: {
         id: inspection.id,
-        cargoId: inspection.cargoId,
+        shipmentId: inspection.shipmentId,
         // ...demais campos
         items: {
           create: inspection.items.map((item) => ({
@@ -306,9 +306,9 @@ export class PrismaInspectionRepository implements InspectionRepository {
 ```ts
 // presentation/dtos/create-inspection.dto.ts (sem os decorators do Swagger)
 export class CreateInspectionDto {
-  @IsUUID() cargoId!: string;
+  @IsUUID() shipmentId!: string;
   @IsEnum(InspectionScope) scope!: InspectionScope;
-  @IsOptional() @IsUUID() cargoItemId?: string;
+  @IsOptional() @IsUUID() shipmentItemId?: string;
   // ...compositionVersion, inspectorId, requirements
 }
 
@@ -322,7 +322,7 @@ async createInspection(
 }
 ```
 
-Repare nas duas validações trabalhando juntas. O DTO aceita `cargoItemId` ausente, porque o formato está correto, mas `Inspection.create()` o exige quando o escopo é `CARGO_ITEM`. O `validationPipeFor(Dto)` informa ao pipe qual DTO validar, já que o `tsx` não emite metadados de tipo.
+Repare nas duas validações trabalhando juntas. O DTO aceita `shipmentItemId` ausente, porque o formato está correto, mas `Inspection.create()` o exige quando o escopo é `SHIPMENT_ITEM`. O `validationPipeFor(Dto)` informa ao pipe qual DTO validar, já que o `tsx` não emite metadados de tipo.
 
 **6. Registre no módulo e teste.** Registre o caso de uso, o controller e, se o contrato for novo, o `useClass` no `InspectionModule` (seção 3.2). Depois escreva três testes: o da entidade, sem mocks (`test/unit/inspection/inspection.entity.spec.ts`); o do caso de uso, com o `InspectionRepositoryMock` e a fábrica `buildInspection()` (`test/mocks/entities.mock.ts`), que monta uma inspeção válida; e o da rota, em `test/e2e/inspections.e2e-spec.ts`, que espera 201 para um cadastro válido, 400 para um payload malformado e 422 para uma regra violada.
 
@@ -365,7 +365,7 @@ flowchart LR
   end
   S -->|"FK, cascade"| U
   II -->|"FK, cascade"| I
-  I -.->|"cargoId: só o ID"| CS
+  I -.->|"shipmentId: só o ID"| CS
   I -.->|"inspectorId: só o ID"| U
   CS -.->|"responsibleUserId"| U
 ```
@@ -541,7 +541,7 @@ O código usa um único nome para cada conceito do negócio:
 | Carga química / situação da carga | `ChemicalShipment` / `StatusShipment` | Gestão de Cargas |
 | Responsável pela carga | `responsibleUserId` | Gestão de Cargas |
 | Inspeção / verificação prevista / item | `Inspection` / `InspectionRequirement` / `InspectionItem` | Inspeções |
-| Carga inspecionada e versão da composição | `cargoId` / `compositionVersion` | Inspeções |
+| Carga inspecionada e versão da composição | `shipmentId` / `compositionVersion` | Inspeções |
 | Fiscal | `inspectorId` | Inspeções |
 | Usuário / perfil / situação / sessão | `User` / `UserRole` / `UserStatus` / `Session` | Identidade e Acesso |
 | Usuário visto por outros contextos | `UserSummary` | Identidade e Acesso (API pública) |

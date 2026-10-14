@@ -33,10 +33,10 @@ export class PrismaInspectionRepository implements InspectionRepository {
     const record = await this.prisma.inspection.create({
       data: {
         id: inspection.id,
-        cargoId: inspection.cargoId,
+        shipmentId: inspection.shipmentId,
         compositionVersion: inspection.compositionVersion,
         scope: inspection.scope,
-        cargoItemId: inspection.cargoItemId,
+        shipmentItemId: inspection.shipmentItemId,
         inspectorId: inspection.inspectorId,
         status: inspection.status,
         startedAt: inspection.startedAt,
@@ -100,7 +100,7 @@ export class PrismaInspectionRepository implements InspectionRepository {
 
   async list(filters: InspectionSearchFilters): Promise<Page<Inspection>> {
     const where = {
-      ...(filters.cargoId ? { cargoId: filters.cargoId } : {}),
+      ...(filters.shipmentId ? { shipmentId: filters.shipmentId } : {}),
       ...(filters.inspectorId ? { inspectorId: filters.inspectorId } : {}),
       ...(filters.status ? { status: filters.status } : {}),
     };
@@ -129,10 +129,10 @@ export class PrismaInspectionRepository implements InspectionRepository {
   private static toDomain(record: PersistedInspectionWithItems): Inspection {
     return Inspection.restore({
       id: record.id,
-      cargoId: record.cargoId,
+      shipmentId: record.shipmentId,
       compositionVersion: record.compositionVersion,
       scope: record.scope as InspectionScope,
-      cargoItemId: record.cargoItemId,
+      shipmentItemId: record.shipmentItemId,
       inspectorId: record.inspectorId,
       status: record.status as InspectionStatus,
       items: record.items.map((item) =>

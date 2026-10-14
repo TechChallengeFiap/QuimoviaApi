@@ -12,7 +12,7 @@ export class ListInspectionsQueryDto {
   })
   @IsOptional()
   @IsUUID()
-  cargoId?: string;
+  shipmentId?: string;
 
   @ApiPropertyOptional({
     type: String,

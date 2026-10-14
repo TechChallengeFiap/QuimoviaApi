@@ -42,8 +42,8 @@ import { ApiPaginationQuery } from '@/shared/presentation/docs/api-pagination-qu
 import { ApiIdParam } from '@/shared/presentation/docs/api-id-param.decorator.js';
 
 const INSPECTION_ID_EXAMPLE = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
-const CARGO_ID_EXAMPLE = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-const CARGO_ITEM_ID_EXAMPLE = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
+const SHIPMENT_ID_EXAMPLE = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+const SHIPMENT_ITEM_ID_EXAMPLE = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
 const INSPECTOR_ID_EXAMPLE = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
 
 const INSPECTION_NOT_FOUND_MESSAGE =
@@ -80,9 +80,9 @@ export class InspectionsController {
         summary: 'Inspeção da carga inteira',
         description: 'Avalia a carga como um todo, sem item específico.',
         value: {
-          cargoId: CARGO_ID_EXAMPLE,
+          shipmentId: SHIPMENT_ID_EXAMPLE,
           compositionVersion: 1,
-          scope: InspectionScope.CARGO,
+          scope: InspectionScope.SHIPMENT,
           inspectorId: INSPECTOR_ID_EXAMPLE,
           requirements: [
             InspectionRequirement.PACKAGING_INTEGRITY,
@@ -96,10 +96,10 @@ export class InspectionsController {
         description:
           'Avalia apenas o item informado, que deve pertencer à composição avaliada.',
         value: {
-          cargoId: CARGO_ID_EXAMPLE,
+          shipmentId: SHIPMENT_ID_EXAMPLE,
           compositionVersion: 2,
-          scope: InspectionScope.CARGO_ITEM,
-          cargoItemId: CARGO_ITEM_ID_EXAMPLE,
+          scope: InspectionScope.SHIPMENT_ITEM,
+          shipmentItemId: SHIPMENT_ITEM_ID_EXAMPLE,
           inspectorId: INSPECTOR_ID_EXAMPLE,
           requirements: [
             InspectionRequirement.EXPIRATION_DATE,
@@ -117,7 +117,7 @@ export class InspectionsController {
     HttpStatus.BAD_REQUEST,
     'Dados inválidos no corpo da requisição.',
     [
-      'cargoId must be a UUID',
+      'shipmentId must be a UUID',
       'compositionVersion must not be less than 1',
       'requirements should not be empty',
     ],
@@ -143,12 +143,12 @@ export class InspectionsController {
       'Retorna uma lista paginada de inspeções, ordenada do cadastro mais recente para o mais antigo.',
   })
   @ApiQuery({
-    name: 'cargoId',
+    name: 'shipmentId',
     required: false,
     type: String,
     format: 'uuid',
     description: 'Filtra as inspeções de uma carga',
-    example: CARGO_ID_EXAMPLE,
+    example: SHIPMENT_ID_EXAMPLE,
   })
   @ApiQuery({
     name: 'inspectorId',
@@ -175,7 +175,7 @@ export class InspectionsController {
     HttpStatus.BAD_REQUEST,
     'Filtros ou parâmetros de paginação inválidos.',
     [
-      'cargoId must be a UUID',
+      'shipmentId must be a UUID',
       'pageSize must not be greater than 100',
     ],
   )

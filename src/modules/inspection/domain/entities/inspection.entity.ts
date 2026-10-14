@@ -8,10 +8,10 @@ import { InspectionItem } from '@/modules/inspection/domain/value-objects/inspec
 
 export interface InspectionProperties {
   id: string;
-  cargoId: string;
+  shipmentId: string;
   compositionVersion: number;
   scope: InspectionScope;
-  cargoItemId: string | null;
+  shipmentItemId: string | null;
   inspectorId: string;
   status: InspectionStatus;
   items: InspectionItem[];
@@ -22,10 +22,10 @@ export interface InspectionProperties {
 }
 
 export interface CreateInspectionData {
-  cargoId: string;
+  shipmentId: string;
   compositionVersion: number;
   scope: InspectionScope;
-  cargoItemId?: string | null;
+  shipmentItemId?: string | null;
   inspectorId: string;
   requirements: InspectionRequirement[];
 }
@@ -41,10 +41,10 @@ export interface CreateInspectionData {
  */
 export class Inspection {
   readonly id: string;
-  readonly cargoId: string;
+  readonly shipmentId: string;
   readonly compositionVersion: number;
   readonly scope: InspectionScope;
-  readonly cargoItemId: string | null;
+  readonly shipmentItemId: string | null;
   readonly createdAt: Date;
 
   #inspectorId: string;
@@ -56,10 +56,10 @@ export class Inspection {
 
   private constructor(properties: InspectionProperties) {
     this.id = properties.id;
-    this.cargoId = properties.cargoId;
+    this.shipmentId = properties.shipmentId;
     this.compositionVersion = properties.compositionVersion;
     this.scope = properties.scope;
-    this.cargoItemId = properties.cargoItemId;
+    this.shipmentItemId = properties.shipmentItemId;
     this.createdAt = properties.createdAt;
     this.#inspectorId = properties.inspectorId;
     this.#status = properties.status;
@@ -75,12 +75,15 @@ export class Inspection {
 
     return new Inspection({
       id: randomUUID(),
-      cargoId: Inspection.validateIdentifier(data.cargoId, 'da carga'),
+      shipmentId: Inspection.validateIdentifier(data.shipmentId, 'da carga'),
       compositionVersion: Inspection.validateCompositionVersion(
         data.compositionVersion,
       ),
       scope: data.scope,
-      cargoItemId: Inspection.validateCargoItem(data.scope, data.cargoItemId),
+      shipmentItemId: Inspection.validateShipmentItem(
+        data.scope,
+        data.shipmentItemId,
+      ),
       inspectorId: Inspection.validateIdentifier(data.inspectorId, 'do Fiscal'),
       status: InspectionStatus.PENDING,
       items: Inspection.createItems(data.requirements),
@@ -199,10 +202,10 @@ export class Inspection {
   toObject(): InspectionProperties {
     return {
       id: this.id,
-      cargoId: this.cargoId,
+      shipmentId: this.shipmentId,
       compositionVersion: this.compositionVersion,
       scope: this.scope,
-      cargoItemId: this.cargoItemId,
+      shipmentItemId: this.shipmentItemId,
       inspectorId: this.#inspectorId,
       status: this.#status,
       items: this.items,
@@ -251,28 +254,31 @@ export class Inspection {
    * A inspeção de um item exige o identificador do item avaliado; a da carga
    * inteira não se refere a nenhum item específico.
    */
-  private static validateCargoItem(
+  private static validateShipmentItem(
     scope: InspectionScope,
-    cargoItemId: string | null | undefined,
+    shipmentItemId: string | null | undefined,
   ): string | null {
-    const normalizedCargoItemId = cargoItemId?.trim() || null;
+    const normalizedShipmentItemId = shipmentItemId?.trim() || null;
 
     if (
-      scope === InspectionScope.CARGO_ITEM &&
-      normalizedCargoItemId === null
+      scope === InspectionScope.SHIPMENT_ITEM &&
+      normalizedShipmentItemId === null
     ) {
       throw new BusinessRuleError(
         'A inspeção de um item da carga exige o identificador do item.',
       );
     }
 
-    if (scope === InspectionScope.CARGO && normalizedCargoItemId !== null) {
+    if (
+      scope === InspectionScope.SHIPMENT &&
+      normalizedShipmentItemId !== null
+    ) {
       throw new BusinessRuleError(
         'A inspeção da carga inteira não deve informar um item da carga.',
       );
     }
 
-    return normalizedCargoItemId;
+    return normalizedShipmentItemId;
   }
 
   private static createItems(

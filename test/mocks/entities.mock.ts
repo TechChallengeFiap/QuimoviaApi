@@ -49,9 +49,9 @@ export function buildInspection(
   override: Partial<CreateInspectionData> = {},
 ): Inspection {
   return Inspection.create({
-    cargoId: 'cargo-001',
+    shipmentId: 'shipment-001',
     compositionVersion: 1,
-    scope: InspectionScope.CARGO,
+    scope: InspectionScope.SHIPMENT,
     inspectorId: 'fiscal-001',
     requirements: [InspectionRequirement.NO_LEAKAGE],
     ...override,

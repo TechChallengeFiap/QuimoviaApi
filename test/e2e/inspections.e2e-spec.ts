@@ -10,17 +10,17 @@ import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exce
 import { InspectionRepositoryMock } from '../mocks/inspection-repository.mock.js';
 import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
 
-const CARGO_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-const CARGO_ITEM_ID = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
+const SHIPMENT_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+const SHIPMENT_ITEM_ID = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
 const INSPECTOR_ID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
 
 describe('InspectionsController (e2e)', () => {
   let app: INestApplication;
 
   const payload = {
-    cargoId: CARGO_ID,
+    shipmentId: SHIPMENT_ID,
     compositionVersion: 1,
-    scope: 'CARGO',
+    scope: 'SHIPMENT',
     inspectorId: INSPECTOR_ID,
     requirements: ['PACKAGING_INTEGRITY', 'NO_LEAKAGE'],
   };
@@ -62,10 +62,10 @@ describe('InspectionsController (e2e)', () => {
       .expect(201);
 
     expect(response.body).toMatchObject({
-      cargoId: CARGO_ID,
+      shipmentId: SHIPMENT_ID,
       compositionVersion: 1,
-      scope: 'CARGO',
-      cargoItemId: null,
+      scope: 'SHIPMENT',
+      shipmentItemId: null,
       inspectorId: INSPECTOR_ID,
       status: 'PENDING',
       startedAt: null,
@@ -80,10 +80,14 @@ describe('InspectionsController (e2e)', () => {
   it('cadastra a inspeção de um item da carga', async () => {
     await request(app.getHttpServer())
       .post('/inspecoes')
-      .send({ ...payload, scope: 'CARGO_ITEM', cargoItemId: CARGO_ITEM_ID })
+      .send({
+        ...payload,
+        scope: 'SHIPMENT_ITEM',
+        shipmentItemId: SHIPMENT_ITEM_ID,
+      })
       .expect(201)
       .expect(({ body }) => {
-        expect(body.cargoItemId).toBe(CARGO_ITEM_ID);
+        expect(body.shipmentItemId).toBe(SHIPMENT_ITEM_ID);
       });
   });
 
@@ -91,7 +95,7 @@ describe('InspectionsController (e2e)', () => {
     await request(app.getHttpServer())
       .post('/inspecoes')
       .send({
-        cargoId: 'nao-e-uuid',
+        shipmentId: 'nao-e-uuid',
         compositionVersion: 0,
         scope: 'PORTO',
         inspectorId: INSPECTOR_ID,
@@ -110,7 +114,7 @@ describe('InspectionsController (e2e)', () => {
   it('retorna 422 quando o escopo de item não informa o item da carga', async () => {
     await request(app.getHttpServer())
       .post('/inspecoes')
-      .send({ ...payload, scope: 'CARGO_ITEM' })
+      .send({ ...payload, scope: 'SHIPMENT_ITEM' })
       .expect(422);
   });
 
@@ -133,23 +137,23 @@ describe('InspectionsController (e2e)', () => {
   });
 
   it('lista as inspeções paginadas e filtradas pela carga', async () => {
-    const otherCargoId = '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b';
+    const otherShipmentId = '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b';
     await request(app.getHttpServer()).post('/inspecoes').send(payload);
     await request(app.getHttpServer())
       .post('/inspecoes')
-      .send({ ...payload, cargoId: otherCargoId });
+      .send({ ...payload, shipmentId: otherShipmentId });
 
     const response = await request(app.getHttpServer())
-      .get(`/inspecoes?cargoId=${otherCargoId}&page=1&pageSize=10`)
+      .get(`/inspecoes?shipmentId=${otherShipmentId}&page=1&pageSize=10`)
       .expect(200);
 
     expect(response.body).toMatchObject({ total: 1, page: 1, pageSize: 10 });
-    expect(response.body.items[0].cargoId).toBe(otherCargoId);
+    expect(response.body.items[0].shipmentId).toBe(otherShipmentId);
   });
 
   it('rejeita filtros inválidos na listagem', async () => {
     await request(app.getHttpServer())
-      .get('/inspecoes?cargoId=nao-e-uuid&pageSize=500')
+      .get('/inspecoes?shipmentId=nao-e-uuid&pageSize=500')
       .expect(400);
   });
 

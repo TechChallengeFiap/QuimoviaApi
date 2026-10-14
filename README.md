@@ -122,7 +122,7 @@ A persistência do Quimovia foi estruturada sobre o banco relacional **MySQL 8.4
 
 - **Garantias ACID:** Operações de liberação, inspeção e bloqueio de cargas químicas demandam consistência transacional absoluta.
 - **Integridade Referencial Forte:** Cargas obrigatoriamente referenciam usuários responsáveis existentes e itens de inspeção vinculam-se unicamente às suas respectivas vistorias (`Foreign Keys` e `Cascades`).
-- **Consultas Relacionais com Índices:** Utilização de índices compostos em campos de consulta frequente (como `[cargoId]`, `[inspectorId, status]` e `[responsibleUserId]`).
+- **Consultas Relacionais com Índices:** Utilização de índices compostos em campos de consulta frequente (como `[shipmentId]`, `[inspectorId, status]` e `[responsibleUserId]`).
 
 ## 5. Configuração e Execução
 
