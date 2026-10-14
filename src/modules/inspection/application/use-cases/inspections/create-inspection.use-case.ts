@@ -1,18 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
-import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
-import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
+import {
+  Inspection,
+  type CreateInspectionData,
+} from '@/modules/inspection/domain/entities/inspection.entity.js';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import type { InspectionRepository } from '@/modules/inspection/domain/repositories/inspection.repository.js';
-
-export interface CreateInspectionInput {
-  cargoId: string;
-  compositionVersion: number;
-  scope: InspectionScope;
-  cargoItemId?: string;
-  inspectorId: string;
-  requirements: InspectionRequirement[];
-}
 
 @Injectable()
 export class CreateInspectionUseCase {
@@ -23,16 +15,10 @@ export class CreateInspectionUseCase {
     private readonly inspections: InspectionRepository,
   ) {}
 
-  async execute(input: CreateInspectionInput): Promise<Inspection> {
+  /** A entrada é a mesma da criação da entidade, que valida os dados. */
+  async execute(input: CreateInspectionData): Promise<Inspection> {
     try {
-      const inspection = Inspection.create({
-        cargoId: input.cargoId,
-        compositionVersion: input.compositionVersion,
-        scope: input.scope,
-        cargoItemId: input.cargoItemId,
-        inspectorId: input.inspectorId,
-        requirements: input.requirements,
-      });
+      const inspection = Inspection.create(input);
 
       return await this.inspections.create(inspection);
     } catch (error) {
