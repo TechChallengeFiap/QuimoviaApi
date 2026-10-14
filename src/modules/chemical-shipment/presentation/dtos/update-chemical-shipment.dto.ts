@@ -1,15 +1,20 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
 import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 
 export class UpdateChemicalShipmentDto extends PartialType(
   CreateChemicalShipmentDTO,
 ) {
-  @ApiProperty({
-    required: false,
-    type: () => StatusShipment,
+  @ApiPropertyOptional({
+    enum: StatusShipment,
+    enumName: 'StatusShipment',
+    description: 'Nova situação da carga química',
+    example: StatusShipment.INSPECTION,
   })
-  declare status?: StatusShipment;
+  @IsOptional()
+  @IsEnum(StatusShipment)
+  status?: StatusShipment;
 
   @ApiProperty({
     required: false,

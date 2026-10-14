@@ -151,6 +151,33 @@ describe('ChemicalShipmentController (e2e)', () => {
       .expect(404);
   });
 
+  it('atualiza a situação de uma carga', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/chemical-shipment')
+      .send(payload)
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/chemical-shipment/${created.body.id}`)
+      .send({ status: 'INSPECTION' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.status).toBe('INSPECTION');
+      });
+  });
+
+  it('responde 400 para uma situação inválida na atualização', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/chemical-shipment')
+      .send(payload)
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/chemical-shipment/${created.body.id}`)
+      .send({ status: 'XPTO' })
+      .expect(400);
+  });
+
   it('responde 422 ao alterar uma carga já aprovada', async () => {
     const approved = ChemicalShipment.restore({
       id: 'ship-aprovada',

@@ -31,6 +31,7 @@ import { ListChemicalShipmentsUseCase } from '@/modules/chemical-shipment/applic
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/find-chemical-shipment-by-id.use-case.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
+import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { UpdateChemicalShipmentDto } from '@/modules/chemical-shipment/presentation/dtos/update-chemical-shipment.dto.js';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
@@ -243,7 +244,8 @@ export class ChemicalShipmentController {
   )
   async updateChemicalShipment(
     @Param('id') id: string,
-    @Body() updateChemicalShipmentDto: UpdateChemicalShipmentDto,
+    @Body(validationPipeFor(UpdateChemicalShipmentDto))
+    updateChemicalShipmentDto: UpdateChemicalShipmentDto,
   ): Promise<ChemicalShipmentResponseDto> {
     const details = await this.updateChemicalShipmentUseCase.execute(
       id,
