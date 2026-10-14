@@ -6,10 +6,7 @@ import { ListChemicalShipmentsUseCase } from '@/modules/chemical-shipment/applic
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/find-chemical-shipment-by-id.use-case.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
-import {
-  BadRequestException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
 import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
@@ -113,7 +110,7 @@ describe('ChemicalShipmentController', () => {
       ).rejects.toThrow(ResourceNotFoundError);
     });
 
-    it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
+    it('deve deixar um erro inesperado seguir para o tratamento global', async () => {
       createUseCase.execute.mockRejectedValue(
         new Error('Falha de conexão com banco'),
       );
@@ -124,7 +121,7 @@ describe('ChemicalShipmentController', () => {
           responsibleUserId: 'user-001',
           documentsIds: 'doc-001',
         }),
-      ).rejects.toThrow(InternalServerErrorException);
+      ).rejects.toThrow('Falha de conexão com banco');
     });
   });
 
@@ -166,11 +163,11 @@ describe('ChemicalShipmentController', () => {
       );
     });
 
-    it('deve capturar erro inesperado na listagem e lançar InternalServerErrorException', async () => {
+    it('deve deixar um erro inesperado na listagem seguir para o tratamento global', async () => {
       listUseCase.execute.mockRejectedValue(new Error('Crash na query'));
 
       await expect(controller.listChemicalShipments({})).rejects.toThrow(
-        InternalServerErrorException,
+        'Crash na query',
       );
     });
   });
@@ -194,14 +191,14 @@ describe('ChemicalShipmentController', () => {
       ).rejects.toThrow(ResourceNotFoundError);
     });
 
-    it('deve capturar erro inesperado na busca por ID e lançar InternalServerErrorException', async () => {
+    it('deve deixar um erro inesperado na busca por ID seguir para o tratamento global', async () => {
       findByIdUseCase.execute.mockRejectedValue(
         new Error('Erro interno não tratado'),
       );
 
       await expect(
         controller.findChemicalShipmentById('id-123'),
-      ).rejects.toThrow(InternalServerErrorException);
+      ).rejects.toThrow('Erro interno não tratado');
     });
   });
 
@@ -244,7 +241,7 @@ describe('ChemicalShipmentController', () => {
       ).rejects.toThrow(ResourceNotFoundError);
     });
 
-    it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
+    it('deve deixar um erro inesperado seguir para o tratamento global', async () => {
       updateUseCase.execute.mockRejectedValue(
         new Error('Falha de conexão com banco'),
       );
@@ -255,7 +252,7 @@ describe('ChemicalShipmentController', () => {
           responsibleUserId: 'user-001',
           documentsIds: 'doc-001',
         }),
-      ).rejects.toThrow(InternalServerErrorException);
+      ).rejects.toThrow('Falha de conexão com banco');
     });
   });
 
@@ -278,14 +275,14 @@ describe('ChemicalShipmentController', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('deve capturar erro inesperado e lançar InternalServerErrorException', async () => {
+    it('deve deixar um erro inesperado seguir para o tratamento global', async () => {
       deleteUseCase.execute.mockRejectedValue(
         new Error('Falha de conexão com banco'),
       );
 
       await expect(
         controller.deleteChemicalShipment(mockShipment.id),
-      ).rejects.toThrow(InternalServerErrorException);
+      ).rejects.toThrow('Falha de conexão com banco');
     });
   });
 });

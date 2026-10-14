@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ChemicalShipmentDetails } from '@/modules/chemical-shipment/application/dto/chemical-shipment-details.dto.js';
 import type { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
@@ -19,6 +19,8 @@ export interface UpdateChemicalShipmentInput {
 
 @Injectable()
 export class UpdateChemicalShipmentUseCase {
+  private readonly logger = new Logger(UpdateChemicalShipmentUseCase.name);
+
   constructor(
     @Inject(CHEMICAL_SHIPMENT_REPOSITORY)
     private readonly chemicalShipments: ChemicalShipmentRepository,
@@ -35,40 +37,48 @@ export class UpdateChemicalShipmentUseCase {
     id: string,
     input: UpdateChemicalShipmentInput,
   ): Promise<ChemicalShipmentDetails> {
-    const chemicalShipment = await this.chemicalShipments.findById(id);
+    try {
+      const chemicalShipment = await this.chemicalShipments.findById(id);
 
-    if (!chemicalShipment) {
-      throw new ResourceNotFoundError('Carga Química', id);
-    }
-
-    if (input.status) {
-      chemicalShipment.changeStatus(input.status);
-    }
-
-    if (input.productId) {
-      chemicalShipment.changeProduct(input.productId);
-    }
-
-    let newResponsibleUser: UserSummary | null = null;
-
-    if (input.responsibleUserId) {
-      newResponsibleUser = await this.users.findById(input.responsibleUserId);
-      if (!newResponsibleUser) {
-        throw new ResourceNotFoundError('Usuário', input.responsibleUserId);
+      if (!chemicalShipment) {
+        throw new ResourceNotFoundError('Carga Química', id);
       }
 
-      chemicalShipment.changeResponsibleUser(input.responsibleUserId);
+      if (input.status) {
+        chemicalShipment.changeStatus(input.status);
+      }
+
+      if (input.productId) {
+        chemicalShipment.changeProduct(input.productId);
+      }
+
+      let newResponsibleUser: UserSummary | null = null;
+
+      if (input.responsibleUserId) {
+        newResponsibleUser = await this.users.findById(input.responsibleUserId);
+        if (!newResponsibleUser) {
+          throw new ResourceNotFoundError('Usuário', input.responsibleUserId);
+        }
+
+        chemicalShipment.changeResponsibleUser(input.responsibleUserId);
+      }
+
+      if (input.documentsIds) {
+        chemicalShipment.changeDocuments(input.documentsIds);
+      }
+
+      const shipment = await this.chemicalShipments.update(chemicalShipment);
+      const responsibleUser =
+        newResponsibleUser ??
+        (await this.users.findById(shipment.responsibleUserId));
+
+      return { shipment, responsibleUser };
+    } catch (error) {
+      this.logger.error(
+        `Erro ao atualizar a carga química com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
     }
-
-    if (input.documentsIds) {
-      chemicalShipment.changeDocuments(input.documentsIds);
-    }
-
-    const shipment = await this.chemicalShipments.update(chemicalShipment);
-    const responsibleUser =
-      newResponsibleUser ??
-      (await this.users.findById(shipment.responsibleUserId));
-
-    return { shipment, responsibleUser };
   }
 }

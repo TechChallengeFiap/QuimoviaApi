@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+import { Logger } from '@nestjs/common';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment.entity.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
@@ -14,8 +16,12 @@ import {
 describe('UpdateChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
   let useCase: UpdateChemicalShipmentUseCase;
+  let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
   beforeEach(() => {
+    loggerError = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     chemicalShipments = new ChemicalShipmentMock();
     useCase = new UpdateChemicalShipmentUseCase(
       chemicalShipments,
@@ -24,6 +30,10 @@ describe('UpdateChemicalShipmentUseCase', () => {
         userSummary({ id: 'user-002', name: 'Segundo Operador' }),
       ]),
     );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   async function createSampleShipment(
@@ -76,6 +86,10 @@ describe('UpdateChemicalShipmentUseCase', () => {
         productId: 'prod-002',
       }),
     ).rejects.toThrow(ResourceNotFoundError);
+    expect(loggerError).toHaveBeenCalledWith(
+      'Erro ao atualizar a carga química com id shipment-inexistente: Carga Química não encontrado(a) para o identificador "shipment-inexistente".',
+      expect.any(String),
+    );
   });
 
   it('deve lançar ResourceNotFoundError quando o usuário responsável não existir na atualização', async () => {

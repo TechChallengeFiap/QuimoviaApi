@@ -4,11 +4,8 @@ import {
   Delete,
   Get,
   HttpCode,
-  HttpException,
   HttpStatus,
   Inject,
-  InternalServerErrorException,
-  Logger,
   Param,
   Patch,
   Post,
@@ -34,7 +31,6 @@ import { ListChemicalShipmentsUseCase } from '@/modules/chemical-shipment/applic
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/find-chemical-shipment-by-id.use-case.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/enums/status-shipment.enum.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
-import { DomainError } from '@/shared/domain/errors/domain.error.js';
 import { UpdateChemicalShipmentDto } from '@/modules/chemical-shipment/presentation/dtos/update-chemical-shipment.dto.js';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipments/delete-chemical-shipment.use-case.js';
@@ -45,8 +41,6 @@ import { ApiIdParam } from '@/shared/presentation/docs/api-id-param.decorator.js
 @ApiTags('Cargas Químicas')
 @UseFilters(DomainExceptionFilter)
 export class ChemicalShipmentController {
-  private readonly logger = new Logger(ChemicalShipmentController.name);
-
   constructor(
     @Inject(CreateChemicalShipmentUseCase)
     private readonly createChemicalShipmentUseCase: CreateChemicalShipmentUseCase,
@@ -114,24 +108,9 @@ export class ChemicalShipmentController {
     )
     chemicalShipment: CreateChemicalShipmentDTO,
   ): Promise<ChemicalShipmentResponseDto> {
-    try {
-      const details =
-        await this.createChemicalShipmentUseCase.execute(chemicalShipment);
-      return ChemicalShipmentResponseDto.fromDetails(details);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao criar carga química: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-
-      if (error instanceof HttpException || error instanceof DomainError) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException(
-        'Erro interno do servidor ao processar a criação da carga química.',
-      );
-    }
+    const details =
+      await this.createChemicalShipmentUseCase.execute(chemicalShipment);
+    return ChemicalShipmentResponseDto.fromDetails(details);
   }
 
   @Get()
@@ -187,23 +166,8 @@ export class ChemicalShipmentController {
     )
     query: ListChemicalShipmentsQueryDto,
   ): Promise<ChemicalShipmentPageResponseDto> {
-    try {
-      const page = await this.listChemicalShipmentsUseCase.execute(query);
-      return ChemicalShipmentPageResponseDto.fromPage(page);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao listar cargas químicas: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-
-      if (error instanceof HttpException || error instanceof DomainError) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException(
-        'Erro interno do servidor ao processar a listagem das cargas químicas.',
-      );
-    }
+    const page = await this.listChemicalShipmentsUseCase.execute(query);
+    return ChemicalShipmentPageResponseDto.fromPage(page);
   }
 
   @Get(':id')
@@ -230,23 +194,8 @@ export class ChemicalShipmentController {
   async findChemicalShipmentById(
     @Param('id') id: string,
   ): Promise<ChemicalShipmentResponseDto> {
-    try {
-      const details = await this.findChemicalShipmentByIdUseCase.execute(id);
-      return ChemicalShipmentResponseDto.fromDetails(details);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao buscar carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-
-      if (error instanceof HttpException || error instanceof DomainError) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException(
-        'Erro interno do servidor ao processar a busca da carga química.',
-      );
-    }
+    const details = await this.findChemicalShipmentByIdUseCase.execute(id);
+    return ChemicalShipmentResponseDto.fromDetails(details);
   }
 
   @Patch(':id')
@@ -296,27 +245,12 @@ export class ChemicalShipmentController {
     @Param('id') id: string,
     @Body() updateChemicalShipmentDto: UpdateChemicalShipmentDto,
   ): Promise<ChemicalShipmentResponseDto> {
-    try {
-      const details = await this.updateChemicalShipmentUseCase.execute(
-        id,
-        updateChemicalShipmentDto,
-      );
+    const details = await this.updateChemicalShipmentUseCase.execute(
+      id,
+      updateChemicalShipmentDto,
+    );
 
-      return ChemicalShipmentResponseDto.fromDetails(details);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao atualizar carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-
-      if (error instanceof HttpException || error instanceof DomainError) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException(
-        'Erro interno do servidor ao processar a atualização da carga química.',
-      );
-    }
+    return ChemicalShipmentResponseDto.fromDetails(details);
   }
 
   @Delete(':id')
@@ -341,21 +275,6 @@ export class ChemicalShipmentController {
       'Erro interno do servidor ao processar a remoção da carga química.',
   })
   async deleteChemicalShipment(@Param('id') id: string): Promise<void> {
-    try {
-      await this.deleteChemicalShipmentUseCase.execute(id);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao remover carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-
-      if (error instanceof HttpException || error instanceof DomainError) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException(
-        'Erro interno do servidor ao processar a remoção da carga química.',
-      );
-    }
+    await this.deleteChemicalShipmentUseCase.execute(id);
   }
 }
