@@ -8,6 +8,8 @@ import {
 } from '@/shared/domain/errors/domain.error.js';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import type { PasswordHasher } from '@/modules/user/application/contracts/password-hasher.contract.js';
+import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
+import type { SessionRepository } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
 
@@ -26,6 +28,7 @@ export class UpdateUserUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(PASSWORD_HASHER) private readonly passwordHasher: PasswordHasher,
+    @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
   ) {}
 
   async execute(id: string, input: UpdateUserInput): Promise<User> {
@@ -35,6 +38,8 @@ export class UpdateUserUseCase {
       if (!user) {
         throw new ResourceNotFoundError('Usuário', id);
       }
+
+      const previousStatus = user.status;
 
       if (input.name !== undefined) {
         user.rename(input.name);
@@ -54,6 +59,15 @@ export class UpdateUserUseCase {
 
       if (input.status !== undefined) {
         this.changeStatus(user, input.status);
+      }
+
+      // A inativação ou o bloqueio invalida as sessões vigentes do usuário
+      // (RN-ACE-03); reativar a conta não as reativa. As sessões são
+      // encerradas antes de gravar o novo status: se o encerramento falhar, o
+      // status não muda e nenhuma sessão fica aberta para voltar a valer numa
+      // reativação.
+      if (user.status !== previousStatus && !user.canAuthenticate()) {
+        await this.sessions.endAllByUserId(user.id, new Date());
       }
 
       return await this.users.update(user);

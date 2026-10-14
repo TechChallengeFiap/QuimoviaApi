@@ -4,6 +4,7 @@ import type {
   UserPage,
 } from '@/modules/user/domain/repositories/user.repository.js';
 import type { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 
 /** Implementação em memória de UserRepository, para uso nos testes. */
 export class UserRepositoryMock implements UserRepository {
@@ -31,6 +32,10 @@ export class UserRepositoryMock implements UserRepository {
     return (
       [...this.users.values()].find((user) => user.email === email) ?? null
     );
+  }
+
+  async registerLogin(user: User): Promise<boolean> {
+    return this.users.get(user.id)?.status === UserStatus.ACTIVE;
   }
 
   async list(filters: UserSearchFilters): Promise<UserPage> {

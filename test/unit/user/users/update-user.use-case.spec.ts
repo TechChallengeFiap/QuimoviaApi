@@ -8,11 +8,14 @@ import {
   ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.ts';
+import { Session } from '@/modules/user/domain/entities/session.entity.js';
 import { PasswordHasherMock } from '../../../mocks/password-hasher.mock.js';
+import { SessionRepositoryMock } from '../../../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
 
 describe('UpdateUserUseCase', () => {
   let users: UserRepositoryMock;
+  let sessions: SessionRepositoryMock;
   let useCase: UpdateUserUseCase;
   let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
@@ -21,8 +24,13 @@ describe('UpdateUserUseCase', () => {
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
     users = new UserRepositoryMock();
-    useCase = new UpdateUserUseCase(users, new PasswordHasherMock());
+    sessions = new SessionRepositoryMock();
+    useCase = new UpdateUserUseCase(users, new PasswordHasherMock(), sessions);
   });
+
+  function startSession(userId: string): Promise<Session> {
+    return sessions.create(Session.start({ userId, durationInSeconds: 3600 }));
+  }
 
   afterEach(() => {
     jest.restoreAllMocks();
@@ -78,6 +86,58 @@ describe('UpdateUserUseCase', () => {
     });
 
     expect(updated.status).toBe(UserStatus.ACTIVE);
+  });
+
+  it.each([UserStatus.BLOCKED, UserStatus.INACTIVE])(
+    'encerra as sessões abertas do usuário ao mudar o status para %s',
+    async (status) => {
+      const user = await registerUser();
+      const other = await registerUser('outro@quimovia.com');
+      const session = await startSession(user.id);
+      const otherSession = await startSession(other.id);
+
+      await useCase.execute(user.id, { status });
+
+      expect(session.isActive()).toBe(false);
+      expect(otherSession.isActive()).toBe(true);
+    },
+  );
+
+  it('não reativa as sessões encerradas ao desbloquear o usuário', async () => {
+    const user = await registerUser();
+    const session = await startSession(user.id);
+
+    await useCase.execute(user.id, { status: UserStatus.BLOCKED });
+    await useCase.execute(user.id, { status: UserStatus.ACTIVE });
+
+    expect(session.isActive()).toBe(false);
+  });
+
+  it('não grava o bloqueio quando o encerramento das sessões falha', async () => {
+    const user = await registerUser();
+    const failure = new Error('Falha de conexão com o banco');
+    jest.spyOn(sessions, 'endAllByUserId').mockRejectedValueOnce(failure);
+    const update = jest.spyOn(users, 'update');
+
+    await expect(
+      useCase.execute(user.id, { status: UserStatus.BLOCKED }),
+    ).rejects.toBe(failure);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('mantém as sessões quando o usuário continua com acesso', async () => {
+    const user = await registerUser();
+    const session = await startSession(user.id);
+    const endAll = jest.spyOn(sessions, 'endAllByUserId');
+
+    await useCase.execute(user.id, {
+      name: 'Maria Souza',
+      role: UserRole.OPERATIONS_MANAGER,
+      status: UserStatus.ACTIVE,
+    });
+
+    expect(endAll).not.toHaveBeenCalled();
+    expect(session.isActive()).toBe(true);
   });
 
   it('registra o erro no log e o propaga quando a persistência falha', async () => {
