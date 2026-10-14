@@ -1,15 +1,14 @@
-import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
-import request from 'supertest';
-import { AppModule } from '@/app.module.ts';
+import { AppModule } from '@/app.module.js';
 import { AUTH_CONFIG } from '@/modules/user/infrastructure/config/auth.config.js';
 import { buildSwaggerConfig } from '@/shared/presentation/docs/swagger.config.js';
-import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
+import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
 
-describe('AppController (e2e)', () => {
+describe('AppModule (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
@@ -17,23 +16,13 @@ describe('AppController (e2e)', () => {
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
-      .useValue({
-        $connect: jest.fn(async () => {}),
-        $disconnect: jest.fn(async () => {}),
-      })
+      .useValue(createPrismaServiceStub())
       .overrideProvider(AUTH_CONFIG)
       .useValue(TEST_AUTH_CONFIG)
       .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
-  });
-
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
   });
 
   it('exige o token de acesso no Swagger só nas rotas protegidas pelo AuthGuard', () => {
