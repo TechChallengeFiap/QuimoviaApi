@@ -30,7 +30,12 @@ function violations(
     );
 }
 
-const isPackage = (entry: SourceImport) => entry.target === null;
+const isSharedOutsideDomain = (path: string) =>
+  path.startsWith('src/shared/infrastructure/') ||
+  path.startsWith('src/shared/presentation/');
+
+const PERSISTENCE_INFRASTRUCTURE =
+  /^src\/(modules\/[^/]+|shared)\/infrastructure\/persistence\//;
 
 describe('Arquitetura: fronteiras entre camadas e contextos', () => {
   it('lê os arquivos de todos os contextos implementados', () => {
@@ -64,12 +69,11 @@ describe('Arquitetura: fronteiras entre camadas e contextos', () => {
         if (entry.specifier === '@nestjs/common') {
           return entry.names.some((name) => !allowedFromNest.has(name));
         }
-        if (isPackage(entry)) return !entry.specifier.startsWith('node:');
+        if (entry.target === null) return !entry.specifier.startsWith('node:');
         return (
-          entry.target?.layer === 'infrastructure' ||
-          entry.target?.layer === 'presentation' ||
-          entry.target?.path.startsWith('src/shared/infrastructure/') === true ||
-          entry.target?.path.startsWith('src/shared/presentation/') === true
+          entry.target.layer === 'infrastructure' ||
+          entry.target.layer === 'presentation' ||
+          isSharedOutsideDomain(entry.target.path)
         );
       },
     );
@@ -124,10 +128,7 @@ describe('Arquitetura: fronteiras entre camadas e contextos', () => {
 
   it('só a infraestrutura de persistência acessa o Prisma', () => {
     const forbidden = violations(
-      (file) =>
-        !/^src\/(modules\/[^/]+\/infrastructure|shared\/infrastructure)\/persistence\//.test(
-          file.path,
-        ),
+      (file) => !PERSISTENCE_INFRASTRUCTURE.test(file.path),
       ({ target }) => target !== null && isPrismaAccess(target),
     );
 

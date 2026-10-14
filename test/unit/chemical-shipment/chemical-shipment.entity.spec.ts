@@ -63,8 +63,14 @@ describe('ChemicalShipment', () => {
     });
 
     it.each([
-      [StatusShipment.APPROVED, 'Não é possível alterar uma carga química aprovada'],
-      [StatusShipment.REPROVED, 'Não é possível alterar uma carga química reprovada'],
+      [
+        StatusShipment.APPROVED,
+        'Não é possível alterar uma carga química aprovada',
+      ],
+      [
+        StatusShipment.REPROVED,
+        'Não é possível alterar uma carga química reprovada',
+      ],
     ])('não altera uma carga com status %s', (status, message) => {
       const shipment = createValidShipment();
       shipment.changeStatus(status);
@@ -73,7 +79,9 @@ describe('ChemicalShipment', () => {
         new BusinessRuleError(message),
       );
       expect(() => shipment.changeProduct('prod-002')).toThrow(message);
-      expect(() => shipment.changeResponsibleUser('user-002')).toThrow(message);
+      expect(() => shipment.changeResponsibleUser('user-002')).toThrow(
+        message,
+      );
       expect(() => shipment.changeDocuments('doc-002')).toThrow(message);
       expect(shipment.status).toBe(status);
     });

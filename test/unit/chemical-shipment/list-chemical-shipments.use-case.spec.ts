@@ -155,7 +155,9 @@ describe('ListChemicalShipmentsUseCase', () => {
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.shipment.id).toBe('ship-2');
-      expect(result.items[0]?.shipment.status).toBe(StatusShipment.INSPECTION);
+      expect(result.items[0]?.shipment.status).toBe(
+        StatusShipment.INSPECTION,
+      );
       expect(result.total).toBe(1);
     });
 
@@ -163,7 +165,10 @@ describe('ListChemicalShipmentsUseCase', () => {
       const result = await useCase.execute({ productId: 'prod-001' });
 
       expect(result.items).toHaveLength(2);
-      expect(result.items.map((i) => i.shipment.id)).toEqual(['ship-1', 'ship-3']);
+      expect(result.items.map((i) => i.shipment.id)).toEqual([
+        'ship-1',
+        'ship-3',
+      ]);
       expect(result.total).toBe(2);
     });
 
@@ -171,7 +176,10 @@ describe('ListChemicalShipmentsUseCase', () => {
       const result = await useCase.execute({ responsibleUserId: 'user-001' });
 
       expect(result.items).toHaveLength(2);
-      expect(result.items.map((i) => i.shipment.id)).toEqual(['ship-1', 'ship-2']);
+      expect(result.items.map((i) => i.shipment.id)).toEqual([
+        'ship-1',
+        'ship-2',
+      ]);
       expect(result.total).toBe(2);
     });
 
