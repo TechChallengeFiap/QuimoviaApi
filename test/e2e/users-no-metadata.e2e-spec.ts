@@ -45,9 +45,16 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
     const { SessionRepositoryMock } =
       await import('../mocks/session-repository.mock.js');
 
+    const { PrismaService } =
+      await import('@/shared/infrastructure/persistence/prisma/prisma.service.js');
+    const { createPrismaServiceStub } =
+      await import('../mocks/prisma-service.mock.js');
+
     const moduleFixture = await Test.createTestingModule({
       imports: [UserModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue(createPrismaServiceStub())
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
       .overrideProvider(PASSWORD_HASHER)

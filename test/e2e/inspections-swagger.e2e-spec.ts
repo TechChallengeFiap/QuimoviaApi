@@ -29,9 +29,16 @@ describe('Swagger do módulo inspection (e2e)', () => {
     const { InspectionRepositoryMock } =
       await import('../mocks/inspection-repository.mock.js');
 
+    const { PrismaService } =
+      await import('@/shared/infrastructure/persistence/prisma/prisma.service.js');
+    const { createPrismaServiceStub } =
+      await import('../mocks/prisma-service.mock.js');
+
     const moduleFixture = await Test.createTestingModule({
       imports: [InspectionModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue(createPrismaServiceStub())
       .overrideProvider(INSPECTION_REPOSITORY)
       .useClass(InspectionRepositoryMock)
       .compile();

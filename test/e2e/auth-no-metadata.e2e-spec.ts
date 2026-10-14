@@ -46,9 +46,16 @@ describe('Autenticação sem a metadata de decorators (e2e)', () => {
     const { ProtectedRouteModule } =
       await import('../mocks/protected-route.mock.js');
 
+    const { PrismaService } =
+      await import('@/shared/infrastructure/persistence/prisma/prisma.service.js');
+    const { createPrismaServiceStub } =
+      await import('../mocks/prisma-service.mock.js');
+
     const moduleFixture = await Test.createTestingModule({
       imports: [ProtectedRouteModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue(createPrismaServiceStub())
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
       .overrideProvider(SESSION_REPOSITORY)

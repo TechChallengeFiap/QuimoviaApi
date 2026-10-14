@@ -28,6 +28,7 @@ import { AuthController } from '@/modules/user/presentation/controllers/auth.con
 import { UsersController } from '@/modules/user/presentation/controllers/users.controller.js';
 import { AuthGuard } from '@/modules/user/presentation/guards/auth.guard.js';
 import { USER_DIRECTORY } from '@/modules/user/public/user-directory.contract.js';
+import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.module.js';
 
 /**
  * Módulo do contexto Identidade e Acesso: cadastro de usuários, sessões,
@@ -47,7 +48,7 @@ import { USER_DIRECTORY } from '@/modules/user/public/user-directory.contract.js
  * módulo é iniciado; sem um JWT_SECRET válido, a aplicação não sobe.
  */
 @Module({
-  imports: [JwtModule.register({})],
+  imports: [PrismaModule, JwtModule.register({})],
   controllers: [UsersController, AuthController],
   providers: [
     CreateUserUseCase,

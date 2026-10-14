@@ -37,9 +37,16 @@ describe('Swagger da autenticação (e2e)', () => {
       await import('../mocks/password-hasher.mock.js');
     const { TEST_AUTH_CONFIG } = await import('../mocks/auth-config.mock.js');
 
+    const { PrismaService } =
+      await import('@/shared/infrastructure/persistence/prisma/prisma.service.js');
+    const { createPrismaServiceStub } =
+      await import('../mocks/prisma-service.mock.js');
+
     const moduleFixture = await Test.createTestingModule({
       imports: [UserModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue(createPrismaServiceStub())
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
       .overrideProvider(SESSION_REPOSITORY)

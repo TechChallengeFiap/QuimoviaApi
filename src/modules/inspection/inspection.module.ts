@@ -7,8 +7,10 @@ import { UpdateInspectionUseCase } from '@/modules/inspection/application/use-ca
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import { PrismaInspectionRepository } from '@/modules/inspection/infrastructure/persistence/prisma/prisma-inspection.repository.js';
 import { InspectionsController } from '@/modules/inspection/presentation/controllers/inspections.controller.js';
+import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.module.js';
 
 @Module({
+  imports: [PrismaModule],
   controllers: [InspectionsController],
   providers: [
     CreateInspectionUseCase,

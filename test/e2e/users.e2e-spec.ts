@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import request from 'supertest';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
@@ -13,6 +14,7 @@ import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
+import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
 
 describe('UsersController (e2e)', () => {
   let app: INestApplication;
@@ -24,6 +26,8 @@ describe('UsersController (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [UserModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue(createPrismaServiceStub())
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
       .overrideProvider(PASSWORD_HASHER)

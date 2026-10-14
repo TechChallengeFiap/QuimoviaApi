@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import request from 'supertest';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
@@ -16,6 +17,7 @@ import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { ProtectedRouteModule } from '../mocks/protected-route.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
+import { createPrismaServiceStub } from '../mocks/prisma-service.mock.js';
 
 const PASSWORD = 'S3nhaForte!';
 
@@ -31,6 +33,8 @@ describe('AuthController (e2e)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [ProtectedRouteModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue(createPrismaServiceStub())
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
       .overrideProvider(SESSION_REPOSITORY)
