@@ -18,7 +18,7 @@ import {
   ConflictError,
   DomainError,
   ResourceNotFoundError,
-} from '@/shared/domain/errors/domain.error.ts';
+} from '@/shared/domain/errors/domain.error.js';
 
 /**
  * Traduz os erros de domínio/aplicação em respostas HTTP apropriadas,
