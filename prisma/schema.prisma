@@ -92,6 +92,7 @@ model User {
   updatedAt         DateTime           @updatedAt
   chemicalShipments ChemicalShipment[]
   sessions          Session[]
+  chemicalProducts  ChemicalProduct[]
 }
 
 model Session {
@@ -103,7 +104,6 @@ model Session {
   endedAt   DateTime?
 
   @@index([userId, endedAt])
-  chemicalProducts  ChemicalProduct[]
 }
 
 enum StatusShipment {
