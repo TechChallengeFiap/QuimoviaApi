@@ -40,4 +40,11 @@ export class UpdateChemicalProductDto extends PartialType(
     description: 'Número ONU: exatamente 4 dígitos.',
   })
   declare unNumber?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'ID do novo usuário responsável pelo produto. Deve existir.',
+  })
+  declare responsibleUserId?: string;
 }

@@ -18,6 +18,7 @@ function createValidProduct(
     unNumber: '1830',
     riskClass: ProductRiskClass.CORROSIVE_SUBSTANCES,
     physicalState: ProductPhysicalState.LIQUID,
+    responsibleUserId: 'user-001',
     ...override,
   });
 }
@@ -42,6 +43,17 @@ describe('ChemicalProduct', () => {
     const product = createValidProduct({ status: ProductStatus.ACTIVE });
 
     expect(product.status).toBe(ProductStatus.ACTIVE);
+  });
+
+  it('exige um usuário responsável e permite trocá-lo', () => {
+    expect(() => createValidProduct({ responsibleUserId: '  ' })).toThrow(BusinessRuleError);
+
+    const product = createValidProduct();
+    expect(product.responsibleUserId).toBe('user-001');
+    expect(product.responsibleUser).toBeNull();
+
+    product.changeResponsibleUser('user-002');
+    expect(product.responsibleUserId).toBe('user-002');
   });
 
   it('trata nome comercial vazio como ausente', () => {
