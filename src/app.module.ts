@@ -5,12 +5,16 @@ import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.
 import { UserModule } from '@/modules/user/user.module.ts';
 import { ChemicalShipmentModule } from '@/modules/chemical-shipment/chemical-shipment.module.ts';
 import { InspectionModule } from '@/modules/inspection/inspection.module.js';
+import { ChemicalProductsModule } from '@/modules/chemical-products/chemical-products.module.js';
 import { AuthModule } from '@/modules/user/auth.module.js';
+
 
 @Module({
   imports: [
     PrismaModule,
     UserModule,
+    ChemicalShipmentModule,
+    ChemicalProductsModule,
     AuthModule,
     ChemicalShipmentModule,
     InspectionModule,
