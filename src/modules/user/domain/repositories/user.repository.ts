@@ -28,6 +28,12 @@ export interface UserRepository {
   remove(id: string): Promise<void>;
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
+  /**
+   * Registra o horário do último login sem regravar os demais dados, e só se o
+   * usuário ainda estiver ativo. Retorna false quando ele deixou de estar ativo
+   * enquanto o login acontecia (por exemplo, foi bloqueado nesse intervalo).
+   */
+  registerLogin(user: User): Promise<boolean>;
   list(filters: UserSearchFilters): Promise<UserPage>;
 }
 

@@ -91,6 +91,18 @@ model User {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   chemicalShipments ChemicalShipment[]
+  sessions          Session[]
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  endedAt   DateTime?
+
+  @@index([userId, endedAt])
   chemicalProducts  ChemicalProduct[]
 }
 

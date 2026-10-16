@@ -24,3 +24,9 @@ export class ResourceNotFoundError extends DomainError {
 
 /** A operação conflita com um recurso já existente. */
 export class ConflictError extends DomainError {}
+
+/** As credenciais ou o token informados não identificam um acesso válido. */
+export class AuthenticationError extends DomainError {}
+
+/** O usuário foi identificado, mas não tem permissão para a operação. */
+export class AccessDeniedError extends DomainError {}
