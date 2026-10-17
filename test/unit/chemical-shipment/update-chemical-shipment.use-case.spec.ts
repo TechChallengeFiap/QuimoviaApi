@@ -1,15 +1,15 @@
-import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.ts';
+import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.js';
+import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
 import { UserRepositoryMock } from '../../mocks/user-repository.mock.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import {
   BusinessRuleError,
   ResourceNotFoundError,
-} from '@/shared/domain/errors/domain.error.ts';
+} from '@/shared/domain/errors/domain.error.js';
 
 describe('UpdateChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
@@ -57,9 +57,10 @@ describe('UpdateChemicalShipmentUseCase', () => {
       productId: 'prod-001',
       responsibleUserId: 'user-001',
       documentsIds: 'doc-001',
+      quantityProduct: 50,
     });
     if (status !== StatusShipment.ANALYZING) {
-      shipment.updateChemicalShipmentStatus(shipment, status);
+      shipment.updateStatus(status);
     }
     return chemicalShipments.create(shipment);
   }
@@ -72,12 +73,14 @@ describe('UpdateChemicalShipmentUseCase', () => {
       responsibleUserId: 'user-002',
       documentsIds: 'doc-002',
       status: StatusShipment.INSPECTION,
+      quantityProduct: 300,
     });
 
     expect(updated.productId).toBe('prod-002');
     expect(updated.responsibleUserId).toBe('user-002');
     expect(updated.documentsIds).toBe('doc-002');
     expect(updated.status).toBe(StatusShipment.INSPECTION);
+    expect(updated.quantityProduct).toBe(300);
   });
 
   it('deve lançar ResourceNotFoundError quando a carga química não for encontrada', async () => {

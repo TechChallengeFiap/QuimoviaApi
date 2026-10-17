@@ -8,12 +8,7 @@ import {
   type UserRepository,
 } from '@/modules/user/domain/repositories/user.repository.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import {
   CHEMICAL_PRODUCT_REPOSITORY,
@@ -51,18 +46,6 @@ export class CreateChemicalShipmentUseCase {
   private async validateInput(
     input: CreateChemicalShipmentData,
   ): Promise<void> {
-    if (!input.productId) {
-      throw new BadRequestException('O productId não pode estar vazio');
-    }
-
-    if (!input.responsibleUserId) {
-      throw new BadRequestException('O responsibleUserId não pode estar vazio');
-    }
-
-    if (!input.documentsIds) {
-      throw new BadRequestException('O documentsIds não pode estar vazio');
-    }
-
     const responsibleUser = await this.userRepository.findById(
       input.responsibleUserId,
     );

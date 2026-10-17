@@ -1,20 +1,20 @@
 import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ChemicalShipmentController } from '@/modules/chemical-shipment/presentation/controllers/chemical-shipment.controller.ts';
-import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
-import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.ts';
-import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { User } from '@/modules/user/domain/entities/user.entity.ts';
-import { UserRole } from '@/modules/user/domain/enums/user-role.enum.ts';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
+import { ChemicalShipmentController } from '@/modules/chemical-shipment/presentation/controllers/chemical-shipment.controller.js';
+import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.js';
+import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.js';
+import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
-import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.ts';
+import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.js';
+import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.js';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
@@ -28,6 +28,7 @@ describe('ChemicalShipmentController', () => {
     productId: 'prod-001',
     responsibleUserId: 'user-001',
     documentsIds: 'doc-001',
+    quantityProduct: 100,
   });
 
   beforeEach(async () => {
@@ -73,6 +74,7 @@ describe('ChemicalShipmentController', () => {
 
       const result = await controller.createChemicalShipment({
         productId: 'prod-001',
+        quantityProduct: 100,
         responsibleUserId: 'user-001',
         documentsIds: 'doc-001',
       });
@@ -89,6 +91,7 @@ describe('ChemicalShipmentController', () => {
       await expect(
         controller.createChemicalShipment({
           productId: '',
+          quantityProduct: 100,
           responsibleUserId: 'user-001',
           documentsIds: 'doc-001',
         }),
@@ -103,6 +106,7 @@ describe('ChemicalShipmentController', () => {
       await expect(
         controller.createChemicalShipment({
           productId: 'prod-001',
+          quantityProduct: 100,
           responsibleUserId: 'user-inexistente',
           documentsIds: 'doc-001',
         }),

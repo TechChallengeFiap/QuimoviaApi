@@ -3,10 +3,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
 import request from 'supertest';
-import { AppModule } from '@/app.module.ts';
+import { AppModule } from '@/app.module.js';
 import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { buildSwaggerConfig } from '@/shared/infrastructure/config/swagger.config.js';
-import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.ts';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 
 describe('AppController (e2e)', () => {

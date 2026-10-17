@@ -14,6 +14,7 @@ export interface UpdateChemicalShipmentInput {
   productId?: string;
   responsibleUserId?: string;
   documentsIds?: string;
+  quantityProduct?: number;
 }
 
 @Injectable()
@@ -36,17 +37,11 @@ export class UpdateChemicalShipmentUseCase {
     }
 
     if (input.status) {
-      existingChemicalShipment.updateChemicalShipmentStatus(
-        existingChemicalShipment,
-        input.status,
-      );
+      existingChemicalShipment.updateStatus(input.status);
     }
 
     if (input.productId) {
-      existingChemicalShipment.changeChemicalShipmentProduct(
-        existingChemicalShipment,
-        input.productId,
-      );
+      existingChemicalShipment.changeProduct(input.productId);
     }
 
     if (input.responsibleUserId) {
@@ -55,17 +50,15 @@ export class UpdateChemicalShipmentUseCase {
         throw new ResourceNotFoundError('Usuário', input.responsibleUserId);
       }
 
-      existingChemicalShipment.changeChemicalShipmentResponsibleUser(
-        existingChemicalShipment,
-        input.responsibleUserId,
-      );
+      existingChemicalShipment.changeResponsibleUser(input.responsibleUserId);
     }
 
     if (input.documentsIds) {
-      existingChemicalShipment.changeChemicalShipmentDocuments(
-        existingChemicalShipment,
-        input.documentsIds,
-      );
+      existingChemicalShipment.changeDocuments(input.documentsIds);
+    }
+
+    if (input.quantityProduct !== undefined) {
+      existingChemicalShipment.changeQuantityProduct(input.quantityProduct);
     }
 
     return await this.chemicalShipments.update(existingChemicalShipment);

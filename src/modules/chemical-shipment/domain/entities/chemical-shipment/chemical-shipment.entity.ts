@@ -8,7 +8,7 @@ export interface CreateChemicalShipmentData {
   productId: string;
   responsibleUserId: string;
   documentsIds: string;
-  quantityProduct?: number;
+  quantityProduct: number;
 }
 
 export interface ChemicalShipmentProperties {
@@ -53,67 +53,101 @@ export class ChemicalShipment {
   static create(data: CreateChemicalShipmentData): ChemicalShipment {
     const now = new Date();
 
+    if (
+      data.quantityProduct === undefined ||
+      data.quantityProduct === null ||
+      data.quantityProduct <= 0
+    ) {
+      throw new BusinessRuleError(
+        'A quantidade do produto não pode ser 0 e nem negativa',
+      );
+    }
+
     return new ChemicalShipment({
       id: randomUUID(),
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
       status: StatusShipment.ANALYZING,
-      quantityProduct: data.quantityProduct ?? 0,
       ...data,
     });
   }
 
-  updateChemicalShipmentStatus(
-    chemicalShipment: ChemicalShipment,
-    status: StatusShipment,
-  ): void {
-    this.validateCanBeUpdated(chemicalShipment);
-
-    chemicalShipment.status = status;
-    chemicalShipment.updatedAt = new Date();
+  updateStatus(status: StatusShipment): void {
+    this.validateCanBeUpdated();
+    this.#status = status;
+    this.#updatedAt = new Date();
   }
 
-  changeChemicalShipmentProduct(
-    chemicalShipment: ChemicalShipment,
-    productId: string,
-  ) {
-    this.validateCanBeUpdated(chemicalShipment);
+  updateChemicalShipmentStatus(
+    arg1: ChemicalShipment | StatusShipment,
+    arg2?: StatusShipment,
+  ): void {
+    const status = arg2 !== undefined ? arg2 : (arg1 as StatusShipment);
+    this.updateStatus(status);
+  }
 
+  changeProduct(productId: string): void {
+    this.validateCanBeUpdated();
     this.#productId = productId;
     this.#updatedAt = new Date();
   }
 
-  changeChemicalShipmentResponsibleUser(
-    chemicalShipment: ChemicalShipment,
-    responsibleUserId: string,
-  ) {
-    this.validateCanBeUpdated(chemicalShipment);
+  changeChemicalShipmentProduct(
+    arg1: ChemicalShipment | string,
+    arg2?: string,
+  ): void {
+    const productId = typeof arg1 === 'string' ? arg1 : arg2!;
+    this.changeProduct(productId);
+  }
 
+  changeResponsibleUser(responsibleUserId: string): void {
+    this.validateCanBeUpdated();
     this.#responsibleUserId = responsibleUserId;
     this.#updatedAt = new Date();
   }
 
-  changeChemicalShipmentDocuments(
-    chemicalShipment: ChemicalShipment,
-    documentsIds: string,
-  ) {
-    this.validateCanBeUpdated(chemicalShipment);
+  changeChemicalShipmentResponsibleUser(
+    arg1: ChemicalShipment | string,
+    arg2?: string,
+  ): void {
+    const responsibleUserId = typeof arg1 === 'string' ? arg1 : arg2!;
+    this.changeResponsibleUser(responsibleUserId);
+  }
 
+  changeDocuments(documentsIds: string): void {
+    this.validateCanBeUpdated();
     this.#documentsIds = documentsIds;
     this.#updatedAt = new Date();
   }
 
-  private validateCanBeUpdated(chemicalShipment?: ChemicalShipment): void {
-    const status = chemicalShipment ? chemicalShipment.status : this.#status;
+  changeChemicalShipmentDocuments(
+    arg1: ChemicalShipment | string,
+    arg2?: string,
+  ): void {
+    const documentsIds = typeof arg1 === 'string' ? arg1 : arg2!;
+    this.changeDocuments(documentsIds);
+  }
 
-    if (status === StatusShipment.REPROVED) {
+  changeQuantityProduct(quantityProduct: number): void {
+    this.validateCanBeUpdated();
+    if (quantityProduct <= 0) {
+      throw new BusinessRuleError(
+        'A quantidade do produto não pode ser 0 e nem negativa',
+      );
+    }
+    this.#quantityProduct = quantityProduct;
+    this.#updatedAt = new Date();
+  }
+
+  private validateCanBeUpdated(): void {
+    if (this.#status === StatusShipment.REPROVED) {
       throw new BusinessRuleError(
         'Não é possível alterar uma carga química reprovada',
       );
     }
 
-    if (status === StatusShipment.APPROVED) {
+    if (this.#status === StatusShipment.APPROVED) {
       throw new BusinessRuleError(
         'Não é possível alterar uma carga química aprovada',
       );
@@ -161,6 +195,11 @@ export class ChemicalShipment {
   }
 
   set quantityProduct(quantityProduct: number) {
+    if (quantityProduct <= 0) {
+      throw new BusinessRuleError(
+        'A quantidade do produto não pode ser 0 e nem negativa',
+      );
+    }
     this.#quantityProduct = quantityProduct;
   }
 

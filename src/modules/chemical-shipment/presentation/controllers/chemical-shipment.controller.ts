@@ -78,6 +78,7 @@ export class ChemicalShipmentController {
           'Payload com dados mínimos obrigatórios para criar a carga química',
         value: {
           productId: 'prod-001',
+          quantityProduct: 100,
           responsibleUserId: 'user-001',
           documentsIds: 'doc-001',
         },

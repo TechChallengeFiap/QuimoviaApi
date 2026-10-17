@@ -2,10 +2,10 @@ import {
   ListChemicalShipmentUseCase,
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
-} from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.ts';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.ts';
+} from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
 
 describe('ListChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
@@ -26,6 +26,7 @@ describe('ListChemicalShipmentUseCase', () => {
       deletedAt: null,
       status: props.status ?? StatusShipment.ANALYZING,
       productId: props.productId ?? 'prod-001',
+      quantityProduct: 100,
       responsibleUserId: props.responsibleUserId ?? 'user-001',
       documentsIds: props.documentsIds ?? 'doc-001',
     });

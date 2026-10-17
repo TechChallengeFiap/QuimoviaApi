@@ -10,7 +10,10 @@ import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { StatusShipment } from '@/generated/prisma/enums.js';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import {
+  BusinessRuleError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 
 describe('CreateChemicalShipmentUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
@@ -63,6 +66,7 @@ describe('CreateChemicalShipmentUseCase', () => {
   it('cria uma carga química com status inicial ANALYZING', async () => {
     const input = {
       productId: 'prod-001',
+      quantityProduct: 100,
       responsibleUserId: 'user-001',
       documentsIds: 'doc-001',
     };
@@ -70,6 +74,7 @@ describe('CreateChemicalShipmentUseCase', () => {
     const chemicalShipment = await useCase.execute(input);
 
     expect(chemicalShipment.status).toBe(StatusShipment.ANALYZING);
+    expect(chemicalShipment.quantityProduct).toBe(100);
     expect(
       await chemicalShipments.findById(chemicalShipment.id),
     ).not.toBeNull();
@@ -78,6 +83,7 @@ describe('CreateChemicalShipmentUseCase', () => {
   it('deve lançar ResourceNotFoundError quando o usuário responsável não existir', async () => {
     const input = {
       productId: 'prod-001',
+      quantityProduct: 100,
       responsibleUserId: 'user-inexistente',
       documentsIds: 'doc-001',
     };
@@ -85,40 +91,47 @@ describe('CreateChemicalShipmentUseCase', () => {
     await expect(useCase.execute(input)).rejects.toThrow(ResourceNotFoundError);
   });
 
-  it('deve rejeitar um productId invalido', async () => {
+  it('deve lançar ResourceNotFoundError quando o produto químico não existir', async () => {
     const input = {
-      productId: '',
+      productId: 'prod-inexistente',
+      quantityProduct: 100,
       responsibleUserId: 'user-001',
       documentsIds: 'doc-001',
     };
 
-    await expect(useCase.execute(input)).rejects.toThrow(
-      'O productId não pode estar vazio',
-    );
+    await expect(useCase.execute(input)).rejects.toThrow(ResourceNotFoundError);
   });
 
-  it('deve rejeitar um responsibleUserId invalido', async () => {
+  it('deve lançar BusinessRuleError quando a quantidade do produto for igual a zero', async () => {
     const input = {
       productId: 'prod-001',
-      responsibleUserId: '',
+      quantityProduct: 0,
+      responsibleUserId: 'user-001',
       documentsIds: 'doc-001',
     };
 
-    await expect(useCase.execute(input)).rejects.toThrow(
-      'O responsibleUserId não pode estar vazio',
-    );
+    await expect(useCase.execute(input)).rejects.toThrow(BusinessRuleError);
   });
 
-  it('deve rejeitar um documentsIds invalido', async () => {
+  it('deve lançar BusinessRuleError quando a quantidade do produto for negativa', async () => {
+    const input = {
+      productId: 'prod-001',
+      quantityProduct: -5,
+      responsibleUserId: 'user-001',
+      documentsIds: 'doc-001',
+    };
+
+    await expect(useCase.execute(input)).rejects.toThrow(BusinessRuleError);
+  });
+
+  it('deve lançar BusinessRuleError quando a quantidade do produto não for informada', async () => {
     const input = {
       productId: 'prod-001',
       responsibleUserId: 'user-001',
-      documentsIds: '',
-    };
+      documentsIds: 'doc-001',
+    } as any;
 
-    await expect(useCase.execute(input)).rejects.toThrow(
-      'O documentsIds não pode estar vazio',
-    );
+    await expect(useCase.execute(input)).rejects.toThrow(BusinessRuleError);
   });
 });
 
