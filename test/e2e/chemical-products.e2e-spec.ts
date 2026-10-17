@@ -48,7 +48,11 @@ describe('ChemicalProductsController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
     );
     app.useGlobalFilters(new DomainExceptionFilter(app.get(HttpAdapterHost)));
     await app.init();
@@ -71,7 +75,11 @@ describe('ChemicalProductsController (e2e)', () => {
   async function createProduct(override: Record<string, unknown> = {}) {
     const response = await request(app.getHttpServer())
       .post('/chemical-products')
-      .send({ ...validProduct, responsibleUserId: responsibleUser.id, ...override })
+      .send({
+        ...validProduct,
+        responsibleUserId: responsibleUser.id,
+        ...override,
+      })
       .expect(201);
 
     return response.body as { id: string; documents: { id: string }[] };
@@ -107,7 +115,10 @@ describe('ChemicalProductsController (e2e)', () => {
   });
 
   it('rejeita o cadastro sem usuário responsável ou com usuário inexistente', async () => {
-    await request(app.getHttpServer()).post('/chemical-products').send(validProduct).expect(400);
+    await request(app.getHttpServer())
+      .post('/chemical-products')
+      .send(validProduct)
+      .expect(400);
 
     await request(app.getHttpServer())
       .post('/chemical-products')
@@ -119,7 +130,11 @@ describe('ChemicalProductsController (e2e)', () => {
     await createProduct();
     await request(app.getHttpServer())
       .post('/chemical-products')
-      .send({ ...validProduct, responsibleUserId: responsibleUser.id, technicalName: 'Outro' })
+      .send({
+        ...validProduct,
+        responsibleUserId: responsibleUser.id,
+        technicalName: 'Outro',
+      })
       .expect(409);
   });
 
@@ -155,7 +170,9 @@ describe('ChemicalProductsController (e2e)', () => {
         expect(body.responsibleUserId).toBe(responsibleUser.id);
       });
 
-    await request(app.getHttpServer()).get('/chemical-products/id-inexistente').expect(404);
+    await request(app.getHttpServer())
+      .get('/chemical-products/id-inexistente')
+      .expect(404);
   });
 
   it('lista produtos paginados, com filtro por status e por responsável', async () => {
@@ -176,7 +193,9 @@ describe('ChemicalProductsController (e2e)', () => {
       responsibleUserId: otherUser.id,
     });
 
-    const all = await request(app.getHttpServer()).get('/chemical-products').expect(200);
+    const all = await request(app.getHttpServer())
+      .get('/chemical-products')
+      .expect(200);
     expect(all.body).toMatchObject({ total: 2, page: 1, pageSize: 20 });
 
     const active = await request(app.getHttpServer())
@@ -285,11 +304,17 @@ describe('ChemicalProductsController (e2e)', () => {
   it('remove um produto e passa a retornar 404 nas buscas seguintes', async () => {
     const created = await createProduct();
 
-    await request(app.getHttpServer()).delete(`/chemical-products/${created.id}`).expect(204);
-    await request(app.getHttpServer()).get(`/chemical-products/${created.id}`).expect(404);
+    await request(app.getHttpServer())
+      .delete(`/chemical-products/${created.id}`)
+      .expect(204);
+    await request(app.getHttpServer())
+      .get(`/chemical-products/${created.id}`)
+      .expect(404);
   });
 
   it('retorna 404 ao remover um produto inexistente', async () => {
-    await request(app.getHttpServer()).delete('/chemical-products/id-inexistente').expect(404);
+    await request(app.getHttpServer())
+      .delete('/chemical-products/id-inexistente')
+      .expect(404);
   });
 });
