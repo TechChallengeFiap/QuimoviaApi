@@ -102,6 +102,36 @@ describe('CreateChemicalShipmentUseCase', () => {
     await expect(useCase.execute(input)).rejects.toThrow(ResourceNotFoundError);
   });
 
+  it('deve lançar BusinessRuleError quando o produto químico estiver inativo', async () => {
+    await chemicalProducts.create(
+      ChemicalProduct.restore({
+        id: 'prod-inativo',
+        code: 'PROD-INATIVO',
+        technicalName: 'Produto Inativo',
+        tradeName: null,
+        unNumber: '1993',
+        riskClass: ProductRiskClass.FLAMMABLE_LIQUIDS,
+        physicalState: ProductPhysicalState.LIQUID,
+        status: ProductStatus.INACTIVE,
+        responsibleUserId: 'user-001',
+        documents: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+
+    const input = {
+      productId: 'prod-inativo',
+      quantityProduct: 100,
+      responsibleUserId: 'user-001',
+      documentsIds: 'doc-001',
+    };
+
+    await expect(useCase.execute(input)).rejects.toThrow(
+      'Um produto químico inativo não pode ser usado em novas cargas',
+    );
+  });
+
   it('deve lançar BusinessRuleError quando a quantidade do produto for igual a zero', async () => {
     const input = {
       productId: 'prod-001',

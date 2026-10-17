@@ -3,6 +3,7 @@ import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
 import { randomUUID } from 'crypto';
 
 import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
 
 export interface CreateChemicalShipmentData {
   productId: string;
@@ -15,6 +16,7 @@ export interface ChemicalShipmentProperties {
   id: string;
   createdAt: Date;
   productId: string;
+  product?: ChemicalProduct | null;
   quantityProduct: number;
   status: StatusShipment;
   responsibleUserId: string;
@@ -29,6 +31,7 @@ export class ChemicalShipment {
   readonly createdAt: Date;
 
   #productId: string;
+  #product?: ChemicalProduct | null;
   #quantityProduct: number;
   #status: StatusShipment;
   #responsibleUserId: string;
@@ -41,6 +44,7 @@ export class ChemicalShipment {
     this.id = props.id;
     this.createdAt = props.createdAt;
     this.#productId = props.productId;
+    this.#product = props.product ?? null;
     this.#quantityProduct = props.quantityProduct;
     this.#status = props.status;
     this.#responsibleUserId = props.responsibleUserId;
@@ -162,6 +166,10 @@ export class ChemicalShipment {
     return this.#productId;
   }
 
+  get product(): ChemicalProduct | null | undefined {
+    return this.#product;
+  }
+
   get quantityProduct(): number {
     return this.#quantityProduct;
   }
@@ -192,6 +200,10 @@ export class ChemicalShipment {
 
   set productId(productId: string) {
     this.#productId = productId;
+  }
+
+  set product(product: ChemicalProduct | null | undefined) {
+    this.#product = product;
   }
 
   set quantityProduct(quantityProduct: number) {
@@ -234,6 +246,7 @@ export class ChemicalShipment {
       updatedAt: this.#updatedAt,
       status: this.#status,
       productId: this.#productId,
+      product: this.#product,
       quantityProduct: this.#quantityProduct,
       responsibleUserId: this.#responsibleUserId,
       responsibleUser: this.#responsibleUser,

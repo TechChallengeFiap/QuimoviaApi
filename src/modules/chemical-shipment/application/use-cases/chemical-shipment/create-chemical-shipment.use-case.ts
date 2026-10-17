@@ -7,7 +7,10 @@ import {
   USER_REPOSITORY,
   type UserRepository,
 } from '@/modules/user/domain/repositories/user.repository.js';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import {
+  BusinessRuleError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import {
@@ -58,6 +61,12 @@ export class CreateChemicalShipmentUseCase {
     );
     if (!chemicalProduct) {
       throw new ResourceNotFoundError('Produto Químico', input.productId);
+    }
+
+    if (!chemicalProduct.canBeUsedInOperations()) {
+      throw new BusinessRuleError(
+        'Um produto químico inativo não pode ser usado em novas cargas',
+      );
     }
   }
 }
