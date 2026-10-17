@@ -53,7 +53,7 @@ describe('InspectionsController (e2e)', () => {
 
   it('cadastra uma inspeção pendente com as verificações sem resultado', async () => {
     const response = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload)
       .expect(201);
 
@@ -75,7 +75,7 @@ describe('InspectionsController (e2e)', () => {
 
   it('cadastra a inspeção de um item da carga', async () => {
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({ ...payload, scope: 'CARGO_ITEM', cargoItemId: CARGO_ITEM_ID })
       .expect(201)
       .expect(({ body }) => {
@@ -85,7 +85,7 @@ describe('InspectionsController (e2e)', () => {
 
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({
         cargoId: 'nao-e-uuid',
         compositionVersion: 0,
@@ -98,25 +98,25 @@ describe('InspectionsController (e2e)', () => {
 
   it('rejeita verificações repetidas', async () => {
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({ ...payload, requirements: ['NO_LEAKAGE', 'NO_LEAKAGE'] })
       .expect(400);
   });
 
   it('retorna 422 quando o escopo de item não informa o item da carga', async () => {
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({ ...payload, scope: 'CARGO_ITEM' })
       .expect(422);
   });
 
   it('busca uma inspeção pelo id e retorna 404 para id inexistente', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
 
     await request(app.getHttpServer())
-      .get(`/inspecoes/${created.body.id}`)
+      .get(`/inspections/${created.body.id}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body.id).toBe(created.body.id);
@@ -124,19 +124,19 @@ describe('InspectionsController (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .get('/inspecoes/id-inexistente')
+      .get('/inspections/id-inexistente')
       .expect(404);
   });
 
   it('lista as inspeções paginadas e filtradas pela carga', async () => {
     const otherCargoId = '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b';
-    await request(app.getHttpServer()).post('/inspecoes').send(payload);
+    await request(app.getHttpServer()).post('/inspections').send(payload);
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({ ...payload, cargoId: otherCargoId });
 
     const response = await request(app.getHttpServer())
-      .get(`/inspecoes?cargoId=${otherCargoId}&page=1&pageSize=10`)
+      .get(`/inspections?cargoId=${otherCargoId}&page=1&pageSize=10`)
       .expect(200);
 
     expect(response.body).toMatchObject({ total: 1, page: 1, pageSize: 10 });
@@ -145,18 +145,18 @@ describe('InspectionsController (e2e)', () => {
 
   it('rejeita filtros inválidos na listagem', async () => {
     await request(app.getHttpServer())
-      .get('/inspecoes?cargoId=nao-e-uuid&pageSize=500')
+      .get('/inspections?cargoId=nao-e-uuid&pageSize=500')
       .expect(400);
   });
 
   it('inicia, registra os resultados e conclui uma inspeção', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({ status: 'IN_PROGRESS' })
       .expect(200)
       .expect(({ body }) => {
@@ -165,7 +165,7 @@ describe('InspectionsController (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({
         results: [
           { requirement: 'PACKAGING_INTEGRITY', result: 'COMPLIANT' },
@@ -196,26 +196,26 @@ describe('InspectionsController (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({ inspectorId: INSPECTOR_ID })
       .expect(422);
   });
 
   it('aplica as regras de negócio na atualização', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({
         results: [{ requirement: 'NO_LEAKAGE', result: 'COMPLIANT' }],
       })
       .expect(422);
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({
         status: 'IN_PROGRESS',
         results: [{ requirement: 'NO_LEAKAGE', result: 'NON_COMPLIANT' }],
@@ -223,23 +223,23 @@ describe('InspectionsController (e2e)', () => {
       .expect(422);
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({ status: 'COMPLETED' })
       .expect(422);
   });
 
   it('rejeita payload inválido na atualização', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${created.body.id}`)
+      .patch(`/inspections/${created.body.id}`)
       .send({ status: 'XPTO' })
       .expect(400);
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${created.body.id}`)
+      .patch(`/inspections/${created.body.id}`)
       .send({
         results: [
           { requirement: 'NO_LEAKAGE', result: 'COMPLIANT' },
@@ -251,39 +251,39 @@ describe('InspectionsController (e2e)', () => {
 
   it('retorna 404 ao atualizar uma inspeção inexistente', async () => {
     await request(app.getHttpServer())
-      .patch('/inspecoes/id-inexistente')
+      .patch('/inspections/id-inexistente')
       .send({ status: 'IN_PROGRESS' })
       .expect(404);
   });
 
   it('remove uma inspeção pendente e passa a retornar 404 nas buscas', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
     const id = created.body.id as string;
 
-    await request(app.getHttpServer()).delete(`/inspecoes/${id}`).expect(204);
-    await request(app.getHttpServer()).get(`/inspecoes/${id}`).expect(404);
+    await request(app.getHttpServer()).delete(`/inspections/${id}`).expect(204);
+    await request(app.getHttpServer()).get(`/inspections/${id}`).expect(404);
   });
 
   it('não remove uma inspeção já iniciada', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({ status: 'IN_PROGRESS' })
       .expect(200);
 
-    await request(app.getHttpServer()).delete(`/inspecoes/${id}`).expect(422);
-    await request(app.getHttpServer()).get(`/inspecoes/${id}`).expect(200);
+    await request(app.getHttpServer()).delete(`/inspections/${id}`).expect(422);
+    await request(app.getHttpServer()).get(`/inspections/${id}`).expect(200);
   });
 
   it('retorna 404 ao remover uma inspeção inexistente', async () => {
     await request(app.getHttpServer())
-      .delete('/inspecoes/id-inexistente')
+      .delete('/inspections/id-inexistente')
       .expect(404);
   });
 });
