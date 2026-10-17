@@ -207,12 +207,7 @@ export class ChemicalShipment {
   }
 
   set quantityProduct(quantityProduct: number) {
-    if (quantityProduct <= 0) {
-      throw new BusinessRuleError(
-        'A quantidade do produto não pode ser 0 e nem negativa',
-      );
-    }
-    this.#quantityProduct = quantityProduct;
+    this.changeQuantityProduct(quantityProduct);
   }
 
   set status(status: StatusShipment) {

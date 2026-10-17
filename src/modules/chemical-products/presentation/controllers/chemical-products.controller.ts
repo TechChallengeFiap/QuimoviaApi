@@ -503,6 +503,16 @@ export class ChemicalProductsController {
     description: 'Produto químico não encontrado.',
     schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
   })
+  @ApiConflictResponse({
+    description: 'Produto químico possui cargas ou registros vinculados e não pode ser removido.',
+    schema: {
+      example: {
+        message: 'Não é possível excluir o produto químico porque existem registros associados a ele.',
+        error: 'Conflict',
+        statusCode: 409,
+      },
+    },
+  })
   @ApiInternalServerErrorResponse({
     description: 'Erro interno do servidor ao processar a remoção do produto químico.',
   })

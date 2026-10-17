@@ -5,7 +5,14 @@ import {
   USER_REPOSITORY,
   type UserRepository,
 } from '@/modules/user/domain/repositories/user.repository.js';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import {
+  CHEMICAL_PRODUCT_REPOSITORY,
+  type ChemicalProductRepository,
+} from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
+import {
+  BusinessRuleError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 import { Inject, Injectable } from '@nestjs/common';
 import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
@@ -24,6 +31,8 @@ export class UpdateChemicalShipmentUseCase {
     private readonly chemicalShipments: ChemicalShipmentRepository,
     @Inject(USER_REPOSITORY)
     private readonly users: UserRepository,
+    @Inject(CHEMICAL_PRODUCT_REPOSITORY)
+    private readonly chemicalProducts: ChemicalProductRepository,
   ) {}
 
   async execute(
@@ -41,6 +50,17 @@ export class UpdateChemicalShipmentUseCase {
     }
 
     if (input.productId) {
+      const product = await this.chemicalProducts.findById(input.productId);
+      if (!product) {
+        throw new ResourceNotFoundError('Produto Químico', input.productId);
+      }
+
+      if (!product.canBeUsedInOperations()) {
+        throw new BusinessRuleError(
+          'Um produto químico inativo não pode ser associado a uma carga química',
+        );
+      }
+
       existingChemicalShipment.changeProduct(input.productId);
     }
 

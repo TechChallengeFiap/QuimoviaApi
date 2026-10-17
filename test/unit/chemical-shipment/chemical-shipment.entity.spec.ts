@@ -105,6 +105,15 @@ describe('ChemicalShipment Entity', () => {
 
     expect(() => shipment.changeQuantityProduct(0)).toThrow(BusinessRuleError);
     expect(() => shipment.changeQuantityProduct(-5)).toThrow(BusinessRuleError);
+
+    shipment.quantityProduct = 350;
+    expect(shipment.quantityProduct).toBe(350);
+    expect(() => {
+      shipment.quantityProduct = 0;
+    }).toThrow(BusinessRuleError);
+    expect(() => {
+      shipment.quantityProduct = -10;
+    }).toThrow(BusinessRuleError);
   });
 
   it('bloqueia alterações de atributos quando a carga já foi aprovada ou reprovada', () => {
@@ -123,6 +132,9 @@ describe('ChemicalShipment Entity', () => {
     expect(() => approvedShipment.changeQuantityProduct(500)).toThrow(
       BusinessRuleError,
     );
+    expect(() => {
+      approvedShipment.quantityProduct = 500;
+    }).toThrow(BusinessRuleError);
 
     const reprovedShipment = createValidShipment();
     reprovedShipment.updateStatus(StatusShipment.REPROVED);
@@ -130,6 +142,9 @@ describe('ChemicalShipment Entity', () => {
     expect(() => reprovedShipment.changeProduct('prod-999')).toThrow(
       BusinessRuleError,
     );
+    expect(() => {
+      reprovedShipment.quantityProduct = 500;
+    }).toThrow(BusinessRuleError);
   });
 
   it('converte corretamente para objeto com toObject()', () => {

@@ -292,4 +292,27 @@ describe('ChemicalProductsController (e2e)', () => {
   it('retorna 404 ao remover um produto inexistente', async () => {
     await request(app.getHttpServer()).delete('/chemical-products/id-inexistente').expect(404);
   });
+
+  it('retorna 409 Conflict ao remover um produto com referências vinculadas', async () => {
+    const created = await createProduct();
+    const productRepo = app.get<ChemicalProductRepositoryMock>(CHEMICAL_PRODUCT_REPOSITORY);
+    const originalRemove = productRepo.remove.bind(productRepo);
+    productRepo.remove = async () => {
+      const { ConflictError } = await import('@/shared/domain/errors/domain.error.js');
+      throw new ConflictError(
+        'Não é possível excluir o produto químico porque existem registros associados a ele.',
+      );
+    };
+
+    try {
+      await request(app.getHttpServer())
+        .delete(`/chemical-products/${created.id}`)
+        .expect(409)
+        .expect(({ body }) => {
+          expect(body.message).toContain('existem registros associados');
+        });
+    } finally {
+      productRepo.remove = originalRemove;
+    }
+  });
 });

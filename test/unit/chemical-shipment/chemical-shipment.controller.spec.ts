@@ -123,6 +123,7 @@ describe('ChemicalShipmentController', () => {
           productId: 'prod-001',
           responsibleUserId: 'user-001',
           documentsIds: 'doc-001',
+          quantityProduct: 1000,
         }),
       ).rejects.toThrow(InternalServerErrorException);
     });
@@ -161,6 +162,7 @@ describe('ChemicalShipmentController', () => {
         responsibleUserId: user.id,
         responsibleUser: user,
         documentsIds: 'doc-001',
+        quantityProduct: 1000,
       });
 
       listUseCase.execute.mockResolvedValue({
