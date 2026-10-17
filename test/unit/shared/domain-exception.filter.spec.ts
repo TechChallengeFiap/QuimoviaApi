@@ -1,12 +1,12 @@
 import { jest } from '@jest/globals';
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.ts';
+import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import {
   AccessDeniedError,
   AuthenticationError,
   ResourceNotFoundError,
-} from '@/shared/domain/errors/domain.error.ts';
+} from '@/shared/domain/errors/domain.error.js';
 
 describe('DomainExceptionFilter', () => {
   let filter: DomainExceptionFilter;

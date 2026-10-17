@@ -25,7 +25,11 @@ import { UserModule } from '@/modules/user/user.module.js';
     DeleteChemicalProductUseCase,
     AddProductDocumentUseCase,
     RemoveProductDocumentUseCase,
-    { provide: CHEMICAL_PRODUCT_REPOSITORY, useClass: PrismaChemicalProductRepository },
+    {
+      provide: CHEMICAL_PRODUCT_REPOSITORY,
+      useClass: PrismaChemicalProductRepository,
+    },
   ],
+  exports: [CHEMICAL_PRODUCT_REPOSITORY],
 })
 export class ChemicalProductsModule {}

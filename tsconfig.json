@@ -19,7 +19,6 @@
     "strict": true,
     "strictPropertyInitialization": false,
     "types": ["jest", "node"],
-    "allowImportingTsExtensions": true,
     "noEmit": true,
     "paths": {
       "@/*": ["./src/*"]

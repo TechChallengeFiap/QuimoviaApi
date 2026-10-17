@@ -19,6 +19,7 @@ import type {
   UserModel,
 } from '@/generated/prisma/models.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import { ConflictError } from '@/shared/domain/errors/domain.error.js';
 
 type PersistedChemicalProduct = ChemicalProductModel & {
   documents: ProductDocumentModel[];
@@ -81,7 +82,16 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
   }
 
   async remove(id: string): Promise<void> {
-    await this.prisma.chemicalProduct.delete({ where: { id } });
+    try {
+      await this.prisma.chemicalProduct.delete({ where: { id } });
+    } catch (error: any) {
+      if (error?.code === 'P2003') {
+        throw new ConflictError(
+          'Não é possível excluir o produto químico porque existem registros associados a ele.',
+        );
+      }
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<ChemicalProduct | null> {

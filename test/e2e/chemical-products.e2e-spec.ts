@@ -6,9 +6,11 @@ import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/chemical-products/domain/
 import { ChemicalProductsModule } from '@/modules/chemical-products/chemical-products.module.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { ChemicalProductRepositoryMock } from '../mocks/chemical-product-repository.mock.js';
+import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 
 const validProduct = {
@@ -40,6 +42,8 @@ describe('ChemicalProductsController (e2e)', () => {
       .useClass(ChemicalProductRepositoryMock)
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
+      .overrideProvider(SESSION_REPOSITORY)
+      .useClass(SessionRepositoryMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -287,5 +291,28 @@ describe('ChemicalProductsController (e2e)', () => {
 
   it('retorna 404 ao remover um produto inexistente', async () => {
     await request(app.getHttpServer()).delete('/chemical-products/id-inexistente').expect(404);
+  });
+
+  it('retorna 409 Conflict ao remover um produto com referências vinculadas', async () => {
+    const created = await createProduct();
+    const productRepo = app.get<ChemicalProductRepositoryMock>(CHEMICAL_PRODUCT_REPOSITORY);
+    const originalRemove = productRepo.remove.bind(productRepo);
+    productRepo.remove = async () => {
+      const { ConflictError } = await import('@/shared/domain/errors/domain.error.js');
+      throw new ConflictError(
+        'Não é possível excluir o produto químico porque existem registros associados a ele.',
+      );
+    };
+
+    try {
+      await request(app.getHttpServer())
+        .delete(`/chemical-products/${created.id}`)
+        .expect(409)
+        .expect(({ body }) => {
+          expect(body.message).toContain('existem registros associados');
+        });
+    } finally {
+      productRepo.remove = originalRemove;
+    }
   });
 });
