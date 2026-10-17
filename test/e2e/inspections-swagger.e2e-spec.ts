@@ -65,19 +65,19 @@ describe('Swagger do módulo inspection (e2e)', () => {
   it('expõe operationIds descritivos, derivados dos nomes dos métodos', () => {
     const { paths } = document;
 
-    expect(paths['/inspecoes']?.post?.operationId).toBe(
+    expect(paths['/inspections']?.post?.operationId).toBe(
       'InspectionsController_createInspection',
     );
-    expect(paths['/inspecoes']?.get?.operationId).toBe(
+    expect(paths['/inspections']?.get?.operationId).toBe(
       'InspectionsController_listInspections',
     );
-    expect(paths['/inspecoes/{id}']?.get?.operationId).toBe(
+    expect(paths['/inspections/{id}']?.get?.operationId).toBe(
       'InspectionsController_findInspectionById',
     );
-    expect(paths['/inspecoes/{id}']?.patch?.operationId).toBe(
+    expect(paths['/inspections/{id}']?.patch?.operationId).toBe(
       'InspectionsController_updateInspection',
     );
-    expect(paths['/inspecoes/{id}']?.delete?.operationId).toBe(
+    expect(paths['/inspections/{id}']?.delete?.operationId).toBe(
       'InspectionsController_deleteInspection',
     );
   });
@@ -128,7 +128,7 @@ describe('Swagger do módulo inspection (e2e)', () => {
   });
 
   it('documenta o corpo do cadastro com o CreateInspectionDto e exemplos de payload', () => {
-    expect(jsonRequestBodyOf('/inspecoes', 'post')).toMatchObject({
+    expect(jsonRequestBodyOf('/inspections', 'post')).toMatchObject({
       schema: { $ref: '#/components/schemas/CreateInspectionDto' },
       examples: {
         cargaInteira: { value: { scope: 'CARGO' } },
@@ -158,7 +158,7 @@ describe('Swagger do módulo inspection (e2e)', () => {
   });
 
   it('documenta o corpo da atualização com os resultados aninhados', () => {
-    expect(jsonRequestBodyOf('/inspecoes/{id}', 'patch')).toMatchObject({
+    expect(jsonRequestBodyOf('/inspections/{id}', 'patch')).toMatchObject({
       schema: { $ref: '#/components/schemas/UpdateInspectionDto' },
       examples: {
         iniciar: { value: { status: 'IN_PROGRESS' } },
@@ -188,11 +188,11 @@ describe('Swagger do módulo inspection (e2e)', () => {
       dto: ClassConstructor<object>;
       value: object;
     }[] = [
-      ...requestExamplesOf('/inspecoes', 'post').map((example) => ({
+      ...requestExamplesOf('/inspections', 'post').map((example) => ({
         ...example,
         dto: CreateInspectionDto,
       })),
-      ...requestExamplesOf('/inspecoes/{id}', 'patch').map((example) => ({
+      ...requestExamplesOf('/inspections/{id}', 'patch').map((example) => ({
         ...example,
         dto: UpdateInspectionDto,
       })),
@@ -211,7 +211,7 @@ describe('Swagger do módulo inspection (e2e)', () => {
   });
 
   it('documenta os filtros e a paginação da listagem', () => {
-    const parameters = document.paths['/inspecoes']?.get?.parameters;
+    const parameters = document.paths['/inspections']?.get?.parameters;
 
     expect(parameters).toHaveLength(5);
     expect(parameters).toEqual(
@@ -251,7 +251,7 @@ describe('Swagger do módulo inspection (e2e)', () => {
   });
 
   it('documenta o id como parâmetro de rota dos endpoints de uma inspeção', () => {
-    const inspectionById = document.paths['/inspecoes/{id}'];
+    const inspectionById = document.paths['/inspections/{id}'];
 
     for (const operation of [
       inspectionById?.get,
@@ -275,16 +275,16 @@ describe('Swagger do módulo inspection (e2e)', () => {
       method: 'get' | 'post' | 'patch' | 'delete',
     ) => Object.keys(document.paths[path]?.[method]?.responses ?? {}).sort();
 
-    expect(statusesOf('/inspecoes', 'post')).toEqual(['201', '400', '422']);
-    expect(statusesOf('/inspecoes', 'get')).toEqual(['200', '400']);
-    expect(statusesOf('/inspecoes/{id}', 'get')).toEqual(['200', '404']);
-    expect(statusesOf('/inspecoes/{id}', 'patch')).toEqual([
+    expect(statusesOf('/inspections', 'post')).toEqual(['201', '400', '422']);
+    expect(statusesOf('/inspections', 'get')).toEqual(['200', '400']);
+    expect(statusesOf('/inspections/{id}', 'get')).toEqual(['200', '404']);
+    expect(statusesOf('/inspections/{id}', 'patch')).toEqual([
       '200',
       '400',
       '404',
       '422',
     ]);
-    expect(statusesOf('/inspecoes/{id}', 'delete')).toEqual([
+    expect(statusesOf('/inspections/{id}', 'delete')).toEqual([
       '204',
       '404',
       '422',

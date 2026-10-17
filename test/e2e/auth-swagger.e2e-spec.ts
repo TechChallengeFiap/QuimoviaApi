@@ -92,7 +92,7 @@ describe('Swagger da autenticação (e2e)', () => {
       { bearer: [] },
     ]);
     expect(document.paths['/auth/login']?.post).not.toHaveProperty('security');
-    expect(document.paths['/usuarios']?.get).not.toHaveProperty('security');
+    expect(document.paths['/users']?.get).not.toHaveProperty('security');
   });
 
   it('documenta o corpo do login com o LoginDto e um exemplo válido', async () => {

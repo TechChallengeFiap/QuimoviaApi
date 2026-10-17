@@ -54,7 +54,7 @@ const INSPECTION_NOT_FOUND_EXAMPLE = {
 };
 
 @ApiTags('Inspeções')
-@Controller('inspecoes')
+@Controller('inspections')
 @UseFilters(DomainExceptionFilter)
 export class InspectionsController {
   constructor(

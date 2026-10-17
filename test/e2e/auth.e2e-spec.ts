@@ -202,7 +202,7 @@ describe('AuthController (e2e)', () => {
           .accessToken as string;
 
         await request(app.getHttpServer())
-          .patch(`/usuarios/${maria.id}`)
+          .patch(`/users/${maria.id}`)
           .send({ status })
           .expect(200);
         // Sem nenhuma requisição com o token no meio: quem encerra a sessão é
@@ -213,7 +213,7 @@ describe('AuthController (e2e)', () => {
         await login('maria@quimovia.com').expect(403);
 
         await request(app.getHttpServer())
-          .patch(`/usuarios/${maria.id}`)
+          .patch(`/users/${maria.id}`)
           .send({ status: reactivatedStatus })
           .expect(200);
         await request(app.getHttpServer())
@@ -270,7 +270,7 @@ describe('AuthController (e2e)', () => {
     });
 
     it('não protege as rotas em que não é aplicado', async () => {
-      await request(app.getHttpServer()).get('/usuarios').expect(200);
+      await request(app.getHttpServer()).get('/users').expect(200);
     });
 
     it('recusa um token inválido ou de outro esquema', async () => {
