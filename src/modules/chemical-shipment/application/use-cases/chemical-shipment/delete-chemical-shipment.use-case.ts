@@ -1,7 +1,7 @@
-import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import { Inject, Injectable } from '@nestjs/common';
-import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
+import type { ChemicalShipmentRepository } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 
 @Injectable()
 export class DeleteChemicalShipmentUseCase {

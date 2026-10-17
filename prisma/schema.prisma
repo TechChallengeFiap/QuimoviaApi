@@ -116,14 +116,16 @@ enum StatusShipment {
 }
 
 model ChemicalShipment {
-  id                String         @id @default(uuid())
+  id                String          @id @default(uuid())
   productId         String
-  status            StatusShipment @default(ANALYZING)
+  product           ChemicalProduct @relation(fields: [productId], references: [id])
+  quantityProduct   Float           @db.Float
+  status            StatusShipment  @default(ANALYZING)
   responsibleUserId String
-  responsibleUser   User           @relation(fields: [responsibleUserId], references: [id])
+  responsibleUser   User            @relation(fields: [responsibleUserId], references: [id])
   documentsIds      String
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   deletedAt         DateTime?
 
   @@index([responsibleUserId])
@@ -174,6 +176,7 @@ model ChemicalProduct {
   responsibleUserId String
   responsibleUser   User                 @relation(fields: [responsibleUserId], references: [id])
   documents         ProductDocument[]
+  shipments         ChemicalShipment[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 

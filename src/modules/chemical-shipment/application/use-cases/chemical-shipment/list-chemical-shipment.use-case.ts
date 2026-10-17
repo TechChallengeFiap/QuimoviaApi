@@ -1,10 +1,10 @@
-import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type {
   ChemicalShipmentPage,
   ChemicalShipmentRepository,
-} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.ts';
+} from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 20;

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ChemicalShipmentResponseDto } from './chemical-shipment-response.dto.ts';
-import { ChemicalShipmentPage } from '../../domain/repositories/chemical-shipment.repository.ts';
+import { ChemicalShipmentResponseDto } from './chemical-shipment-response.dto.js';
+import { ChemicalShipmentPage } from '../../domain/repositories/chemical-shipment.repository.js';
 
 export class ChemicalShipmentPageResponseDto {
   @ApiProperty({ type: [ChemicalShipmentResponseDto] })

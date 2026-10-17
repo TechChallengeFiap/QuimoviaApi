@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateChemicalShipmentDTO {
   @ApiProperty({
@@ -10,6 +10,15 @@ export class CreateChemicalShipmentDTO {
   @IsString({ message: 'O productId deve ser uma string' })
   @IsNotEmpty({ message: 'O productId não pode estar vazio' })
   productId: string;
+
+  @ApiPropertyOptional({
+    type: Number,
+    description: 'Quantidade de produto químico',
+    example: 100,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'A quantidade do produto deve ser um número' })
+  quantityProduct?: number;
 
   @ApiProperty({
     type: String,

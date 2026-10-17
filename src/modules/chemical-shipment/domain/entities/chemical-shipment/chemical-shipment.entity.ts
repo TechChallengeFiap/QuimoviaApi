@@ -1,19 +1,21 @@
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { BusinessRuleError } from '@/shared/domain/errors/domain.error.ts';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
 import { randomUUID } from 'crypto';
 
-import { User } from '@/modules/user/domain/entities/user.entity.ts';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
 
 export interface CreateChemicalShipmentData {
   productId: string;
   responsibleUserId: string;
   documentsIds: string;
+  quantityProduct?: number;
 }
 
 export interface ChemicalShipmentProperties {
   id: string;
   createdAt: Date;
   productId: string;
+  quantityProduct: number;
   status: StatusShipment;
   responsibleUserId: string;
   responsibleUser?: User | null;
@@ -27,6 +29,7 @@ export class ChemicalShipment {
   readonly createdAt: Date;
 
   #productId: string;
+  #quantityProduct: number;
   #status: StatusShipment;
   #responsibleUserId: string;
   #responsibleUser?: User | null;
@@ -38,6 +41,7 @@ export class ChemicalShipment {
     this.id = props.id;
     this.createdAt = props.createdAt;
     this.#productId = props.productId;
+    this.#quantityProduct = props.quantityProduct;
     this.#status = props.status;
     this.#responsibleUserId = props.responsibleUserId;
     this.#responsibleUser = props.responsibleUser ?? null;
@@ -55,6 +59,7 @@ export class ChemicalShipment {
       updatedAt: now,
       deletedAt: null,
       status: StatusShipment.ANALYZING,
+      quantityProduct: data.quantityProduct ?? 0,
       ...data,
     });
   }
@@ -123,6 +128,10 @@ export class ChemicalShipment {
     return this.#productId;
   }
 
+  get quantityProduct(): number {
+    return this.#quantityProduct;
+  }
+
   get status(): StatusShipment {
     return this.#status;
   }
@@ -149,6 +158,10 @@ export class ChemicalShipment {
 
   set productId(productId: string) {
     this.#productId = productId;
+  }
+
+  set quantityProduct(quantityProduct: number) {
+    this.#quantityProduct = quantityProduct;
   }
 
   set status(status: StatusShipment) {
@@ -182,6 +195,7 @@ export class ChemicalShipment {
       updatedAt: this.#updatedAt,
       status: this.#status,
       productId: this.#productId,
+      quantityProduct: this.#quantityProduct,
       responsibleUserId: this.#responsibleUserId,
       responsibleUser: this.#responsibleUser,
       documentsIds: this.#documentsIds,
