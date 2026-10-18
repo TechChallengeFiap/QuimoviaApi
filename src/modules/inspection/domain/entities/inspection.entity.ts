@@ -5,14 +5,18 @@ import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspect
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { InspectionItem } from '@/modules/inspection/domain/value-objects/inspection-item.vo.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
 
 export interface InspectionProperties {
   id: string;
   cargoId: string;
+  cargo?: ChemicalShipment | null;
   compositionVersion: number;
   scope: InspectionScope;
   cargoItemId: string | null;
   inspectorId: string;
+  inspector?: User | null;
   status: InspectionStatus;
   items: InspectionItem[];
   startedAt: Date | null;
@@ -53,6 +57,8 @@ export class Inspection {
   #startedAt: Date | null;
   #completedAt: Date | null;
   #updatedAt: Date;
+  #cargo?: ChemicalShipment | null;
+  #inspector?: User | null;
 
   private constructor(properties: InspectionProperties) {
     this.id = properties.id;
@@ -67,6 +73,8 @@ export class Inspection {
     this.#startedAt = properties.startedAt;
     this.#completedAt = properties.completedAt;
     this.#updatedAt = properties.updatedAt;
+    this.#cargo = properties.cargo;
+    this.#inspector = properties.inspector;
   }
 
   /** Cria uma nova inspeção pendente, validando os dados informados. */
@@ -118,6 +126,14 @@ export class Inspection {
 
   get updatedAt(): Date {
     return this.#updatedAt;
+  }
+
+  get cargo(): ChemicalShipment | null | undefined {
+    return this.#cargo;
+  }
+
+  get inspector(): User | null | undefined {
+    return this.#inspector;
   }
 
   assignInspector(inspectorId: string): void {
@@ -210,6 +226,8 @@ export class Inspection {
       completedAt: this.#completedAt,
       createdAt: this.createdAt,
       updatedAt: this.#updatedAt,
+      cargo: this.#cargo,
+      inspector: this.#inspector,
     };
   }
 
