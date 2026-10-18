@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  isISO8601,
 } from 'class-validator';
 import { ProductDocumentType } from '@/modules/chemical-products/domain/enums/product-document-type.enum.js';
 
@@ -42,7 +43,9 @@ export class CreateProductDocumentDto {
   })
   @IsOptional()
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? new Date(value) : value,
+    typeof value === 'string' && isISO8601(value, { strict: true })
+      ? new Date(value)
+      : value,
   )
   @IsDate({ message: 'A validade do documento deve ser uma data válida.' })
   expiresAt?: Date | null;

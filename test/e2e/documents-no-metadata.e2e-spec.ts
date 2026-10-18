@@ -132,6 +132,9 @@ describe('Document CRUD without design metadata', () => {
     [{ filePath: 'x'.repeat(501) }, 400],
     [{ type: 'INVALID' }, 400],
     [{ expiresAt: 'invalid' }, 400],
+    [{ expiresAt: '2026-02-30T00:00:00.000Z' }, 400],
+    [{ expiresAt: '2025-02-29T00:00:00.000Z' }, 400],
+    [{ expiresAt: '123' }, 400],
     [{ expiresAt: 123 }, 400],
     [{ status: 'ACTIVE' }, 400],
   ])(
@@ -185,6 +188,9 @@ describe('Document CRUD without design metadata', () => {
     { number: null },
     { filePath: null },
     { expiresAt: 'invalid' },
+    { expiresAt: '2026-02-30T00:00:00.000Z' },
+    { expiresAt: '2025-02-29T00:00:00.000Z' },
+    { expiresAt: '123' },
   ])(
     'rejects invalid updates without persisting changes: %j',
     async (changes) => {
