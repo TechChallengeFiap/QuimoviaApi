@@ -10,12 +10,16 @@ import { UpdateChemicalProductUseCase } from '@/modules/chemical-products/applic
 import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
 import { PrismaChemicalProductRepository } from '@/modules/chemical-products/infrastructure/persistence/prisma/prisma-chemical-product.repository.js';
 import { ChemicalProductsController } from '@/modules/chemical-products/presentation/controllers/chemical-products.controller.js';
+import { ProductDocumentsController } from '@/modules/chemical-products/presentation/controllers/product-documents.controller.js';
+import { ListProductDocumentsUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/list-product-documents.use-case.js';
+import { FindProductDocumentByIdUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/find-product-document-by-id.use-case.js';
+import { UpdateProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/update-product-document.use-case.js';
 import { UserModule } from '@/modules/user/user.module.js';
 
 @Module({
   /** UserModule exporta USER_REPOSITORY, usado para validar o usuário responsável. */
   imports: [UserModule],
-  controllers: [ChemicalProductsController],
+  controllers: [ChemicalProductsController, ProductDocumentsController],
   providers: [
     CreateChemicalProductUseCase,
     ListChemicalProductsUseCase,
@@ -25,6 +29,9 @@ import { UserModule } from '@/modules/user/user.module.js';
     DeleteChemicalProductUseCase,
     AddProductDocumentUseCase,
     RemoveProductDocumentUseCase,
+    ListProductDocumentsUseCase,
+    FindProductDocumentByIdUseCase,
+    UpdateProductDocumentUseCase,
     {
       provide: CHEMICAL_PRODUCT_REPOSITORY,
       useClass: PrismaChemicalProductRepository,

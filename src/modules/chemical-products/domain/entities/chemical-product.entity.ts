@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { BusinessRuleError, ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 import { ProductDocument } from '@/modules/chemical-products/domain/entities/product-document.entity.js';
-import type { CreateProductDocumentData } from '@/modules/chemical-products/domain/entities/product-document.entity.js';
+import type { CreateProductDocumentData, UpdateProductDocumentData } from '@/modules/chemical-products/domain/entities/product-document.entity.js';
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
 import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/product-risk-class.enum.js';
 import { ProductStatus } from '@/modules/chemical-products/domain/enums/product-status.enum.js';
@@ -237,6 +237,17 @@ export class ChemicalProduct {
 
     this.#documents.splice(index, 1);
     this.markAsUpdated();
+  }
+
+  updateDocument(documentId: string, data: UpdateProductDocumentData): ProductDocument {
+    const index = this.#documents.findIndex((document) => document.id === documentId);
+    if (index === -1) {
+      throw new ResourceNotFoundError('Documento do produto', documentId);
+    }
+    const document = this.#documents[index].withChanges(data);
+    this.#documents[index] = document;
+    this.markAsUpdated();
+    return document;
   }
 
   findDocument(documentId: string): ProductDocument | null {

@@ -31,13 +31,11 @@ import {
   ApiTags,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
-import { AddProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/add-product-document.use-case.js';
 import { ChangeChemicalProductStatusUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/change-chemical-product-status.use-case.js';
 import { CreateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/create-chemical-product.use-case.js';
 import { DeleteChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/delete-chemical-product.use-case.js';
 import { FindChemicalProductByIdUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/find-chemical-product-by-id.use-case.js';
 import { ListChemicalProductsUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/list-chemical-products.use-case.js';
-import { RemoveProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/remove-product-document.use-case.js';
 import { UpdateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/update-chemical-product.use-case.js';
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
 import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/product-risk-class.enum.js';
@@ -49,7 +47,6 @@ import {
 import { ChemicalProductPageResponseDto } from '@/modules/chemical-products/presentation/dtos/chemical-product-page-response.dto.js';
 import { ChemicalProductResponseDto } from '@/modules/chemical-products/presentation/dtos/chemical-product-response.dto.js';
 import { CreateChemicalProductDto } from '@/modules/chemical-products/presentation/dtos/create-chemical-product.dto.js';
-import { CreateProductDocumentDto } from '@/modules/chemical-products/presentation/dtos/create-product-document.dto.js';
 import { ListChemicalProductsQueryDto } from '@/modules/chemical-products/presentation/dtos/list-chemical-products-query.dto.js';
 import { UpdateChemicalProductDto } from '@/modules/chemical-products/presentation/dtos/update-chemical-product.dto.js';
 import { DomainError } from '@/shared/domain/errors/domain.error.js';
@@ -60,13 +57,6 @@ const PRODUCT_ID_PARAM = {
   required: true,
   description: 'ID do produto químico',
   example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-} as const;
-
-const DOCUMENT_ID_PARAM = {
-  name: 'documentId',
-  required: true,
-  description: 'ID do documento vinculado ao produto químico',
-  example: '9b2f1c7e-4d3a-4f6b-8e21-5c0d7a1b2c3d',
 } as const;
 
 const USER_NOT_FOUND_EXAMPLE = {
@@ -102,10 +92,6 @@ export class ChemicalProductsController {
     private readonly changeProductStatus: ChangeChemicalProductStatusUseCase,
     @Inject(DeleteChemicalProductUseCase)
     private readonly deleteProduct: DeleteChemicalProductUseCase,
-    @Inject(AddProductDocumentUseCase)
-    private readonly addDocument: AddProductDocumentUseCase,
-    @Inject(RemoveProductDocumentUseCase)
-    private readonly removeDocument: RemoveProductDocumentUseCase,
   ) {}
 
   @Post()
@@ -521,134 +507,6 @@ export class ChemicalProductsController {
       await this.deleteProduct.execute(id);
     } catch (error) {
       this.handleError(error, `a remoção do produto químico com ID ${id}`);
-    }
-  }
-
-  @Post(':id/documents')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Vincula um documento a um produto químico',
-    description:
-      'Adiciona um documento (FISPQ, certificado, licença, laudo ou autorização) ao produto químico e retorna o produto atualizado.',
-  })
-  @ApiParam(PRODUCT_ID_PARAM)
-  @ApiBody({
-    type: CreateProductDocumentDto,
-    description: 'Dados do documento a vincular.',
-    examples: {
-      comValidade: {
-        summary: 'Documento com data de validade',
-        value: {
-          type: 'SAFETY_DATA_SHEET',
-          number: 'FISPQ-2026-0001',
-          expiresAt: '2027-12-31T00:00:00.000Z',
-          filePath: 'documentos/produtos/acido-sulfurico/fispq.pdf',
-        },
-      },
-      semValidade: {
-        summary: 'Documento sem data de validade',
-        value: {
-          type: 'TECHNICAL_REPORT',
-          number: 'LAUDO-2026-0042',
-          filePath: 'documentos/produtos/acido-sulfurico/laudo.pdf',
-        },
-      },
-    },
-  })
-  @ApiCreatedResponse({
-    description: 'Documento vinculado ao produto químico com sucesso.',
-    type: ChemicalProductResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos fornecidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'type must be one of the following values: SAFETY_DATA_SHEET, CERTIFICATE, ENVIRONMENTAL_LICENSE, TECHNICAL_REPORT, AUTHORIZATION',
-          'number should not be empty',
-          'expiresAt must be a Date instance',
-          'filePath should not be empty',
-        ],
-        error: 'Bad Request',
-        statusCode: 400,
-      },
-    },
-  })
-  @ApiNotFoundResponse({
-    description: 'Produto químico não encontrado.',
-    schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
-  })
-  @ApiUnprocessableEntityResponse({
-    description: 'Uma regra de negócio do domínio foi violada.',
-    schema: {
-      example: {
-        message: 'O número do documento do produto não pode ser vazio.',
-        error: 'Unprocessable Entity',
-        statusCode: 422,
-      },
-    },
-  })
-  @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar o vínculo do documento ao produto químico.',
-  })
-  async addProductDocument(
-    @Param('id') id: string,
-    @Body(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        expectedType: CreateProductDocumentDto,
-      }),
-    )
-    dto: CreateProductDocumentDto,
-  ): Promise<ChemicalProductResponseDto> {
-    try {
-      const product = await this.addDocument.execute(id, dto);
-      return ChemicalProductResponseDto.fromEntity(product);
-    } catch (error) {
-      this.handleError(error, `o vínculo de documento ao produto químico com ID ${id}`);
-    }
-  }
-
-  @Delete(':id/documents/:documentId')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Desvincula um documento de um produto químico',
-    description: 'Remove o documento do produto químico e retorna o produto atualizado.',
-  })
-  @ApiParam(PRODUCT_ID_PARAM)
-  @ApiParam(DOCUMENT_ID_PARAM)
-  @ApiOkResponse({
-    description: 'Documento desvinculado do produto químico com sucesso.',
-    type: ChemicalProductResponseDto,
-  })
-  @ApiNotFoundResponse({
-    description: 'Produto químico ou documento não encontrado.',
-    schema: {
-      example: {
-        message:
-          'Documento do produto não encontrado(a) para o identificador "9b2f1c7e-4d3a-4f6b-8e21-5c0d7a1b2c3d".',
-        error: 'Not Found',
-        statusCode: 404,
-      },
-    },
-  })
-  @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar a remoção do documento do produto químico.',
-  })
-  async removeProductDocument(
-    @Param('id') id: string,
-    @Param('documentId') documentId: string,
-  ): Promise<ChemicalProductResponseDto> {
-    try {
-      const product = await this.removeDocument.execute(id, documentId);
-      return ChemicalProductResponseDto.fromEntity(product);
-    } catch (error) {
-      this.handleError(
-        error,
-        `a remoção do documento ${documentId} do produto químico com ID ${id}`,
-      );
     }
   }
 

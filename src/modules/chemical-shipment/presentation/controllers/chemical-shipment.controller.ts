@@ -33,6 +33,7 @@ import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/appli
 import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.js';
 import { ChemicalShipmentResponseDto } from '@/modules/chemical-shipment/presentation/dtos/chemical-shipment-response.dto.js';
 import { ChemicalShipmentPageResponseDto } from '../dtos/chemical-shipment-page-response.dto.js';
+import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
 import { ListChemicalShipmentsQueryDto } from '../dtos/list-chemical-shipment-query.dto.js';
 import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.js';
 import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.js';
@@ -338,7 +339,8 @@ export class ChemicalShipmentController {
   })
   async updateChemicalShipment(
     @Param('id') id: string,
-    @Body() updateChemicalShipmentDto: UpdateChemicalShipmentDto,
+    @Body(validationPipeFor(UpdateChemicalShipmentDto))
+    updateChemicalShipmentDto: UpdateChemicalShipmentDto,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
       const updatedShipment = await this.updateChemicalShipmentUseCase.execute(

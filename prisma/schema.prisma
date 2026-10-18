@@ -131,6 +131,58 @@ model ChemicalShipment {
   @@index([responsibleUserId])
 }
 
+enum ShipmentDocumentStatus {
+  PENDING
+  UNDER_REVIEW
+  COMPLIANT
+  NON_COMPLIANT
+
+  @@map("CargoDocumentStatus")
+}
+
+enum DocumentType {
+  SAFETY_DATA_SHEET
+  CERTIFICATE
+  LICENSE
+  DECLARATION
+  OTHER
+}
+
+model ShipmentDocument {
+  id                 String                       @id @default(uuid())
+  shipmentId         String                       @unique(map: "CargoDocument_cargoId_key") @map("cargoId")
+  shipperId          String
+  compositionVersion Int
+  status             ShipmentDocumentStatus       @default(PENDING)
+  submittedAt        DateTime?
+  revision           Int                          @default(0)
+  attachments        ShipmentDocumentAttachment[]
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@index([shipperId, status], map: "CargoDocument_shipperId_status_idx")
+  @@map("CargoDocument")
+}
+
+model ShipmentDocumentAttachment {
+  id                   String           @id @default(uuid())
+  shipmentDocumentId   String           @map("cargoDocumentId")
+  shipmentDocument     ShipmentDocument @relation(fields: [shipmentDocumentId], references: [id], onDelete: Cascade, map: "CargoDocumentAttachment_cargoDocumentId_fkey")
+  name                 String           @db.VarChar(180)
+  type                 DocumentType
+  fileReference        String           @db.VarChar(1024)
+  scopes               Json
+  issuedAt             DateTime
+  expiresAt            DateTime?
+  replacesAttachmentId String?
+  removedAt            DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([shipmentDocumentId], map: "CargoDocumentAttachment_cargoDocumentId_idx")
+  @@map("CargoDocumentAttachment")
+}
+
 enum ProductRiskClass {
   EXPLOSIVES
   GASES

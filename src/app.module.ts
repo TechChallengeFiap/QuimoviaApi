@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.module.js';
+import { DocumentComplianceModule } from '@/modules/document-compliance/document-compliance.module.js';
 import { UserModule } from '@/modules/user/user.module.js';
 import { ChemicalShipmentModule } from '@/modules/chemical-shipment/chemical-shipment.module.js';
 import { InspectionModule } from '@/modules/inspection/inspection.module.js';
@@ -13,9 +14,10 @@ import { AuthModule } from '@/modules/user/auth.module.js';
     PrismaModule,
     UserModule,
     ChemicalShipmentModule,
+    InspectionModule,
+    DocumentComplianceModule,
     ChemicalProductsModule,
     AuthModule,
-    InspectionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
