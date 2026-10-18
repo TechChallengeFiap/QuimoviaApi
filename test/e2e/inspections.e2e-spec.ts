@@ -7,6 +7,17 @@ import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/
 import { InspectionModule } from '@/modules/inspection/inspection.module.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { InspectionRepositoryMock } from '../mocks/inspection-repository.mock.js';
+import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.module.js';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { ChemicalShipmentMock } from '../mocks/chemical-shipment.mock.js';
+import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 
 const CARGO_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 const CARGO_ITEM_ID = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
@@ -14,6 +25,8 @@ const INSPECTOR_ID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
 
 describe('InspectionsController (e2e)', () => {
   let app: INestApplication;
+  let chemicalShipments: ChemicalShipmentMock;
+  let users: UserRepositoryMock;
 
   const payload = {
     cargoId: CARGO_ID,
@@ -27,11 +40,47 @@ describe('InspectionsController (e2e)', () => {
     // Os casos de uso registram os erros esperados (404, 422) no log.
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
+    chemicalShipments = new ChemicalShipmentMock();
+    await chemicalShipments.create(
+      ChemicalShipment.restore({
+        id: CARGO_ID,
+        productId: 'prod-001',
+        quantityProduct: 100,
+        status: StatusShipment.ANALYZING,
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-001',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      }),
+    );
+
+    users = new UserRepositoryMock();
+    await users.create(
+      User.restore({
+        id: INSPECTOR_ID,
+        name: 'Carlos Fiscal',
+        email: 'carlos.fiscal@quimovia.com',
+        passwordHash: 'hash',
+        role: UserRole.PORT_OPERATOR,
+        status: UserStatus.ACTIVE,
+        lastLoginAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [InspectionModule],
+      imports: [PrismaModule, InspectionModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue({})
       .overrideProvider(INSPECTION_REPOSITORY)
       .useClass(InspectionRepositoryMock)
+      .overrideProvider(CHEMICAL_SHIPMENT_REPOSITORY)
+      .useValue(chemicalShipments)
+      .overrideProvider(USER_REPOSITORY)
+      .useValue(users)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -83,6 +132,40 @@ describe('InspectionsController (e2e)', () => {
       });
   });
 
+  it('retorna 404 ao cadastrar inspeção com carga química inexistente', async () => {
+    await request(app.getHttpServer())
+      .post('/inspections')
+      .send({ ...payload, cargoId: 'b567d1fc-3b1d-44a5-9273-5a02a8327d6a' })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.message).toContain('Carga Química não encontrado(a)');
+      });
+  });
+
+  it('retorna 404 ao cadastrar inspeção com Fiscal inexistente', async () => {
+    await request(app.getHttpServer())
+      .post('/inspections')
+      .send({ ...payload, inspectorId: 'b567d1fc-3b1d-44a5-9273-5a02a8327d6a' })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.message).toContain('Usuário não encontrado(a)');
+      });
+  });
+
+  it('retorna 404 ao tentar reatribuir para um Fiscal inexistente', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/inspections')
+      .send(payload);
+
+    await request(app.getHttpServer())
+      .patch(`/inspections/${created.body.id}`)
+      .send({ inspectorId: 'b567d1fc-3b1d-44a5-9273-5a02a8327d6a' })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.message).toContain('Usuário não encontrado(a)');
+      });
+  });
+
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
       .post('/inspections')
@@ -130,6 +213,19 @@ describe('InspectionsController (e2e)', () => {
 
   it('lista as inspeções paginadas e filtradas pela carga', async () => {
     const otherCargoId = '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b';
+    await chemicalShipments.create(
+      ChemicalShipment.restore({
+        id: otherCargoId,
+        productId: 'prod-001',
+        quantityProduct: 100,
+        status: StatusShipment.ANALYZING,
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-001',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      }),
+    );
     await request(app.getHttpServer()).post('/inspections').send(payload);
     await request(app.getHttpServer())
       .post('/inspections')

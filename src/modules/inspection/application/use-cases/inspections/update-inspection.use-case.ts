@@ -9,6 +9,11 @@ import {
 } from '@/shared/domain/errors/domain.error.js';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import type { InspectionRepository } from '@/modules/inspection/domain/repositories/inspection.repository.js';
+import {
+  USER_REPOSITORY,
+  type UserRepository,
+} from '@/modules/user/domain/repositories/user.repository.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 
 export interface InspectionResultInput {
   requirement: InspectionRequirement;
@@ -28,7 +33,9 @@ export class UpdateInspectionUseCase {
 
   constructor(
     @Inject(INSPECTION_REPOSITORY)
-    private readonly inspections: InspectionRepository,
+    private readonly inspectionsRepository: InspectionRepository,
+    @Inject(USER_REPOSITORY)
+    private readonly usersRepository: UserRepository,
   ) {}
 
   /**
@@ -38,7 +45,8 @@ export class UpdateInspectionUseCase {
    */
   async execute(id: string, input: UpdateInspectionInput): Promise<Inspection> {
     try {
-      const inspection = await this.inspections.findById(id);
+      await this.validateInput(input);
+      const inspection = await this.inspectionsRepository.findById(id);
 
       if (!inspection) {
         throw new ResourceNotFoundError('Inspeção', id);
@@ -67,13 +75,29 @@ export class UpdateInspectionUseCase {
         this.changeStatus(inspection, input.status);
       }
 
-      return await this.inspections.update(inspection);
+      return await this.inspectionsRepository.update(inspection);
     } catch (error) {
       this.logger.error(
         `Erro ao atualizar a inspeção com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
+    }
+  }
+
+  private async validateInput(input: UpdateInspectionInput): Promise<void> {
+    if (input.inspectorId) {
+      const inspectorExists = await this.usersRepository.findById(
+        input.inspectorId,
+      );
+      if (!inspectorExists) {
+        throw new ResourceNotFoundError('Usuário', input.inspectorId);
+      }
+      if (inspectorExists.status !== UserStatus.ACTIVE) {
+        throw new BusinessRuleError(
+          'O novo fiscal responsável pela inspeção deve estar ativo no sistema.',
+        );
+      }
     }
   }
 

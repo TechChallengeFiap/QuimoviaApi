@@ -25,5 +25,6 @@ import { ChemicalProductsModule } from '../chemical-products/chemical-products.m
       useClass: PrismaChemicalShipmentRepository,
     },
   ],
+  exports: [CHEMICAL_SHIPMENT_REPOSITORY],
 })
 export class ChemicalShipmentModule {}

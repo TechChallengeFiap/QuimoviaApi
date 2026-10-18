@@ -22,18 +22,36 @@ describe('Swagger do módulo inspection (e2e)', () => {
   beforeAll(async () => {
     disableDesignMetadata();
 
+    const { PrismaModule } =
+      await import('@/shared/infrastructure/persistence/prisma/prisma.module.js');
+    const { PrismaService } =
+      await import('@/shared/infrastructure/persistence/prisma/prisma.service.js');
     const { InspectionModule } =
       await import('@/modules/inspection/inspection.module.js');
     const { INSPECTION_REPOSITORY } =
       await import('@/modules/inspection/domain/repositories/inspection.repository.js');
+    const { CHEMICAL_SHIPMENT_REPOSITORY } =
+      await import('@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js');
+    const { USER_REPOSITORY } =
+      await import('@/modules/user/domain/repositories/user.repository.js');
     const { InspectionRepositoryMock } =
       await import('../mocks/inspection-repository.mock.js');
+    const { ChemicalShipmentMock } =
+      await import('../mocks/chemical-shipment.mock.js');
+    const { UserRepositoryMock } =
+      await import('../mocks/user-repository.mock.js');
 
     const moduleFixture = await Test.createTestingModule({
-      imports: [InspectionModule],
+      imports: [PrismaModule, InspectionModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue({})
       .overrideProvider(INSPECTION_REPOSITORY)
       .useClass(InspectionRepositoryMock)
+      .overrideProvider(CHEMICAL_SHIPMENT_REPOSITORY)
+      .useClass(ChemicalShipmentMock)
+      .overrideProvider(USER_REPOSITORY)
+      .useClass(UserRepositoryMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -275,7 +293,12 @@ describe('Swagger do módulo inspection (e2e)', () => {
       method: 'get' | 'post' | 'patch' | 'delete',
     ) => Object.keys(document.paths[path]?.[method]?.responses ?? {}).sort();
 
-    expect(statusesOf('/inspections', 'post')).toEqual(['201', '400', '422']);
+    expect(statusesOf('/inspections', 'post')).toEqual([
+      '201',
+      '400',
+      '404',
+      '422',
+    ]);
     expect(statusesOf('/inspections', 'get')).toEqual(['200', '400']);
     expect(statusesOf('/inspections/{id}', 'get')).toEqual(['200', '404']);
     expect(statusesOf('/inspections/{id}', 'patch')).toEqual([

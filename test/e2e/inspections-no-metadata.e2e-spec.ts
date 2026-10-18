@@ -31,18 +31,76 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
     // Os casos de uso registram os erros esperados (404, 422) no log.
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
+    const { PrismaModule } =
+      await import('@/shared/infrastructure/persistence/prisma/prisma.module.js');
+    const { PrismaService } =
+      await import('@/shared/infrastructure/persistence/prisma/prisma.service.js');
     const { InspectionModule } =
       await import('@/modules/inspection/inspection.module.js');
     const { INSPECTION_REPOSITORY } =
       await import('@/modules/inspection/domain/repositories/inspection.repository.js');
+    const { CHEMICAL_SHIPMENT_REPOSITORY } =
+      await import('@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js');
+    const { USER_REPOSITORY } =
+      await import('@/modules/user/domain/repositories/user.repository.js');
     const { InspectionRepositoryMock } =
       await import('../mocks/inspection-repository.mock.js');
+    const { ChemicalShipmentMock } =
+      await import('../mocks/chemical-shipment.mock.js');
+    const { UserRepositoryMock } =
+      await import('../mocks/user-repository.mock.js');
+    const { ChemicalShipment } =
+      await import('@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js');
+    const { StatusShipment } =
+      await import('@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js');
+    const { User } =
+      await import('@/modules/user/domain/entities/user.entity.js');
+    const { UserRole } =
+      await import('@/modules/user/domain/enums/user-role.enum.js');
+    const { UserStatus } =
+      await import('@/modules/user/domain/enums/user-status.enum.js');
+
+    const chemicalShipmentsMock = new ChemicalShipmentMock();
+    await chemicalShipmentsMock.create(
+      ChemicalShipment.restore({
+        id: CARGO_ID,
+        productId: 'prod-001',
+        quantityProduct: 100,
+        status: StatusShipment.ANALYZING,
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-001',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      }),
+    );
+
+    const usersMock = new UserRepositoryMock();
+    await usersMock.create(
+      User.restore({
+        id: INSPECTOR_ID,
+        name: 'Fiscal Teste',
+        email: 'fiscal@quimovia.com',
+        passwordHash: 'hash',
+        role: UserRole.PORT_OPERATOR,
+        status: UserStatus.ACTIVE,
+        lastLoginAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
 
     const moduleFixture = await Test.createTestingModule({
-      imports: [InspectionModule],
+      imports: [PrismaModule, InspectionModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue({})
       .overrideProvider(INSPECTION_REPOSITORY)
       .useClass(InspectionRepositoryMock)
+      .overrideProvider(CHEMICAL_SHIPMENT_REPOSITORY)
+      .useValue(chemicalShipmentsMock)
+      .overrideProvider(USER_REPOSITORY)
+      .useValue(usersMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
