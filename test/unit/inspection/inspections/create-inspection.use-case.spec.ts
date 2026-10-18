@@ -118,6 +118,26 @@ describe('CreateInspectionUseCase', () => {
     ).rejects.toThrow(BusinessRuleError);
   });
 
+  it('lança BusinessRuleError quando o fiscal está bloqueado', async () => {
+    await users.create(
+      User.restore({
+        id: 'fiscal-bloqueado',
+        name: 'Fiscal Bloqueado',
+        email: 'fiscal.bloqueado@quimovia.com',
+        passwordHash: 'hash123',
+        role: UserRole.PORT_OPERATOR,
+        status: UserStatus.BLOCKED,
+        lastLoginAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+
+    await expect(
+      useCase.execute({ ...input, inspectorId: 'fiscal-bloqueado' }),
+    ).rejects.toThrow(BusinessRuleError);
+  });
+
   it('rejeita escopo de item da carga sem o identificador do item', async () => {
     await expect(
       useCase.execute({ ...input, scope: InspectionScope.CARGO_ITEM }),

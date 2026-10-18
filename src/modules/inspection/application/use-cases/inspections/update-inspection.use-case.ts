@@ -13,6 +13,7 @@ import {
   USER_REPOSITORY,
   type UserRepository,
 } from '@/modules/user/domain/repositories/user.repository.js';
+import type { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 
 export interface InspectionResultInput {
@@ -45,7 +46,7 @@ export class UpdateInspectionUseCase {
    */
   async execute(id: string, input: UpdateInspectionInput): Promise<Inspection> {
     try {
-      await this.validateInput(input);
+      const { newInspector } = await this.validateInput(input);
       const inspection = await this.inspectionsRepository.findById(id);
 
       if (!inspection) {
@@ -53,7 +54,7 @@ export class UpdateInspectionUseCase {
       }
 
       if (input.inspectorId !== undefined) {
-        inspection.assignInspector(input.inspectorId);
+        inspection.assignInspector(input.inspectorId, newInspector);
       }
 
       if (input.status === InspectionStatus.IN_PROGRESS) {
@@ -85,7 +86,9 @@ export class UpdateInspectionUseCase {
     }
   }
 
-  private async validateInput(input: UpdateInspectionInput): Promise<void> {
+  private async validateInput(
+    input: UpdateInspectionInput,
+  ): Promise<{ newInspector?: User }> {
     if (input.inspectorId) {
       const inspectorExists = await this.usersRepository.findById(
         input.inspectorId,
@@ -98,7 +101,9 @@ export class UpdateInspectionUseCase {
           'O novo fiscal responsável pela inspeção deve estar ativo no sistema.',
         );
       }
+      return { newInspector: inspectorExists };
     }
+    return {};
   }
 
   /**

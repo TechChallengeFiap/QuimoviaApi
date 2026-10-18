@@ -127,6 +127,16 @@ describe('Swagger do módulo inspection (e2e)', () => {
         completedAt: { type: 'string', format: 'date-time', nullable: true },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
+        cargo: {
+          nullable: true,
+          allOf: [
+            { $ref: '#/components/schemas/ChemicalShipmentResponseDto' },
+          ],
+        },
+        inspector: {
+          nullable: true,
+          allOf: [{ $ref: '#/components/schemas/UserResponseDto' }],
+        },
       },
     });
     expect(

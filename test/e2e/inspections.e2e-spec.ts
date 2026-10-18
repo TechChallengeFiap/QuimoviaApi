@@ -119,6 +119,20 @@ describe('InspectionsController (e2e)', () => {
         { requirement: 'PACKAGING_INTEGRITY', result: null, observation: null },
         { requirement: 'NO_LEAKAGE', result: null, observation: null },
       ],
+      cargo: {
+        id: CARGO_ID,
+        productId: 'prod-001',
+        quantityProduct: 100,
+        status: 'ANALYZING',
+        responsibleUserId: 'user-001',
+      },
+      inspector: {
+        id: INSPECTOR_ID,
+        name: 'Carlos Fiscal',
+        email: 'carlos.fiscal@quimovia.com',
+        role: 'PORT_OPERATOR',
+        status: 'ACTIVE',
+      },
     });
   });
 

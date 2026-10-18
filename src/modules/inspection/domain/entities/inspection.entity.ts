@@ -27,10 +27,12 @@ export interface InspectionProperties {
 
 export interface CreateInspectionData {
   cargoId: string;
+  cargo?: ChemicalShipment | null;
   compositionVersion: number;
   scope: InspectionScope;
   cargoItemId?: string | null;
   inspectorId: string;
+  inspector?: User | null;
   requirements: InspectionRequirement[];
 }
 
@@ -84,12 +86,14 @@ export class Inspection {
     return new Inspection({
       id: randomUUID(),
       cargoId: Inspection.validateIdentifier(data.cargoId, 'da carga'),
+      cargo: data.cargo,
       compositionVersion: Inspection.validateCompositionVersion(
         data.compositionVersion,
       ),
       scope: data.scope,
       cargoItemId: Inspection.validateCargoItem(data.scope, data.cargoItemId),
       inspectorId: Inspection.validateIdentifier(data.inspectorId, 'do Fiscal'),
+      inspector: data.inspector,
       status: InspectionStatus.PENDING,
       items: Inspection.createItems(data.requirements),
       startedAt: null,
@@ -136,9 +140,12 @@ export class Inspection {
     return this.#inspector;
   }
 
-  assignInspector(inspectorId: string): void {
+  assignInspector(inspectorId: string, inspector?: User | null): void {
     this.ensureNotCompleted();
     this.#inspectorId = Inspection.validateIdentifier(inspectorId, 'do Fiscal');
+    if (inspector !== undefined) {
+      this.#inspector = inspector;
+    }
     this.markAsUpdated();
   }
 

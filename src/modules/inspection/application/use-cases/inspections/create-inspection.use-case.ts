@@ -12,6 +12,8 @@ import {
   USER_REPOSITORY,
   type UserRepository,
 } from '@/modules/user/domain/repositories/user.repository.js';
+import type { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import type { User } from '@/modules/user/domain/entities/user.entity.js';
 import {
   BusinessRuleError,
   ResourceNotFoundError,
@@ -42,13 +44,15 @@ export class CreateInspectionUseCase {
 
   async execute(input: CreateInspectionInput): Promise<Inspection> {
     try {
-      await this.validateInput(input);
+      const { chemicalShipment, inspector } = await this.validateInput(input);
       const inspection = Inspection.create({
         cargoId: input.cargoId,
+        cargo: chemicalShipment,
         compositionVersion: input.compositionVersion,
         scope: input.scope,
         cargoItemId: input.cargoItemId,
         inspectorId: input.inspectorId,
+        inspector,
         requirements: input.requirements,
       });
 
@@ -62,7 +66,10 @@ export class CreateInspectionUseCase {
     }
   }
 
-  private async validateInput(input: CreateInspectionInput): Promise<void> {
+  private async validateInput(input: CreateInspectionInput): Promise<{
+    chemicalShipment: ChemicalShipment;
+    inspector: User;
+  }> {
     const chemicalShipment = await this.chemicalShipmentsRepository.findById(
       input.cargoId,
     );
@@ -78,5 +85,6 @@ export class CreateInspectionUseCase {
         'O fiscal responsável pela inspeção deve estar ativo no sistema.',
       );
     }
+    return { chemicalShipment, inspector };
   }
 }
