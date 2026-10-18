@@ -23,7 +23,16 @@ function createPrismaFake() {
   };
 }
 
-const INCLUDE_ITEMS = { items: { orderBy: { requirement: 'asc' } } };
+const INCLUDE_ITEMS_AND_RELATIONS = {
+  items: { orderBy: { requirement: 'asc' } },
+  cargo: {
+    include: {
+      product: true,
+      responsibleUser: true,
+    },
+  },
+  inspector: true,
+};
 
 const persisted = {
   id: 'inspection-001',
@@ -53,6 +62,8 @@ const persisted = {
       observation: null,
     },
   ],
+  cargo: null,
+  inspector: null,
 };
 
 describe('PrismaInspectionRepository', () => {
@@ -99,7 +110,7 @@ describe('PrismaInspectionRepository', () => {
           ],
         },
       },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
   });
 
@@ -110,7 +121,7 @@ describe('PrismaInspectionRepository', () => {
 
     expect(prisma.inspection.findUnique).toHaveBeenCalledWith({
       where: { id: 'inspection-001' },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
     expect(inspection?.toObject()).toMatchObject({
       id: 'inspection-001',
@@ -185,7 +196,7 @@ describe('PrismaInspectionRepository', () => {
           ],
         },
       },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
   });
 
@@ -206,7 +217,7 @@ describe('PrismaInspectionRepository', () => {
     };
     expect(prisma.inspection.findMany).toHaveBeenCalledWith({
       where,
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
       orderBy: { createdAt: 'desc' },
       skip: 20,
       take: 20,

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Prisma } from '@/generated/prisma/client.js';
 import {
   InspectionPage,
   InspectionRepository,
@@ -10,20 +11,28 @@ import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspect
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { InspectionItem } from '@/modules/inspection/domain/value-objects/inspection-item.vo.js';
-import type {
-  InspectionItemModel as PersistedInspectionItem,
-  InspectionModel as PersistedInspection,
-} from '@/generated/prisma/models.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 
-type PersistedInspectionWithItems = PersistedInspection & {
-  items: PersistedInspectionItem[];
-};
-
 /** Os itens voltam sempre na mesma ordem, a de declaração dos requisitos. */
-const INCLUDE_ITEMS = {
+const INCLUDE_ITEMS_AND_RELATIONS = {
   items: { orderBy: { requirement: 'asc' } },
-} as const;
+  cargo: {
+    include: {
+      product: true,
+      responsibleUser: true,
+    },
+  },
+  inspector: true,
+} satisfies Prisma.InspectionInclude;
+
+type PersistedInspectionRecord = Prisma.InspectionGetPayload<{
+  include: typeof INCLUDE_ITEMS_AND_RELATIONS;
+}>;
 
 @Injectable()
 export class PrismaInspectionRepository implements InspectionRepository {
@@ -49,7 +58,7 @@ export class PrismaInspectionRepository implements InspectionRepository {
           })),
         },
       },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
 
     return PrismaInspectionRepository.toDomain(record);
@@ -79,7 +88,7 @@ export class PrismaInspectionRepository implements InspectionRepository {
           })),
         },
       },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
 
     return PrismaInspectionRepository.toDomain(record);
@@ -92,7 +101,7 @@ export class PrismaInspectionRepository implements InspectionRepository {
   async findById(id: string): Promise<Inspection | null> {
     const record = await this.prisma.inspection.findUnique({
       where: { id },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
 
     return record ? PrismaInspectionRepository.toDomain(record) : null;
@@ -108,7 +117,7 @@ export class PrismaInspectionRepository implements InspectionRepository {
     const [records, total] = await Promise.all([
       this.prisma.inspection.findMany({
         where,
-        include: INCLUDE_ITEMS,
+        include: INCLUDE_ITEMS_AND_RELATIONS,
         orderBy: { createdAt: 'desc' },
         skip: (filters.page - 1) * filters.pageSize,
         take: filters.pageSize,
@@ -126,7 +135,7 @@ export class PrismaInspectionRepository implements InspectionRepository {
     };
   }
 
-  private static toDomain(record: PersistedInspectionWithItems): Inspection {
+  private static toDomain(record: PersistedInspectionRecord): Inspection {
     return Inspection.restore({
       id: record.id,
       cargoId: record.cargoId,
@@ -146,6 +155,47 @@ export class PrismaInspectionRepository implements InspectionRepository {
       completedAt: record.completedAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      cargo: record.cargo
+        ? PrismaInspectionRepository.cargoToDomain(record.cargo)
+        : null,
+      inspector: record.inspector
+        ? PrismaInspectionRepository.userToDomain(record.inspector)
+        : null,
+    });
+  }
+
+  private static cargoToDomain(
+    cargo: NonNullable<PersistedInspectionRecord['cargo']>,
+  ): ChemicalShipment {
+    return ChemicalShipment.restore({
+      id: cargo.id,
+      productId: cargo.productId,
+      quantityProduct: cargo.quantityProduct,
+      status: cargo.status as StatusShipment,
+      responsibleUserId: cargo.responsibleUserId,
+      responsibleUser: cargo.responsibleUser
+        ? PrismaInspectionRepository.userToDomain(cargo.responsibleUser)
+        : null,
+      documentsIds: cargo.documentsIds,
+      createdAt: cargo.createdAt,
+      updatedAt: cargo.updatedAt,
+      deletedAt: cargo.deletedAt,
+    });
+  }
+
+  private static userToDomain(
+    user: NonNullable<PersistedInspectionRecord['inspector']>,
+  ): User {
+    return User.restore({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      passwordHash: user.passwordHash,
+      role: user.role as UserRole,
+      status: user.status as UserStatus,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     });
   }
 }
