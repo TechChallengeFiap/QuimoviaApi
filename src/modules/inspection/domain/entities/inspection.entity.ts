@@ -5,14 +5,18 @@ import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspect
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { InspectionItem } from '@/modules/inspection/domain/value-objects/inspection-item.vo.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
 
 export interface InspectionProperties {
   id: string;
   cargoId: string;
+  cargo?: ChemicalShipment | null;
   compositionVersion: number;
   scope: InspectionScope;
   cargoItemId: string | null;
   inspectorId: string;
+  inspector?: User | null;
   status: InspectionStatus;
   items: InspectionItem[];
   startedAt: Date | null;
@@ -23,10 +27,12 @@ export interface InspectionProperties {
 
 export interface CreateInspectionData {
   cargoId: string;
+  cargo?: ChemicalShipment | null;
   compositionVersion: number;
   scope: InspectionScope;
   cargoItemId?: string | null;
   inspectorId: string;
+  inspector?: User | null;
   requirements: InspectionRequirement[];
 }
 
@@ -53,6 +59,8 @@ export class Inspection {
   #startedAt: Date | null;
   #completedAt: Date | null;
   #updatedAt: Date;
+  #cargo?: ChemicalShipment | null;
+  #inspector?: User | null;
 
   private constructor(properties: InspectionProperties) {
     this.id = properties.id;
@@ -67,6 +75,8 @@ export class Inspection {
     this.#startedAt = properties.startedAt;
     this.#completedAt = properties.completedAt;
     this.#updatedAt = properties.updatedAt;
+    this.#cargo = properties.cargo;
+    this.#inspector = properties.inspector;
   }
 
   /** Cria uma nova inspeção pendente, validando os dados informados. */
@@ -76,12 +86,14 @@ export class Inspection {
     return new Inspection({
       id: randomUUID(),
       cargoId: Inspection.validateIdentifier(data.cargoId, 'da carga'),
+      cargo: data.cargo,
       compositionVersion: Inspection.validateCompositionVersion(
         data.compositionVersion,
       ),
       scope: data.scope,
       cargoItemId: Inspection.validateCargoItem(data.scope, data.cargoItemId),
       inspectorId: Inspection.validateIdentifier(data.inspectorId, 'do Fiscal'),
+      inspector: data.inspector,
       status: InspectionStatus.PENDING,
       items: Inspection.createItems(data.requirements),
       startedAt: null,
@@ -120,9 +132,20 @@ export class Inspection {
     return this.#updatedAt;
   }
 
-  assignInspector(inspectorId: string): void {
+  get cargo(): ChemicalShipment | null | undefined {
+    return this.#cargo;
+  }
+
+  get inspector(): User | null | undefined {
+    return this.#inspector;
+  }
+
+  assignInspector(inspectorId: string, inspector?: User | null): void {
     this.ensureNotCompleted();
     this.#inspectorId = Inspection.validateIdentifier(inspectorId, 'do Fiscal');
+    if (inspector !== undefined) {
+      this.#inspector = inspector;
+    }
     this.markAsUpdated();
   }
 
@@ -210,6 +233,8 @@ export class Inspection {
       completedAt: this.#completedAt,
       createdAt: this.createdAt,
       updatedAt: this.#updatedAt,
+      cargo: this.#cargo,
+      inspector: this.#inspector,
     };
   }
 

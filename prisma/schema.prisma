@@ -40,10 +40,12 @@ enum InspectionItemResult {
 model Inspection {
   id                 String           @id @default(uuid())
   cargoId            String
+  cargo              ChemicalShipment @relation(fields: [cargoId], references: [id])
   compositionVersion Int
   scope              InspectionScope
   cargoItemId        String?
   inspectorId        String
+  inspector          User             @relation(fields: [inspectorId], references: [id])
   status             InspectionStatus @default(PENDING)
   items              InspectionItem[]
   startedAt          DateTime?
@@ -93,6 +95,7 @@ model User {
   chemicalShipments ChemicalShipment[]
   sessions          Session[]
   chemicalProducts  ChemicalProduct[]
+  inspections       Inspection[]
 }
 
 model Session {
@@ -127,6 +130,7 @@ model ChemicalShipment {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   deletedAt         DateTime?
+  inspections       Inspection[]
 
   @@index([responsibleUserId])
 }

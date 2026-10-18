@@ -7,6 +7,8 @@ import { UpdateInspectionUseCase } from '@/modules/inspection/application/use-ca
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import { PrismaInspectionRepository } from '@/modules/inspection/infrastructure/persistence/prisma/prisma-inspection.repository.js';
 import { InspectionsController } from '@/modules/inspection/presentation/controllers/inspections.controller.js';
+import { ChemicalShipmentModule } from '../chemical-shipment/chemical-shipment.module.js';
+import { UserModule } from '../user/user.module.js';
 
 @Module({
   controllers: [InspectionsController],
@@ -18,5 +20,6 @@ import { InspectionsController } from '@/modules/inspection/presentation/control
     DeleteInspectionUseCase,
     { provide: INSPECTION_REPOSITORY, useClass: PrismaInspectionRepository },
   ],
+  imports: [ChemicalShipmentModule, UserModule],
 })
 export class InspectionModule {}

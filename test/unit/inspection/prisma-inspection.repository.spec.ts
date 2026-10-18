@@ -4,6 +4,8 @@ import { InspectionItemResult } from '@/modules/inspection/domain/enums/inspecti
 import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { PrismaInspectionRepository } from '@/modules/inspection/infrastructure/persistence/prisma/prisma-inspection.repository.js';
 import type { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 
@@ -23,7 +25,16 @@ function createPrismaFake() {
   };
 }
 
-const INCLUDE_ITEMS = { items: { orderBy: { requirement: 'asc' } } };
+const INCLUDE_ITEMS_AND_RELATIONS = {
+  items: { orderBy: { requirement: 'asc' } },
+  cargo: {
+    include: {
+      product: true,
+      responsibleUser: true,
+    },
+  },
+  inspector: true,
+};
 
 const persisted = {
   id: 'inspection-001',
@@ -53,6 +64,45 @@ const persisted = {
       observation: null,
     },
   ],
+  cargo: null,
+  inspector: null,
+};
+
+const persistedWithRelations = {
+  ...persisted,
+  cargo: {
+    id: 'cargo-001',
+    productId: 'prod-001',
+    quantityProduct: 100,
+    status: 'ANALYZING',
+    responsibleUserId: 'user-001',
+    responsibleUser: {
+      id: 'user-001',
+      name: 'João Responsável',
+      email: 'joao@quimovia.com',
+      passwordHash: 'hash',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      lastLoginAt: null,
+      createdAt: new Date('2026-09-01T10:00:00Z'),
+      updatedAt: new Date('2026-09-01T10:00:00Z'),
+    },
+    documentsIds: 'doc-001',
+    createdAt: new Date('2026-09-01T10:00:00Z'),
+    updatedAt: new Date('2026-09-01T10:00:00Z'),
+    deletedAt: null,
+  },
+  inspector: {
+    id: 'fiscal-001',
+    name: 'Carlos Fiscal',
+    email: 'carlos.fiscal@quimovia.com',
+    passwordHash: 'hash',
+    role: 'PORT_OPERATOR',
+    status: 'ACTIVE',
+    lastLoginAt: null,
+    createdAt: new Date('2026-09-01T10:00:00Z'),
+    updatedAt: new Date('2026-09-01T10:00:00Z'),
+  },
 };
 
 describe('PrismaInspectionRepository', () => {
@@ -99,7 +149,7 @@ describe('PrismaInspectionRepository', () => {
           ],
         },
       },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
   });
 
@@ -110,7 +160,7 @@ describe('PrismaInspectionRepository', () => {
 
     expect(prisma.inspection.findUnique).toHaveBeenCalledWith({
       where: { id: 'inspection-001' },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
     expect(inspection?.toObject()).toMatchObject({
       id: 'inspection-001',
@@ -130,6 +180,18 @@ describe('PrismaInspectionRepository', () => {
         observation: null,
       },
     ]);
+  });
+
+  it('converte as relações de cargo e inspector para as entidades de domínio', async () => {
+    prisma.inspection.findUnique.mockResolvedValueOnce(persistedWithRelations);
+
+    const inspection = await repository.findById('inspection-001');
+
+    expect(inspection?.cargo).toBeInstanceOf(ChemicalShipment);
+    expect(inspection?.cargo?.id).toBe('cargo-001');
+    expect(inspection?.cargo?.responsibleUser).toBeInstanceOf(User);
+    expect(inspection?.inspector).toBeInstanceOf(User);
+    expect(inspection?.inspector?.name).toBe('Carlos Fiscal');
   });
 
   it('retorna null quando a inspeção não existe', async () => {
@@ -185,7 +247,7 @@ describe('PrismaInspectionRepository', () => {
           ],
         },
       },
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
     });
   });
 
@@ -206,7 +268,7 @@ describe('PrismaInspectionRepository', () => {
     };
     expect(prisma.inspection.findMany).toHaveBeenCalledWith({
       where,
-      include: INCLUDE_ITEMS,
+      include: INCLUDE_ITEMS_AND_RELATIONS,
       orderBy: { createdAt: 'desc' },
       skip: 20,
       take: 20,

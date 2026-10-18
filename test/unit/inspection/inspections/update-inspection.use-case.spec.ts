@@ -11,18 +11,39 @@ import {
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import { InspectionRepositoryMock } from '../../../mocks/inspection-repository.mock.js';
+import { UserRepositoryMock } from '../../../mocks/user-repository.mock.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 
 describe('UpdateInspectionUseCase', () => {
   let inspections: InspectionRepositoryMock;
+  let users: UserRepositoryMock;
   let useCase: UpdateInspectionUseCase;
   let loggerError: jest.Spied<typeof Logger.prototype.error>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     loggerError = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
     inspections = new InspectionRepositoryMock();
-    useCase = new UpdateInspectionUseCase(inspections);
+    users = new UserRepositoryMock();
+
+    await users.create(
+      User.restore({
+        id: 'fiscal-002',
+        name: 'Segundo Fiscal',
+        email: 'fiscal2@quimovia.com',
+        passwordHash: 'hash123',
+        role: UserRole.PORT_OPERATOR,
+        status: UserStatus.ACTIVE,
+        lastLoginAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+
+    useCase = new UpdateInspectionUseCase(inspections, users);
   });
 
   afterEach(() => {
@@ -132,6 +153,40 @@ describe('UpdateInspectionUseCase', () => {
     });
 
     expect(updated.inspectorId).toBe('fiscal-002');
+  });
+
+  it('lança ResourceNotFoundError ao tentar reatribuir para um Fiscal inexistente', async () => {
+    const inspection = await registerInspection();
+
+    await expect(
+      useCase.execute(inspection.id, {
+        inspectorId: 'fiscal-inexistente',
+      }),
+    ).rejects.toThrow(ResourceNotFoundError);
+  });
+
+  it('lança BusinessRuleError ao tentar reatribuir para um Fiscal inativo', async () => {
+    await users.create(
+      User.restore({
+        id: 'fiscal-inativo',
+        name: 'Fiscal Inativo',
+        email: 'inativo@quimovia.com',
+        passwordHash: 'hash123',
+        role: UserRole.PORT_OPERATOR,
+        status: UserStatus.INACTIVE,
+        lastLoginAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+
+    const inspection = await registerInspection();
+
+    await expect(
+      useCase.execute(inspection.id, {
+        inspectorId: 'fiscal-inativo',
+      }),
+    ).rejects.toThrow(BusinessRuleError);
   });
 
   it('registra o erro no log e o propaga quando a persistência falha', async () => {
