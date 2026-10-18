@@ -135,14 +135,16 @@ Antes de iniciar, certifique-se de ter instalado em sua máquina:
 
 O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e conexão com o banco de dados. As configurações disponíveis são:
 
-| Variável              | Descrição                                   | Exemplo Padrão                                                                                             |
-| :-------------------- | :------------------------------------------ | :--------------------------------------------------------------------------------------------------------- |
-| `MYSQL_ROOT_PASSWORD` | Senha do usuário root do container MySQL    | `root_secret`                                                                                              |
-| `MYSQL_USER`          | Usuário da aplicação no banco               | `quimovia_user`                                                                                            |
-| `MYSQL_PASSWORD`      | Senha do usuário da aplicação               | `quimovia_pass`                                                                                            |
-| `MYSQL_DATABASE`      | Nome do banco de dados                      | `quimovia_db`                                                                                              |
-| `DATABASE_URL`        | URL de conexão utilizada pelo Prisma ORM    | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
-| `PORT`                | Porta HTTP da API (opcional, padrão `3000`) | `3000`                                                                                                     |
+| Variável                 | Descrição                                                                                                | Exemplo Padrão                                                                                             |
+| :----------------------- | :------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| `MYSQL_ROOT_PASSWORD`    | Senha do usuário root do container MySQL                                                                 | `root_secret`                                                                                              |
+| `MYSQL_USER`             | Usuário da aplicação no banco                                                                            | `quimovia_user`                                                                                            |
+| `MYSQL_PASSWORD`         | Senha do usuário da aplicação                                                                            | `quimovia_pass`                                                                                            |
+| `MYSQL_DATABASE`         | Nome do banco de dados                                                                                   | `quimovia_db`                                                                                              |
+| `DATABASE_URL`           | URL de conexão utilizada pelo Prisma ORM                                                                 | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
+| `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
+| `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48`                                                                       |
+| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `3600`                                                                                                     |
 
 ### 5.3. Executando com Docker e Localmente
 
@@ -169,6 +171,8 @@ copy .env.example .env
 ```
 
 > **Importante:** O `docker-compose.yml` utiliza essas variáveis para inicializar o MySQL. Verifique se as credenciais de `MYSQL_*` e a string de conexão em `DATABASE_URL` estão configuradas corretamente.
+
+> **Autenticação:** o `JWT_SECRET` vem em branco no exemplo e precisa ser preenchido; sem um valor válido, a API não sobe. Para gerá-lo, use por exemplo `openssl rand -base64 48`.
 
 #### 3. Subir o container do banco de dados (MySQL)
 
@@ -209,6 +213,8 @@ npm run start:dev
 A aplicação estará acessível em: `http://localhost:3000`  
 A documentação Swagger estará disponível em: `http://localhost:3000/api`
 
+> A API não sobe sem um `JWT_SECRET` válido no `.env`.
+
 ---
 
 ### 5.4. Scripts Disponíveis
@@ -235,9 +241,22 @@ A API possui documentação interativa completa via Swagger. Com a aplicação e
 
 📍 **URL do Swagger:** [http://localhost:3000/api](http://localhost:3000/api)
 
-A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `403`, `404`, `422`).
+A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `401`, `403`, `404`, `422`).
+
+Para testar as rotas que exigem login pelo Swagger, como o logout, faça login em `POST /auth/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**.
 
 ### 6.2. Principais Endpoints
+
+As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa; sem ele, a API responde `401`. Por enquanto, só o logout usa o guard: cada módulo pode exigir login nas próprias rotas importando o `AuthModule` e usando `@UseGuards(AuthGuard)`.
+
+#### Autenticação (`/auth`)
+
+- `POST /auth/login` — Confere e-mail e senha, inicia uma sessão e devolve o token de acesso (`401` para credenciais inválidas e `403` para conta inativa ou bloqueada).
+- `POST /auth/logout` — Encerra a sessão do token enviado, que deixa de valer na hora.
+
+Bloquear ou inativar um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
+
+A autorização por perfil (RN-ACE-04) ainda não é aplicada.
 
 #### Cargas Químicas (`/chemical-shipment`)
 
@@ -247,21 +266,21 @@ A documentação inclui exemplos de payloads, esquemas de entrada/saída, valida
 - `PATCH /chemical-shipment/:id` — Atualiza dados da carga ou avança seu status segundo as regras de transição.
 - `DELETE /chemical-shipment/:id` — Realiza a inativação/remoção da carga química.
 
-#### Inspeções Portuárias (`/inspecoes`)
+#### Inspeções Portuárias (`/inspections`)
 
-- `POST /inspecoes` — Registra nova inspeção técnica para a carga total ou item específico.
-- `GET /inspecoes` — Lista inspeções cadastradas com filtros de status e escopo.
-- `GET /inspecoes/:id` — Consulta o resultado e detalhes de uma inspeção por identificador.
-- `PATCH /inspecoes/:id` — Atualiza o status (`IN_PROGRESS`, `COMPLETED`) e resultado dos itens (`COMPLIANT`, `NON_COMPLIANT`).
-- `DELETE /inspecoes/:id` — Remove registro de inspeção.
+- `POST /inspections` — Registra nova inspeção técnica para a carga total ou item específico.
+- `GET /inspections` — Lista inspeções cadastradas com filtros de status e escopo.
+- `GET /inspections/:id` — Consulta o resultado e detalhes de uma inspeção por identificador.
+- `PATCH /inspections/:id` — Atualiza o status (`IN_PROGRESS`, `COMPLETED`) e resultado dos itens (`COMPLIANT`, `NON_COMPLIANT`).
+- `DELETE /inspections/:id` — Remove registro de inspeção.
 
-#### Usuários e Acessos (`/usuarios`)
+#### Usuários e Acessos (`/users`)
 
-- `POST /usuarios` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
-- `GET /usuarios` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
-- `GET /usuarios/:id` — Busca informações cadastrais do usuário.
-- `PATCH /usuarios/:id` — Atualiza dados cadastrais ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
-- `DELETE /usuarios/:id` — Remove usuário do sistema.
+- `POST /users` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
+- `GET /users` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
+- `GET /users/:id` — Busca informações cadastrais do usuário.
+- `PATCH /users/:id` — Atualiza dados cadastrais ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
+- `DELETE /users/:id` — Remove usuário do sistema.
 
 ---
 
@@ -289,6 +308,7 @@ Os testes automatizados validam cenários críticos exigidos no Tech Challenge, 
 - Impedimento de transições ilegais na máquina de estados;
 - Bloqueio de movimentação de cargas marcadas como `BLOCKED`;
 - Validação e hash criptográfico de senhas;
+- Login, sessões com expiração e encerramento, e exigência do token de acesso nas rotas protegidas pelo `AuthGuard`;
 - Tratamento de exceções e mapeamento padronizado de erros de domínio.
 
 ---

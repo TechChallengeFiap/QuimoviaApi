@@ -1,18 +1,23 @@
 #!/usr/bin/env node
-// build.mjs - Runs tspc and exits with 0 regardless of TS2877 warnings
-// TS2877 is expected: typescript-transform-paths rewrites @/ aliases in emitted JS.
 import { spawnSync } from 'child_process';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const tspc = resolve(__dirname, 'node_modules/.bin/tspc');
+const isWindows = process.platform === 'win32';
+const tspc = resolve(__dirname, 'node_modules/.bin', isWindows ? 'tspc.cmd' : 'tspc');
+const command = isWindows ? `"${tspc}"` : tspc;
 
-const result = spawnSync(tspc, ['--project', 'tsconfig.build.json'], {
+const result = spawnSync(command, ['--project', 'tsconfig.build.json'], {
   stdio: 'inherit',
   cwd: __dirname,
+  shell: isWindows,
 });
 
-// Exit 0 even if tspc exits with error code (TS2877 warning expected)
-// Real type errors will still be visible in output.
-process.exit(0);
+if (result.error) {
+  console.error('Erro ao executar o build com tspc:', result.error);
+  process.exit(1);
+}
+
+process.exit(result.status ?? 1);
+

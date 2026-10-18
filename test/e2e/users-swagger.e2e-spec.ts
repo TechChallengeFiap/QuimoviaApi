@@ -31,10 +31,14 @@ describe('Swagger do módulo user (e2e)', () => {
       await import('@/modules/user/domain/repositories/user.repository.js');
     const { PASSWORD_HASHER } =
       await import('@/modules/user/application/contracts/password-hasher.contract.js');
+    const { SESSION_REPOSITORY } =
+      await import('@/modules/user/domain/repositories/session.repository.js');
     const { UserRepositoryMock } =
       await import('../mocks/user-repository.mock.js');
     const { PasswordHasherMock } =
       await import('../mocks/password-hasher.mock.js');
+    const { SessionRepositoryMock } =
+      await import('../mocks/session-repository.mock.js');
 
     const moduleFixture = await Test.createTestingModule({
       imports: [UserModule],
@@ -43,6 +47,8 @@ describe('Swagger do módulo user (e2e)', () => {
       .useClass(UserRepositoryMock)
       .overrideProvider(PASSWORD_HASHER)
       .useClass(PasswordHasherMock)
+      .overrideProvider(SESSION_REPOSITORY)
+      .useClass(SessionRepositoryMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -72,7 +78,7 @@ describe('Swagger do módulo user (e2e)', () => {
   }
 
   it('documenta o corpo do cadastro com o CreateUserDto e exemplos de payload', () => {
-    expect(jsonRequestBodyOf('/usuarios', 'post')).toMatchObject({
+    expect(jsonRequestBodyOf('/users', 'post')).toMatchObject({
       schema: { $ref: '#/components/schemas/CreateUserDto' },
       examples: {
         padrao: { value: { name: 'Maria Silva', role: 'PORT_OPERATOR' } },
@@ -97,7 +103,7 @@ describe('Swagger do módulo user (e2e)', () => {
   });
 
   it('documenta o corpo da atualização com o UpdateUserDto e exemplos de payload', () => {
-    expect(jsonRequestBodyOf('/usuarios/{id}', 'patch')).toMatchObject({
+    expect(jsonRequestBodyOf('/users/{id}', 'patch')).toMatchObject({
       schema: { $ref: '#/components/schemas/UpdateUserDto' },
       examples: {
         alterarNome: { value: { name: 'Maria Souza' } },
@@ -121,11 +127,11 @@ describe('Swagger do módulo user (e2e)', () => {
       dto: ClassConstructor<object>;
       value: object;
     }[] = [
-      ...requestExamplesOf('/usuarios', 'post').map((example) => ({
+      ...requestExamplesOf('/users', 'post').map((example) => ({
         ...example,
         dto: CreateUserDto,
       })),
-      ...requestExamplesOf('/usuarios/{id}', 'patch').map((example) => ({
+      ...requestExamplesOf('/users/{id}', 'patch').map((example) => ({
         ...example,
         dto: UpdateUserDto,
       })),
@@ -144,7 +150,7 @@ describe('Swagger do módulo user (e2e)', () => {
   });
 
   it('documenta os filtros e a paginação da listagem', () => {
-    const parameters = document.paths['/usuarios']?.get?.parameters;
+    const parameters = document.paths['/users']?.get?.parameters;
 
     expect(parameters).toHaveLength(4);
     expect(parameters).toEqual(
@@ -187,7 +193,7 @@ describe('Swagger do módulo user (e2e)', () => {
   });
 
   it('documenta o id como parâmetro de rota dos endpoints de um usuário', () => {
-    const userById = document.paths['/usuarios/{id}'];
+    const userById = document.paths['/users/{id}'];
 
     for (const operation of [
       userById?.get,
@@ -211,40 +217,40 @@ describe('Swagger do módulo user (e2e)', () => {
       method: 'get' | 'post' | 'patch' | 'delete',
     ) => Object.keys(document.paths[path]?.[method]?.responses ?? {}).sort();
 
-    expect(statusesOf('/usuarios', 'post')).toEqual([
+    expect(statusesOf('/users', 'post')).toEqual([
       '201',
       '400',
       '409',
       '422',
     ]);
-    expect(statusesOf('/usuarios', 'get')).toEqual(['200', '400']);
-    expect(statusesOf('/usuarios/{id}', 'get')).toEqual(['200', '404']);
-    expect(statusesOf('/usuarios/{id}', 'patch')).toEqual([
+    expect(statusesOf('/users', 'get')).toEqual(['200', '400']);
+    expect(statusesOf('/users/{id}', 'get')).toEqual(['200', '404']);
+    expect(statusesOf('/users/{id}', 'patch')).toEqual([
       '200',
       '400',
       '404',
       '409',
       '422',
     ]);
-    expect(statusesOf('/usuarios/{id}', 'delete')).toEqual(['204', '404']);
+    expect(statusesOf('/users/{id}', 'delete')).toEqual(['204', '404']);
   });
 
   it('expõe operationIds descritivos, derivados dos nomes dos métodos', () => {
     const { paths } = document;
 
-    expect(paths['/usuarios']?.post?.operationId).toBe(
+    expect(paths['/users']?.post?.operationId).toBe(
       'UsersController_createUser',
     );
-    expect(paths['/usuarios']?.get?.operationId).toBe(
+    expect(paths['/users']?.get?.operationId).toBe(
       'UsersController_listUsers',
     );
-    expect(paths['/usuarios/{id}']?.get?.operationId).toBe(
+    expect(paths['/users/{id}']?.get?.operationId).toBe(
       'UsersController_findUserById',
     );
-    expect(paths['/usuarios/{id}']?.patch?.operationId).toBe(
+    expect(paths['/users/{id}']?.patch?.operationId).toBe(
       'UsersController_updateUser',
     );
-    expect(paths['/usuarios/{id}']?.delete?.operationId).toBe(
+    expect(paths['/users/{id}']?.delete?.operationId).toBe(
       'UsersController_deleteUser',
     );
   });

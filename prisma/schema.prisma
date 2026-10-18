@@ -91,6 +91,19 @@ model User {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   chemicalShipments ChemicalShipment[]
+  sessions          Session[]
+  chemicalProducts  ChemicalProduct[]
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  endedAt   DateTime?
+
+  @@index([userId, endedAt])
 }
 
 enum StatusShipment {
@@ -103,14 +116,16 @@ enum StatusShipment {
 }
 
 model ChemicalShipment {
-  id                String         @id @default(uuid())
+  id                String          @id @default(uuid())
   productId         String
-  status            StatusShipment @default(ANALYZING)
+  product           ChemicalProduct @relation(fields: [productId], references: [id])
+  quantityProduct   Float           @db.Float
+  status            StatusShipment  @default(ANALYZING)
   responsibleUserId String
-  responsibleUser   User           @relation(fields: [responsibleUserId], references: [id])
+  responsibleUser   User            @relation(fields: [responsibleUserId], references: [id])
   documentsIds      String
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   deletedAt         DateTime?
 
   @@index([responsibleUserId])
@@ -162,4 +177,69 @@ model CargoDocumentAttachment {
   updatedAt            DateTime      @updatedAt
 
   @@index([cargoDocumentId])
+}
+
+enum ProductRiskClass {
+  EXPLOSIVES
+  GASES
+  FLAMMABLE_LIQUIDS
+  FLAMMABLE_SOLIDS
+  OXIDIZING_SUBSTANCES
+  TOXIC_SUBSTANCES
+  RADIOACTIVE_MATERIALS
+  CORROSIVE_SUBSTANCES
+  MISCELLANEOUS_DANGEROUS_SUBSTANCES
+}
+
+enum ProductPhysicalState {
+  SOLID
+  LIQUID
+  GASEOUS
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  UNDER_ANALYSIS
+}
+
+enum ProductDocumentType {
+  SAFETY_DATA_SHEET
+  CERTIFICATE
+  ENVIRONMENTAL_LICENSE
+  TECHNICAL_REPORT
+  AUTHORIZATION
+}
+
+model ChemicalProduct {
+  id                String               @id @default(uuid())
+  code              String               @unique @db.VarChar(40)
+  technicalName     String               @db.VarChar(180)
+  tradeName         String?              @db.VarChar(180)
+  unNumber          String               @db.VarChar(4)
+  riskClass         ProductRiskClass
+  physicalState     ProductPhysicalState
+  status            ProductStatus        @default(UNDER_ANALYSIS)
+  responsibleUserId String
+  responsibleUser   User                 @relation(fields: [responsibleUserId], references: [id])
+  documents         ProductDocument[]
+  shipments         ChemicalShipment[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([responsibleUserId])
+}
+
+model ProductDocument {
+  id        String              @id @default(uuid())
+  productId String
+  product   ChemicalProduct     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      ProductDocumentType
+  number    String              @db.VarChar(80)
+  expiresAt DateTime?
+  filePath  String              @db.VarChar(500)
+  createdAt DateTime            @default(now())
+
+  @@index([productId])
 }

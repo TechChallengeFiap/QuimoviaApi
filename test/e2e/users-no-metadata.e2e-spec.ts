@@ -33,10 +33,14 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       await import('@/modules/user/domain/repositories/user.repository.js');
     const { PASSWORD_HASHER } =
       await import('@/modules/user/application/contracts/password-hasher.contract.js');
+    const { SESSION_REPOSITORY } =
+      await import('@/modules/user/domain/repositories/session.repository.js');
     const { UserRepositoryMock } =
       await import('../mocks/user-repository.mock.js');
     const { PasswordHasherMock } =
       await import('../mocks/password-hasher.mock.js');
+    const { SessionRepositoryMock } =
+      await import('../mocks/session-repository.mock.js');
 
     const moduleFixture = await Test.createTestingModule({
       imports: [UserModule],
@@ -45,6 +49,8 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       .useClass(UserRepositoryMock)
       .overrideProvider(PASSWORD_HASHER)
       .useClass(PasswordHasherMock)
+      .overrideProvider(SESSION_REPOSITORY)
+      .useClass(SessionRepositoryMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -65,64 +71,64 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
 
   it('cadastra, busca, atualiza e remove um usuário', async () => {
     const created = await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .send(payload)
       .expect(201);
     const id = created.body.id as string;
 
-    await request(app.getHttpServer()).get(`/usuarios/${id}`).expect(200);
+    await request(app.getHttpServer()).get(`/users/${id}`).expect(200);
     await request(app.getHttpServer())
-      .patch(`/usuarios/${id}`)
+      .patch(`/users/${id}`)
       .send({ status: 'BLOCKED' })
       .expect(200)
       .expect(({ body }) => {
         expect(body.status).toBe('BLOCKED');
       });
-    await request(app.getHttpServer()).delete(`/usuarios/${id}`).expect(204);
+    await request(app.getHttpServer()).delete(`/users/${id}`).expect(204);
   });
 
   it('traduz os erros de domínio para 404 e 409', async () => {
     const duplicated = { ...payload, email: 'duplicado@quimovia.com' };
 
     await request(app.getHttpServer())
-      .get('/usuarios/id-inexistente')
+      .get('/users/id-inexistente')
       .expect(404);
     await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .send(duplicated)
       .expect(201);
     await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .send(duplicated)
       .expect(409);
   });
 
   it('valida o corpo do cadastro e da atualização com o DTO esperado', async () => {
     await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .send({ ...payload, password: '123' })
       .expect(400);
     await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .send({ ...payload, email: 'extra@quimovia.com', admin: true })
       .expect(400);
 
     const created = await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .send({ ...payload, email: 'status@quimovia.com' })
       .expect(201);
 
     await request(app.getHttpServer())
-      .patch(`/usuarios/${created.body.id}`)
+      .patch(`/users/${created.body.id}`)
       .send({ status: 'XPTO' })
       .expect(400);
   });
 
   it('valida e converte os parâmetros da listagem', async () => {
-    await request(app.getHttpServer()).get('/usuarios?page=0').expect(400);
+    await request(app.getHttpServer()).get('/users?page=0').expect(400);
 
     const response = await request(app.getHttpServer())
-      .get('/usuarios?role=PORT_OPERATOR&status=ACTIVE&page=1&pageSize=20')
+      .get('/users?role=PORT_OPERATOR&status=ACTIVE&page=1&pageSize=20')
       .expect(200);
 
     expect(response.body).toMatchObject({ page: 1, pageSize: 20 });

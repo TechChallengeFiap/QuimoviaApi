@@ -1,0 +1,34 @@
+-- CreateTable
+CREATE TABLE `ChemicalProduct` (
+    `id` VARCHAR(191) NOT NULL,
+    `code` VARCHAR(40) NOT NULL,
+    `technicalName` VARCHAR(180) NOT NULL,
+    `tradeName` VARCHAR(180) NULL,
+    `unNumber` VARCHAR(4) NOT NULL,
+    `riskClass` ENUM('EXPLOSIVES', 'GASES', 'FLAMMABLE_LIQUIDS', 'FLAMMABLE_SOLIDS', 'OXIDIZING_SUBSTANCES', 'TOXIC_SUBSTANCES', 'RADIOACTIVE_MATERIALS', 'CORROSIVE_SUBSTANCES', 'MISCELLANEOUS_DANGEROUS_SUBSTANCES') NOT NULL,
+    `physicalState` ENUM('SOLID', 'LIQUID', 'GASEOUS') NOT NULL,
+    `status` ENUM('ACTIVE', 'INACTIVE', 'BLOCKED', 'UNDER_ANALYSIS') NOT NULL DEFAULT 'UNDER_ANALYSIS',
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `ChemicalProduct_code_key`(`code`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ProductDocument` (
+    `id` VARCHAR(191) NOT NULL,
+    `productId` VARCHAR(191) NOT NULL,
+    `type` ENUM('SAFETY_DATA_SHEET', 'CERTIFICATE', 'ENVIRONMENTAL_LICENSE', 'TECHNICAL_REPORT', 'AUTHORIZATION') NOT NULL,
+    `number` VARCHAR(80) NOT NULL,
+    `expiresAt` DATETIME(3) NULL,
+    `filePath` VARCHAR(500) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `ProductDocument_productId_idx`(`productId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `ProductDocument` ADD CONSTRAINT `ProductDocument_productId_fkey` FOREIGN KEY (`productId`) REFERENCES `ChemicalProduct`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+

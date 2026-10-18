@@ -1,8 +1,12 @@
 import { jest } from '@jest/globals';
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.ts';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
+import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
+import {
+  AccessDeniedError,
+  AuthenticationError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 
 describe('DomainExceptionFilter', () => {
   let filter: DomainExceptionFilter;
@@ -40,6 +44,29 @@ describe('DomainExceptionFilter', () => {
       mockResponse,
       expect.objectContaining({ statusCode: HttpStatus.NOT_FOUND }),
       HttpStatus.NOT_FOUND,
+    );
+  });
+
+  it.each([
+    [
+      'AuthenticationError',
+      HttpStatus.UNAUTHORIZED,
+      new AuthenticationError('E-mail ou senha inválidos.'),
+    ],
+    [
+      'AccessDeniedError',
+      HttpStatus.FORBIDDEN,
+      new AccessDeniedError(
+        'Usuário com status BLOCKED não pode autenticar-se no sistema.',
+      ),
+    ],
+  ])('deve traduzir %s para %i, mantendo a mensagem', (_, status, error) => {
+    filter.catch(error, mockHost);
+
+    expect(mockHttpAdapter.reply).toHaveBeenCalledWith(
+      mockResponse,
+      expect.objectContaining({ statusCode: status, message: error.message }),
+      status,
     );
   });
 

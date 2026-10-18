@@ -3,18 +3,22 @@ import {
   Catch,
   ConflictException,
   ExceptionFilter,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   Optional,
+  UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import {
+  AccessDeniedError,
+  AuthenticationError,
   BusinessRuleError,
   ConflictError,
   DomainError,
   ResourceNotFoundError,
-} from '@/shared/domain/errors/domain.error.ts';
+} from '@/shared/domain/errors/domain.error.js';
 
 /**
  * Traduz os erros de domínio/aplicação em respostas HTTP apropriadas,
@@ -51,6 +55,14 @@ export class DomainExceptionFilter implements ExceptionFilter {
 
     if (error instanceof ConflictError) {
       return new ConflictException(error.message);
+    }
+
+    if (error instanceof AuthenticationError) {
+      return new UnauthorizedException(error.message);
+    }
+
+    if (error instanceof AccessDeniedError) {
+      return new ForbiddenException(error.message);
     }
 
     if (error instanceof BusinessRuleError) {
