@@ -131,11 +131,13 @@ model ChemicalShipment {
   @@index([responsibleUserId])
 }
 
-enum CargoDocumentStatus {
+enum ShipmentDocumentStatus {
   PENDING
   UNDER_REVIEW
   COMPLIANT
   NON_COMPLIANT
+
+  @@map("CargoDocumentStatus")
 }
 
 enum DocumentType {
@@ -146,37 +148,39 @@ enum DocumentType {
   OTHER
 }
 
-model CargoDocument {
-  id                 String                    @id @default(uuid())
-  cargoId            String                    @unique
+model ShipmentDocument {
+  id                 String                       @id @default(uuid())
+  shipmentId         String                       @unique(map: "CargoDocument_cargoId_key") @map("cargoId")
   shipperId          String
   compositionVersion Int
-  status             CargoDocumentStatus       @default(PENDING)
+  status             ShipmentDocumentStatus       @default(PENDING)
   submittedAt        DateTime?
-  revision           Int                       @default(0)
-  attachments        CargoDocumentAttachment[]
-  createdAt          DateTime                  @default(now())
-  updatedAt          DateTime                  @updatedAt
+  revision           Int                          @default(0)
+  attachments        ShipmentDocumentAttachment[]
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
 
-  @@index([shipperId, status])
+  @@index([shipperId, status], map: "CargoDocument_shipperId_status_idx")
+  @@map("CargoDocument")
 }
 
-model CargoDocumentAttachment {
-  id                   String        @id @default(uuid())
-  cargoDocumentId      String
-  cargoDocument        CargoDocument @relation(fields: [cargoDocumentId], references: [id], onDelete: Cascade)
-  name                 String        @db.VarChar(180)
+model ShipmentDocumentAttachment {
+  id                   String           @id @default(uuid())
+  shipmentDocumentId   String           @map("cargoDocumentId")
+  shipmentDocument     ShipmentDocument @relation(fields: [shipmentDocumentId], references: [id], onDelete: Cascade, map: "CargoDocumentAttachment_cargoDocumentId_fkey")
+  name                 String           @db.VarChar(180)
   type                 DocumentType
-  fileReference        String        @db.VarChar(1024)
+  fileReference        String           @db.VarChar(1024)
   scopes               Json
   issuedAt             DateTime
   expiresAt            DateTime?
   replacesAttachmentId String?
   removedAt            DateTime?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
-  @@index([cargoDocumentId])
+  @@index([shipmentDocumentId], map: "CargoDocumentAttachment_cargoDocumentId_idx")
+  @@map("CargoDocumentAttachment")
 }
 
 enum ProductRiskClass {

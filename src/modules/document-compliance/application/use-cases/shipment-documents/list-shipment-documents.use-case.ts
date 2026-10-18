@@ -1,33 +1,33 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { CargoDocumentStatus } from '@/modules/document-compliance/domain/enums/cargo-document-status.enum.js';
-import { CARGO_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/cargo-document.repository.js';
+import type { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
+import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import type {
-  CargoDocumentPage,
-  CargoDocumentRepository,
-} from '@/modules/document-compliance/domain/repositories/cargo-document.repository.js';
+  ShipmentDocumentPage,
+  ShipmentDocumentRepository,
+} from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
 
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 20;
 
-export interface ListCargoDocumentsInput {
-  cargoId?: string;
+export interface ListShipmentDocumentsInput {
+  shipmentId?: string;
   shipperId?: string;
-  status?: CargoDocumentStatus;
+  status?: ShipmentDocumentStatus;
   page?: number;
   pageSize?: number;
 }
 
 @Injectable()
-export class ListCargoDocumentsUseCase {
+export class ListShipmentDocumentsUseCase {
   constructor(
-    @Inject(CARGO_DOCUMENT_REPOSITORY)
-    private readonly documents: CargoDocumentRepository,
+    @Inject(SHIPMENT_DOCUMENT_REPOSITORY)
+    private readonly documents: ShipmentDocumentRepository,
   ) {}
 
   async execute(
-    input: ListCargoDocumentsInput = {},
-  ): Promise<CargoDocumentPage> {
+    input: ListShipmentDocumentsInput = {},
+  ): Promise<ShipmentDocumentPage> {
     const page = input.page ?? DEFAULT_PAGE;
     const pageSize = input.pageSize ?? DEFAULT_PAGE_SIZE;
     if (
@@ -43,7 +43,7 @@ export class ListCargoDocumentsUseCase {
       );
     }
     return this.documents.list({
-      cargoId: input.cargoId?.toLowerCase(),
+      shipmentId: input.shipmentId?.toLowerCase(),
       shipperId: input.shipperId?.toLowerCase(),
       status: input.status,
       page,

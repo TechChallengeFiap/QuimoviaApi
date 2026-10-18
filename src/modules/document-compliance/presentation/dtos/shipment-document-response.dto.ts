@@ -1,25 +1,26 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { CargoDocument } from '@/modules/document-compliance/domain/entities/cargo-document.entity.js';
-import { CargoDocumentStatus } from '@/modules/document-compliance/domain/enums/cargo-document-status.enum.js';
-import { CreateCargoDocumentDto } from './create-cargo-document.dto.js';
+import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
+import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
+import { CreateShipmentDocumentDto } from './create-shipment-document.dto.js';
 import { DocumentAttachmentResponseDto } from './document-attachment.dto.js';
 
-export class CargoDocumentResponseDto extends PickType(CreateCargoDocumentDto, [
-  'cargoId',
-  'shipperId',
-  'compositionVersion',
-] as const) {
+export class ShipmentDocumentResponseDto extends PickType(
+  CreateShipmentDocumentDto,
+  ['shipmentId', 'shipperId', 'compositionVersion'] as const,
+) {
   @ApiProperty({
+    type: String,
     format: 'uuid',
     description: 'Identificador da documentação.',
   })
   id: string;
   @ApiProperty({
-    enum: CargoDocumentStatus,
+    type: String,
+    enum: ShipmentDocumentStatus,
     readOnly: true,
     description: 'Situação documental; não é alterada pelo CRUD de preparação.',
   })
-  status: CargoDocumentStatus;
+  status: ShipmentDocumentStatus;
   @ApiProperty({
     type: String,
     format: 'date-time',
@@ -46,21 +47,21 @@ export class CargoDocumentResponseDto extends PickType(CreateCargoDocumentDto, [
   })
   updatedAt: Date;
 
-  private constructor(data: CargoDocumentResponseDto) {
+  private constructor(data: ShipmentDocumentResponseDto) {
     super();
     Object.assign(this, data);
   }
 
-  static fromEntity(document: CargoDocument): CargoDocumentResponseDto {
-    return new CargoDocumentResponseDto({
+  static fromEntity(document: ShipmentDocument): ShipmentDocumentResponseDto {
+    return new ShipmentDocumentResponseDto({
       id: document.id,
-      cargoId: document.cargoId,
+      shipmentId: document.shipmentId,
       shipperId: document.shipperId,
       compositionVersion: document.compositionVersion,
       status: document.status,
       submittedAt: document.submittedAt,
-      attachments: document.attachments.map(
-        DocumentAttachmentResponseDto.fromProperties,
+      attachments: document.attachments.map((attachment) =>
+        DocumentAttachmentResponseDto.fromProperties(attachment),
       ),
       createdAt: document.createdAt,
       updatedAt: document.updatedAt,

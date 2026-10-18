@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CARGO_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/cargo-document.repository.js';
-import type { CargoDocumentRepository } from '@/modules/document-compliance/domain/repositories/cargo-document.repository.js';
+import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
+import type { ShipmentDocumentRepository } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
 
 @Injectable()
-export class DeleteCargoDocumentUseCase {
+export class DeleteShipmentDocumentUseCase {
   constructor(
-    @Inject(CARGO_DOCUMENT_REPOSITORY)
-    private readonly documents: CargoDocumentRepository,
+    @Inject(SHIPMENT_DOCUMENT_REPOSITORY)
+    private readonly documents: ShipmentDocumentRepository,
   ) {}
 
   async execute(id: string): Promise<void> {

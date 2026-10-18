@@ -1,24 +1,24 @@
 import { Module } from '@nestjs/common';
-import { CreateCargoDocumentUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/create-cargo-document.use-case.js';
-import { DeleteCargoDocumentUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/delete-cargo-document.use-case.js';
-import { FindCargoDocumentByIdUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/find-cargo-document-by-id.use-case.js';
-import { ListCargoDocumentsUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/list-cargo-documents.use-case.js';
-import { UpdateCargoDocumentUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/update-cargo-document.use-case.js';
-import { CARGO_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/cargo-document.repository.js';
-import { PrismaCargoDocumentRepository } from '@/modules/document-compliance/infrastructure/persistence/prisma/prisma-cargo-document.repository.js';
-import { CargoDocumentsController } from '@/modules/document-compliance/presentation/controllers/cargo-documents.controller.js';
+import { CreateShipmentDocumentUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/create-shipment-document.use-case.js';
+import { DeleteShipmentDocumentUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/delete-shipment-document.use-case.js';
+import { FindShipmentDocumentByIdUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/find-shipment-document-by-id.use-case.js';
+import { ListShipmentDocumentsUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/list-shipment-documents.use-case.js';
+import { UpdateShipmentDocumentUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/update-shipment-document.use-case.js';
+import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
+import { PrismaShipmentDocumentRepository } from '@/modules/document-compliance/infrastructure/persistence/prisma/prisma-shipment-document.repository.js';
+import { ShipmentDocumentsController } from '@/modules/document-compliance/presentation/controllers/shipment-documents.controller.js';
 
 @Module({
-  controllers: [CargoDocumentsController],
+  controllers: [ShipmentDocumentsController],
   providers: [
-    CreateCargoDocumentUseCase,
-    FindCargoDocumentByIdUseCase,
-    ListCargoDocumentsUseCase,
-    UpdateCargoDocumentUseCase,
-    DeleteCargoDocumentUseCase,
+    CreateShipmentDocumentUseCase,
+    FindShipmentDocumentByIdUseCase,
+    ListShipmentDocumentsUseCase,
+    UpdateShipmentDocumentUseCase,
+    DeleteShipmentDocumentUseCase,
     {
-      provide: CARGO_DOCUMENT_REPOSITORY,
-      useClass: PrismaCargoDocumentRepository,
+      provide: SHIPMENT_DOCUMENT_REPOSITORY,
+      useClass: PrismaShipmentDocumentRepository,
     },
   ],
 })

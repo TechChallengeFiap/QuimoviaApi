@@ -1,4 +1,4 @@
-export enum CargoDocumentStatus {
+export enum ShipmentDocumentStatus {
   PENDING = 'PENDING',
   UNDER_REVIEW = 'UNDER_REVIEW',
   COMPLIANT = 'COMPLIANT',

@@ -3,12 +3,12 @@ import {
   BusinessRuleError,
   ConflictError,
 } from '@/shared/domain/errors/domain.error.js';
-import { CargoDocumentStatus } from '@/modules/document-compliance/domain/enums/cargo-document-status.enum.js';
+import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
 import { DocumentType } from '@/modules/document-compliance/domain/enums/document-type.enum.js';
 
 export interface DocumentScope {
-  type: 'CARGO' | 'CARGO_ITEM';
-  cargoItemId?: string;
+  type: 'SHIPMENT' | 'SHIPMENT_ITEM';
+  shipmentItemId?: string;
 }
 
 export interface CreateDocumentAttachmentData {
@@ -33,12 +33,12 @@ export interface DocumentAttachmentProperties extends Omit<
   updatedAt: Date;
 }
 
-export interface CargoDocumentProperties {
+export interface ShipmentDocumentProperties {
   id: string;
-  cargoId: string;
+  shipmentId: string;
   shipperId: string;
   compositionVersion: number;
-  status: CargoDocumentStatus;
+  status: ShipmentDocumentStatus;
   submittedAt: Date | null;
   revision: number;
   attachments: DocumentAttachmentProperties[];
@@ -46,14 +46,14 @@ export interface CargoDocumentProperties {
   updatedAt: Date;
 }
 
-export interface CreateCargoDocumentData {
-  cargoId: string;
+export interface CreateShipmentDocumentData {
+  shipmentId: string;
   shipperId: string;
   compositionVersion: number;
   attachments?: CreateDocumentAttachmentData[];
 }
 
-export interface UpdateCargoDocumentData {
+export interface UpdateShipmentDocumentData {
   attachments?: CreateDocumentAttachmentData[];
   removeAttachmentIds?: string[];
 }
@@ -62,11 +62,16 @@ const UUID_FORMAT =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /** Raiz da documentação; controla a validação e o histórico dos anexos. */
-export class CargoDocument {
-  private constructor(private readonly properties: CargoDocumentProperties) {}
+export class ShipmentDocument {
+  private constructor(
+    private readonly properties: ShipmentDocumentProperties,
+  ) {}
 
-  static create(data: CreateCargoDocumentData): CargoDocument {
-    if (!UUID_FORMAT.test(data.cargoId) || !UUID_FORMAT.test(data.shipperId)) {
+  static create(data: CreateShipmentDocumentData): ShipmentDocument {
+    if (
+      !UUID_FORMAT.test(data.shipmentId) ||
+      !UUID_FORMAT.test(data.shipperId)
+    ) {
       throw new BusinessRuleError(
         'A carga e o embarcador devem possuir identificadores válidos.',
       );
@@ -81,12 +86,12 @@ export class CargoDocument {
       );
     }
     const now = new Date();
-    const document = new CargoDocument({
+    const document = new ShipmentDocument({
       id: randomUUID(),
-      cargoId: data.cargoId.toLowerCase(),
+      shipmentId: data.shipmentId.toLowerCase(),
       shipperId: data.shipperId.toLowerCase(),
       compositionVersion: data.compositionVersion,
-      status: CargoDocumentStatus.PENDING,
+      status: ShipmentDocumentStatus.PENDING,
       submittedAt: null,
       revision: 0,
       attachments: [],
@@ -99,15 +104,15 @@ export class CargoDocument {
     return document;
   }
 
-  static restore(properties: CargoDocumentProperties): CargoDocument {
-    return new CargoDocument(structuredClone(properties));
+  static restore(properties: ShipmentDocumentProperties): ShipmentDocument {
+    return new ShipmentDocument(structuredClone(properties));
   }
 
   get id(): string {
     return this.properties.id;
   }
-  get cargoId(): string {
-    return this.properties.cargoId;
+  get shipmentId(): string {
+    return this.properties.shipmentId;
   }
   get shipperId(): string {
     return this.properties.shipperId;
@@ -115,7 +120,7 @@ export class CargoDocument {
   get compositionVersion(): number {
     return this.properties.compositionVersion;
   }
-  get status(): CargoDocumentStatus {
+  get status(): ShipmentDocumentStatus {
     return this.properties.status;
   }
   get submittedAt(): Date | null {
@@ -137,7 +142,7 @@ export class CargoDocument {
   }
 
   /** Confirma inclusões e remoções juntas, após validar toda a alteração. */
-  revise(data: UpdateCargoDocumentData): void {
+  revise(data: UpdateShipmentDocumentData): void {
     this.ensureEditable();
     const additions = data.attachments ?? [];
     const removals = data.removeAttachmentIds ?? [];
@@ -174,7 +179,7 @@ export class CargoDocument {
 
     const now = new Date();
     const created = additions.map((attachment) =>
-      CargoDocument.createAttachment(attachment, now),
+      ShipmentDocument.createAttachment(attachment, now),
     );
     this.properties.attachments = [
       ...this.properties.attachments.map((attachment) =>
@@ -189,7 +194,7 @@ export class CargoDocument {
 
   ensureEditable(): void {
     if (
-      this.status !== CargoDocumentStatus.PENDING ||
+      this.status !== ShipmentDocumentStatus.PENDING ||
       this.submittedAt !== null
     ) {
       throw new ConflictError(
@@ -198,7 +203,7 @@ export class CargoDocument {
     }
   }
 
-  toObject(): CargoDocumentProperties {
+  toObject(): ShipmentDocumentProperties {
     return structuredClone(this.properties);
   }
 
@@ -233,7 +238,7 @@ export class CargoDocument {
         'A validade deve ser uma data igual ou posterior à emissão.',
       );
     }
-    CargoDocument.validateScopes(data.scopes);
+    ShipmentDocument.validateScopes(data.scopes);
     return structuredClone({
       id: randomUUID(),
       name,
@@ -241,8 +246,8 @@ export class CargoDocument {
       fileReference,
       scopes: data.scopes.map((scope) => ({
         type: scope.type,
-        ...(scope.cargoItemId
-          ? { cargoItemId: scope.cargoItemId.toLowerCase() }
+        ...(scope.shipmentItemId
+          ? { shipmentItemId: scope.shipmentItemId.toLowerCase() }
           : {}),
       })),
       issuedAt: data.issuedAt,
@@ -262,23 +267,23 @@ export class CargoDocument {
     }
     const keys = new Set<string>();
     for (const scope of scopes) {
-      if (scope.type !== 'CARGO' && scope.type !== 'CARGO_ITEM') {
+      if (scope.type !== 'SHIPMENT' && scope.type !== 'SHIPMENT_ITEM') {
         throw new BusinessRuleError('O escopo do documento é inválido.');
       }
-      if (scope.type === 'CARGO' && scope.cargoItemId !== undefined) {
+      if (scope.type === 'SHIPMENT' && scope.shipmentItemId !== undefined) {
         throw new BusinessRuleError(
           'O escopo da carga inteira não pode identificar um item.',
         );
       }
       if (
-        scope.type === 'CARGO_ITEM' &&
-        !UUID_FORMAT.test(scope.cargoItemId ?? '')
+        scope.type === 'SHIPMENT_ITEM' &&
+        !UUID_FORMAT.test(scope.shipmentItemId ?? '')
       ) {
         throw new BusinessRuleError(
           'O escopo de item exige um identificador de item válido.',
         );
       }
-      const key = `${scope.type}:${scope.cargoItemId?.toLowerCase() ?? ''}`;
+      const key = `${scope.type}:${scope.shipmentItemId?.toLowerCase() ?? ''}`;
       if (keys.has(key)) {
         throw new BusinessRuleError(
           'Os escopos de um anexo não podem se repetir.',

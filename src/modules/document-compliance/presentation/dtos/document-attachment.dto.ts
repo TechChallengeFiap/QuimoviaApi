@@ -19,32 +19,35 @@ import type {
   CreateDocumentAttachmentData,
   DocumentAttachmentProperties,
   DocumentScope,
-} from '@/modules/document-compliance/domain/entities/cargo-document.entity.js';
+} from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
 import { DocumentType } from '@/modules/document-compliance/domain/enums/document-type.enum.js';
 
 class DocumentScopeDto {
   @ApiProperty({
-    enum: ['CARGO', 'CARGO_ITEM'],
+    type: String,
+    enum: ['SHIPMENT', 'SHIPMENT_ITEM'],
     description: 'Aplicação à carga inteira ou a um item da composição.',
   })
-  @IsIn(['CARGO', 'CARGO_ITEM'], {
-    message: 'O escopo deve ser CARGO ou CARGO_ITEM.',
+  @IsIn(['SHIPMENT', 'SHIPMENT_ITEM'], {
+    message: 'O escopo deve ser SHIPMENT ou SHIPMENT_ITEM.',
   })
   type!: DocumentScope['type'];
 
   @ApiPropertyOptional({
+    type: String,
     format: 'uuid',
-    description: 'Obrigatório para CARGO_ITEM e proibido para CARGO.',
+    description: 'Obrigatório para SHIPMENT_ITEM e proibido para SHIPMENT.',
   })
   @ValidateIf((_object, value) => value !== undefined)
   @IsUUID('all', {
     message: 'O identificador do item deve ser um UUID válido.',
   })
-  cargoItemId?: string;
+  shipmentItemId?: string;
 }
 
 export class CreateDocumentAttachmentDto {
   @ApiProperty({
+    type: String,
     description: 'Nome do documento.',
     example: 'Ficha de segurança',
     minLength: 1,
@@ -62,6 +65,7 @@ export class CreateDocumentAttachmentDto {
   type!: DocumentType;
 
   @ApiProperty({
+    type: String,
     description:
       'Referência opaca de um arquivo já armazenado; este endpoint não faz upload.',
     example: 'documents/safety-sheet.pdf',
@@ -115,6 +119,7 @@ export class CreateDocumentAttachmentDto {
   expiresAt?: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     format: 'uuid',
     description:
       'Anexo ativo substituído; a versão anterior permanece no histórico.',
@@ -146,6 +151,7 @@ export class DocumentAttachmentResponseDto extends OmitType(
   ['replacesAttachmentId'] as const,
 ) {
   @ApiProperty({
+    type: String,
     format: 'uuid',
     description: 'Identificador desta versão do anexo.',
   })

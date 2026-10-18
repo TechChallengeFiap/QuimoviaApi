@@ -1,44 +1,46 @@
 import { randomUUID } from 'node:crypto';
 import { jest } from '@jest/globals';
-import { CreateCargoDocumentUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/create-cargo-document.use-case.js';
-import { DeleteCargoDocumentUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/delete-cargo-document.use-case.js';
-import { FindCargoDocumentByIdUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/find-cargo-document-by-id.use-case.js';
-import { ListCargoDocumentsUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/list-cargo-documents.use-case.js';
-import { UpdateCargoDocumentUseCase } from '@/modules/document-compliance/application/use-cases/cargo-documents/update-cargo-document.use-case.js';
-import { CargoDocument } from '@/modules/document-compliance/domain/entities/cargo-document.entity.js';
-import { CargoDocumentStatus } from '@/modules/document-compliance/domain/enums/cargo-document-status.enum.js';
+import { CreateShipmentDocumentUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/create-shipment-document.use-case.js';
+import { DeleteShipmentDocumentUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/delete-shipment-document.use-case.js';
+import { FindShipmentDocumentByIdUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/find-shipment-document-by-id.use-case.js';
+import { ListShipmentDocumentsUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/list-shipment-documents.use-case.js';
+import { UpdateShipmentDocumentUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/update-shipment-document.use-case.js';
+import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
+import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
 import {
   BusinessRuleError,
   ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
-import { CargoDocumentRepositoryMock } from '../../mocks/cargo-document-repository.mock.js';
+import { ShipmentDocumentRepositoryMock } from '../../mocks/shipment-document-repository.mock.js';
 import {
   createAttachmentData,
-  createCargoDocumentData,
+  createShipmentDocumentData,
   SHIPPER_ID,
-} from '../../mocks/cargo-document.fixture.js';
+} from '../../mocks/shipment-document.fixture.js';
 
-describe('Casos de uso de CargoDocument', () => {
-  let documents: CargoDocumentRepositoryMock;
-  let createDocument: CreateCargoDocumentUseCase;
-  let findDocument: FindCargoDocumentByIdUseCase;
-  let listDocuments: ListCargoDocumentsUseCase;
-  let updateDocument: UpdateCargoDocumentUseCase;
-  let deleteDocument: DeleteCargoDocumentUseCase;
+describe('Casos de uso de ShipmentDocument', () => {
+  let documents: ShipmentDocumentRepositoryMock;
+  let createDocument: CreateShipmentDocumentUseCase;
+  let findDocument: FindShipmentDocumentByIdUseCase;
+  let listDocuments: ListShipmentDocumentsUseCase;
+  let updateDocument: UpdateShipmentDocumentUseCase;
+  let deleteDocument: DeleteShipmentDocumentUseCase;
 
   beforeEach(() => {
-    documents = new CargoDocumentRepositoryMock();
-    createDocument = new CreateCargoDocumentUseCase(documents);
-    findDocument = new FindCargoDocumentByIdUseCase(documents);
-    listDocuments = new ListCargoDocumentsUseCase(documents);
-    updateDocument = new UpdateCargoDocumentUseCase(documents);
-    deleteDocument = new DeleteCargoDocumentUseCase(documents);
+    documents = new ShipmentDocumentRepositoryMock();
+    createDocument = new CreateShipmentDocumentUseCase(documents);
+    findDocument = new FindShipmentDocumentByIdUseCase(documents);
+    listDocuments = new ListShipmentDocumentsUseCase(documents);
+    updateDocument = new UpdateShipmentDocumentUseCase(documents);
+    deleteDocument = new DeleteShipmentDocumentUseCase(documents);
   });
 
-  describe('CreateCargoDocumentUseCase', () => {
+  describe('CreateShipmentDocumentUseCase', () => {
     it('persiste a raiz e seus anexos e devolve o registro', async () => {
-      const document = await createDocument.execute(createCargoDocumentData());
+      const document = await createDocument.execute(
+        createShipmentDocumentData(),
+      );
       expect((await documents.findById(document.id))?.toObject()).toEqual(
         document.toObject(),
       );
@@ -46,22 +48,22 @@ describe('Casos de uso de CargoDocument', () => {
     });
 
     it('rejeita outra documentação para a mesma carga, inclusive em caixa diferente', async () => {
-      const input = createCargoDocumentData();
+      const input = createShipmentDocumentData();
       await createDocument.execute(input);
       await expect(
         createDocument.execute({
           ...input,
-          cargoId: input.cargoId.toUpperCase(),
+          shipmentId: input.shipmentId.toUpperCase(),
         }),
       ).rejects.toThrow(ConflictError);
     });
 
     it('não consulta nem grava o repositório se o cadastro for inválido', async () => {
       const create = jest.spyOn(documents, 'create');
-      const find = jest.spyOn(documents, 'findByCargoId');
+      const find = jest.spyOn(documents, 'findByShipmentId');
       await expect(
         createDocument.execute(
-          createCargoDocumentData({ compositionVersion: 0 }),
+          createShipmentDocumentData({ compositionVersion: 0 }),
         ),
       ).rejects.toThrow(BusinessRuleError);
       expect(create).not.toHaveBeenCalled();
@@ -69,10 +71,10 @@ describe('Casos de uso de CargoDocument', () => {
     });
   });
 
-  describe('FindCargoDocumentByIdUseCase', () => {
+  describe('FindShipmentDocumentByIdUseCase', () => {
     it('encontra pelo UUID sem distinguir caixa e rejeita inexistente', async () => {
       const document = await documents.create(
-        CargoDocument.create(createCargoDocumentData()),
+        ShipmentDocument.create(createShipmentDocumentData()),
       );
       expect((await findDocument.execute(document.id.toUpperCase())).id).toBe(
         document.id,
@@ -83,7 +85,7 @@ describe('Casos de uso de CargoDocument', () => {
     });
   });
 
-  describe('ListCargoDocumentsUseCase', () => {
+  describe('ListShipmentDocumentsUseCase', () => {
     it('aplica a paginação padrão, inclusive para resultado vazio', async () => {
       expect(await listDocuments.execute()).toEqual({
         items: [],
@@ -95,17 +97,19 @@ describe('Casos de uso de CargoDocument', () => {
 
     it('pagina sem repetir itens e combina filtros mantendo o total', async () => {
       const first = await documents.create(
-        CargoDocument.create(createCargoDocumentData()),
+        ShipmentDocument.create(createShipmentDocumentData()),
       );
-      await documents.create(CargoDocument.create(createCargoDocumentData()));
       await documents.create(
-        CargoDocument.create(
-          createCargoDocumentData({ shipperId: randomUUID() }),
+        ShipmentDocument.create(createShipmentDocumentData()),
+      );
+      await documents.create(
+        ShipmentDocument.create(
+          createShipmentDocumentData({ shipperId: randomUUID() }),
         ),
       );
       const filters = {
         shipperId: SHIPPER_ID.toUpperCase(),
-        status: CargoDocumentStatus.PENDING,
+        status: ShipmentDocumentStatus.PENDING,
         pageSize: 1,
       };
       const page1 = await listDocuments.execute({ ...filters, page: 1 });
@@ -117,7 +121,7 @@ describe('Casos de uso de CargoDocument', () => {
         (
           await listDocuments.execute({
             ...filters,
-            cargoId: first.cargoId.toUpperCase(),
+            shipmentId: first.shipmentId.toUpperCase(),
           })
         ).total,
       ).toBe(1);
@@ -127,7 +131,7 @@ describe('Casos de uso de CargoDocument', () => {
       expect(
         (
           await listDocuments.execute({
-            status: CargoDocumentStatus.UNDER_REVIEW,
+            status: ShipmentDocumentStatus.UNDER_REVIEW,
           })
         ).total,
       ).toBe(0);
@@ -146,10 +150,10 @@ describe('Casos de uso de CargoDocument', () => {
     });
   });
 
-  describe('UpdateCargoDocumentUseCase', () => {
+  describe('UpdateShipmentDocumentUseCase', () => {
     it('atualiza anexos preservando vínculos, datas e histórico', async () => {
       const original = await documents.create(
-        CargoDocument.create(createCargoDocumentData()),
+        ShipmentDocument.create(createShipmentDocumentData()),
       );
       const updated = await updateDocument.execute(original.id, {
         attachments: [
@@ -160,7 +164,7 @@ describe('Casos de uso de CargoDocument', () => {
       });
       expect(updated.toObject()).toMatchObject({
         id: original.id,
-        cargoId: original.cargoId,
+        shipmentId: original.shipmentId,
         shipperId: original.shipperId,
         createdAt: original.createdAt,
         revision: 1,
@@ -181,7 +185,7 @@ describe('Casos de uso de CargoDocument', () => {
 
     it('não persiste mudanças se a validação falhar', async () => {
       const original = await documents.create(
-        CargoDocument.create(createCargoDocumentData()),
+        ShipmentDocument.create(createShipmentDocumentData()),
       );
       const update = jest.spyOn(documents, 'update');
       await expect(
@@ -197,9 +201,9 @@ describe('Casos de uso de CargoDocument', () => {
 
     it('não altera a documentação já enviada para análise', async () => {
       const document = await documents.create(
-        CargoDocument.restore({
-          ...CargoDocument.create(createCargoDocumentData()).toObject(),
-          status: CargoDocumentStatus.UNDER_REVIEW,
+        ShipmentDocument.restore({
+          ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
+          status: ShipmentDocumentStatus.UNDER_REVIEW,
           submittedAt: new Date(),
         }),
       );
@@ -211,10 +215,10 @@ describe('Casos de uso de CargoDocument', () => {
     });
   });
 
-  describe('DeleteCargoDocumentUseCase', () => {
+  describe('DeleteShipmentDocumentUseCase', () => {
     it('remove a preparação existente e informa ausência nas tentativas seguintes', async () => {
       const document = await documents.create(
-        CargoDocument.create(createCargoDocumentData()),
+        ShipmentDocument.create(createShipmentDocumentData()),
       );
       await deleteDocument.execute(document.id.toUpperCase());
       expect(await documents.findById(document.id)).toBeNull();
@@ -228,9 +232,9 @@ describe('Casos de uso de CargoDocument', () => {
 
     it('preserva documentações em análise e seus anexos', async () => {
       const document = await documents.create(
-        CargoDocument.restore({
-          ...CargoDocument.create(createCargoDocumentData()).toObject(),
-          status: CargoDocumentStatus.UNDER_REVIEW,
+        ShipmentDocument.restore({
+          ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
+          status: ShipmentDocumentStatus.UNDER_REVIEW,
         }),
       );
       const remove = jest.spyOn(documents, 'remove');

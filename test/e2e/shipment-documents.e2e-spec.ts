@@ -5,41 +5,41 @@ import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import request from 'supertest';
 import { DocumentComplianceModule } from '@/modules/document-compliance/document-compliance.module.js';
-import { CARGO_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/cargo-document.repository.js';
-import { CargoDocument } from '@/modules/document-compliance/domain/entities/cargo-document.entity.js';
-import { CargoDocumentStatus } from '@/modules/document-compliance/domain/enums/cargo-document-status.enum.js';
+import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
+import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
+import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
-import { CargoDocumentRepositoryMock } from '../mocks/cargo-document-repository.mock.js';
+import { ShipmentDocumentRepositoryMock } from '../mocks/shipment-document-repository.mock.js';
 import {
-  createCargoDocumentData,
+  createShipmentDocumentData,
   SHIPPER_ID,
-} from '../mocks/cargo-document.fixture.js';
+} from '../mocks/shipment-document.fixture.js';
 
 const attachmentPayload = () => ({
   name: 'Ficha de segurança',
   type: 'SAFETY_DATA_SHEET',
   fileReference: 'documents/safety.pdf',
-  scopes: [{ type: 'CARGO' }],
+  scopes: [{ type: 'SHIPMENT' }],
   issuedAt: '2026-01-01T00:00:00.000Z',
   expiresAt: null,
 });
 const documentPayload = () => ({
-  cargoId: randomUUID(),
+  shipmentId: randomUUID(),
   shipperId: SHIPPER_ID,
   compositionVersion: 1,
   attachments: [attachmentPayload()],
 });
 
-describe('CargoDocumentsController (e2e)', () => {
+describe('ShipmentDocumentsController (e2e)', () => {
   let app: INestApplication;
-  let documents: CargoDocumentRepositoryMock;
+  let documents: ShipmentDocumentRepositoryMock;
 
   beforeEach(async () => {
-    documents = new CargoDocumentRepositoryMock();
+    documents = new ShipmentDocumentRepositoryMock();
     const moduleFixture = await Test.createTestingModule({
       imports: [DocumentComplianceModule],
     })
-      .overrideProvider(CARGO_DOCUMENT_REPOSITORY)
+      .overrideProvider(SHIPMENT_DOCUMENT_REPOSITORY)
       .useValue(documents)
       .compile();
     app = moduleFixture.createNestApplication();
@@ -61,14 +61,14 @@ describe('CargoDocumentsController (e2e)', () => {
   it('executa o CRUD com 201/200/204, Location e histórico de substituição', async () => {
     const payload = documentPayload();
     const created = await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send(payload)
       .expect(201);
     const id = created.body.id as string;
     const originalId = created.body.attachments[0].id as string;
-    expect(created.headers.location).toBe(`/cargo-documents/${id}`);
+    expect(created.headers.location).toBe(`/shipment-documents/${id}`);
     expect(created.body).toMatchObject({
-      cargoId: payload.cargoId,
+      shipmentId: payload.shipmentId,
       shipperId: SHIPPER_ID,
       status: 'PENDING',
       submittedAt: null,
@@ -89,7 +89,7 @@ describe('CargoDocumentsController (e2e)', () => {
       .get(created.headers.location)
       .expect(200);
     const updated = await request(app.getHttpServer())
-      .patch(`/cargo-documents/${id}`)
+      .patch(`/shipment-documents/${id}`)
       .send({
         attachments: [
           {
@@ -114,51 +114,51 @@ describe('CargoDocumentsController (e2e)', () => {
     });
     const replacementId = updated.body.attachments[1].id as string;
     await request(app.getHttpServer())
-      .patch(`/cargo-documents/${id}`)
+      .patch(`/shipment-documents/${id}`)
       .send({ removeAttachmentIds: [replacementId] })
       .expect(200);
     const removed = await request(app.getHttpServer())
-      .delete(`/cargo-documents/${id}`)
+      .delete(`/shipment-documents/${id}`)
       .expect(204);
     expect(removed.text).toBe('');
     await request(app.getHttpServer())
-      .get(`/cargo-documents/${id}`)
+      .get(`/shipment-documents/${id}`)
       .expect(404);
   });
 
   it('permite iniciar a preparação vazia e adicionar anexos de um item depois', async () => {
     const payload = documentPayload();
     const created = await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send({ ...payload, attachments: [] })
       .expect(201);
     expect(created.body.attachments).toEqual([]);
-    const cargoItemId = randomUUID();
+    const shipmentItemId = randomUUID();
     const updated = await request(app.getHttpServer())
-      .patch(`/cargo-documents/${created.body.id}`)
+      .patch(`/shipment-documents/${created.body.id}`)
       .send({
         attachments: [
           {
             ...attachmentPayload(),
-            scopes: [{ type: 'CARGO_ITEM', cargoItemId }],
+            scopes: [{ type: 'SHIPMENT_ITEM', shipmentItemId }],
           },
         ],
       })
       .expect(200);
     expect(updated.body.attachments[0].scopes).toEqual([
-      { type: 'CARGO_ITEM', cargoItemId },
+      { type: 'SHIPMENT_ITEM', shipmentItemId },
     ]);
   });
 
   it('retorna 409 para carga duplicada', async () => {
     const payload = documentPayload();
     await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send(payload)
       .expect(201);
     const response = await request(app.getHttpServer())
-      .post('/cargo-documents')
-      .send({ ...payload, cargoId: payload.cargoId.toUpperCase() })
+      .post('/shipment-documents')
+      .send({ ...payload, shipmentId: payload.shipmentId.toUpperCase() })
       .expect(409);
     expect(response.body.message).toBe(
       'Já existe documentação cadastrada para esta carga.',
@@ -167,46 +167,46 @@ describe('CargoDocumentsController (e2e)', () => {
 
   it('lista com padrões, filtros combinados e páginas sem repetição', async () => {
     const first = await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send(documentPayload())
       .expect(201);
     await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send(documentPayload())
       .expect(201);
     await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send({ ...documentPayload(), shipperId: randomUUID() })
       .expect(201);
     const page = await request(app.getHttpServer())
-      .get('/cargo-documents')
+      .get('/shipment-documents')
       .expect(200);
     expect(page.body).toMatchObject({ total: 3, page: 1, pageSize: 20 });
     const query = { shipperId: SHIPPER_ID, status: 'PENDING', pageSize: 1 };
     const page1 = await request(app.getHttpServer())
-      .get('/cargo-documents')
+      .get('/shipment-documents')
       .query({ ...query, page: 1 })
       .expect(200);
     const page2 = await request(app.getHttpServer())
-      .get('/cargo-documents')
+      .get('/shipment-documents')
       .query({ ...query, page: 2 })
       .expect(200);
     expect(page1.body.total).toBe(2);
     expect(page2.body.items[0].id).not.toBe(page1.body.items[0].id);
     const filtered = await request(app.getHttpServer())
-      .get('/cargo-documents')
-      .query({ ...query, cargoId: first.body.cargoId })
+      .get('/shipment-documents')
+      .query({ ...query, shipmentId: first.body.shipmentId })
       .expect(200);
     expect(filtered.body.total).toBe(1);
     const empty = await request(app.getHttpServer())
-      .get('/cargo-documents')
+      .get('/shipment-documents')
       .query({ status: 'UNDER_REVIEW' })
       .expect(200);
     expect(empty.body).toEqual({ items: [], total: 0, page: 1, pageSize: 20 });
   });
 
   it.each([
-    { cargoId: 'inválido' },
+    { shipmentId: 'inválido' },
     { shipperId: null },
     { compositionVersion: 0 },
     { compositionVersion: '1' },
@@ -217,7 +217,7 @@ describe('CargoDocumentsController (e2e)', () => {
     { extra: true },
   ])('retorna 400 para cadastro inválido: %j', async (overrides) => {
     const response = await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send({ ...documentPayload(), ...overrides })
       .expect(400);
     expect(response.body.message).toBeDefined();
@@ -237,15 +237,15 @@ describe('CargoDocumentsController (e2e)', () => {
     { expiresAt: '2025-01-01T00:00:00Z' },
     { scopes: [] },
     { scopes: [null] },
-    { scopes: [{ type: 'CARGO_ITEM' }] },
-    { scopes: [{ type: 'CARGO', cargoItemId: randomUUID() }] },
-    { scopes: [{ type: 'CARGO' }, { type: 'CARGO' }] },
+    { scopes: [{ type: 'SHIPMENT_ITEM' }] },
+    { scopes: [{ type: 'SHIPMENT', shipmentItemId: randomUUID() }] },
+    { scopes: [{ type: 'SHIPMENT' }, { type: 'SHIPMENT' }] },
     { replacesAttachmentId: null },
   ])(
     'valida DTOs aninhados e invariantes com status 400: %j',
     async (overrides) => {
       await request(app.getHttpServer())
-        .post('/cargo-documents')
+        .post('/shipment-documents')
         .send({
           ...documentPayload(),
           attachments: [{ ...attachmentPayload(), ...overrides }],
@@ -259,18 +259,18 @@ describe('CargoDocumentsController (e2e)', () => {
     { page: 1.5 },
     { pageSize: 101 },
     { pageSize: 'abc' },
-    { cargoId: 'inválido' },
+    { shipmentId: 'inválido' },
     { status: 'INVALID' },
     { page: Number.MAX_SAFE_INTEGER, pageSize: 100 },
   ])('retorna 400 para consulta inválida: %j', async (query) => {
     await request(app.getHttpServer())
-      .get('/cargo-documents')
+      .get('/shipment-documents')
       .query(query)
       .expect(400);
   });
 
   it('retorna 404 para UUID inexistente em consulta, atualização e exclusão', async () => {
-    const path = `/cargo-documents/${randomUUID()}`;
+    const path = `/shipment-documents/${randomUUID()}`;
     await request(app.getHttpServer()).get(path).expect(404);
     await request(app.getHttpServer())
       .patch(path)
@@ -280,7 +280,7 @@ describe('CargoDocumentsController (e2e)', () => {
   });
 
   it('retorna 400 para identificador malformado nos três verbos', async () => {
-    const path = '/cargo-documents/invalid';
+    const path = '/shipment-documents/invalid';
     const response = await request(app.getHttpServer()).get(path).expect(400);
     expect(response.body.message).toBe(
       'O identificador deve ser um UUID válido.',
@@ -297,18 +297,18 @@ describe('CargoDocumentsController (e2e)', () => {
     { attachments: [] },
     { attachments: null },
     { removeAttachmentIds: null },
-    { cargoId: randomUUID() },
+    { shipmentId: randomUUID() },
     { status: 'COMPLIANT' },
     { submittedAt: '2026-01-01' },
   ])(
     'rejeita PATCH vazio, nulo ou de campos protegidos: %j',
     async (payload) => {
       const created = await request(app.getHttpServer())
-        .post('/cargo-documents')
+        .post('/shipment-documents')
         .send(documentPayload())
         .expect(201);
       await request(app.getHttpServer())
-        .patch(`/cargo-documents/${created.body.id}`)
+        .patch(`/shipment-documents/${created.body.id}`)
         .send(payload)
         .expect(400);
     },
@@ -316,10 +316,10 @@ describe('CargoDocumentsController (e2e)', () => {
 
   it('não modifica o agregado quando uma substituição falha', async () => {
     const created = await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send(documentPayload())
       .expect(201);
-    const path = `/cargo-documents/${created.body.id}`;
+    const path = `/shipment-documents/${created.body.id}`;
     await request(app.getHttpServer())
       .patch(path)
       .send({
@@ -333,15 +333,15 @@ describe('CargoDocumentsController (e2e)', () => {
 
   it('retorna 409 para referência a anexo de outra documentação', async () => {
     const first = await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send(documentPayload())
       .expect(201);
     const second = await request(app.getHttpServer())
-      .post('/cargo-documents')
+      .post('/shipment-documents')
       .send(documentPayload())
       .expect(201);
     await request(app.getHttpServer())
-      .patch(`/cargo-documents/${first.body.id}`)
+      .patch(`/shipment-documents/${first.body.id}`)
       .send({
         attachments: [
           {
@@ -354,18 +354,18 @@ describe('CargoDocumentsController (e2e)', () => {
   });
 
   it.each([
-    CargoDocumentStatus.UNDER_REVIEW,
-    CargoDocumentStatus.COMPLIANT,
-    CargoDocumentStatus.NON_COMPLIANT,
+    ShipmentDocumentStatus.UNDER_REVIEW,
+    ShipmentDocumentStatus.COMPLIANT,
+    ShipmentDocumentStatus.NON_COMPLIANT,
   ])('retorna 409 ao editar ou excluir documentação em %s', async (status) => {
     const document = await documents.create(
-      CargoDocument.restore({
-        ...CargoDocument.create(createCargoDocumentData()).toObject(),
+      ShipmentDocument.restore({
+        ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
         status,
         submittedAt: new Date(),
       }),
     );
-    const path = `/cargo-documents/${document.id}`;
+    const path = `/shipment-documents/${document.id}`;
     await request(app.getHttpServer())
       .patch(path)
       .send({ attachments: [attachmentPayload()] })
@@ -380,17 +380,17 @@ describe('CargoDocumentsController (e2e)', () => {
       app,
       new DocumentBuilder().setTitle('Teste').setVersion('1').build(),
     );
-    expect(Object.keys(specification.paths['/cargo-documents']).sort()).toEqual(
-      ['get', 'post'],
-    );
     expect(
-      Object.keys(specification.paths['/cargo-documents/{id}']).sort(),
+      Object.keys(specification.paths['/shipment-documents']).sort(),
+    ).toEqual(['get', 'post']);
+    expect(
+      Object.keys(specification.paths['/shipment-documents/{id}']).sort(),
     ).toEqual(['delete', 'get', 'patch']);
     expect(
-      specification.paths['/cargo-documents'].post?.responses,
+      specification.paths['/shipment-documents'].post?.responses,
     ).toHaveProperty('201');
     expect(
-      specification.paths['/cargo-documents/{id}'].patch?.responses,
+      specification.paths['/shipment-documents/{id}'].patch?.responses,
     ).toMatchObject({
       200: expect.any(Object),
       400: expect.any(Object),
@@ -398,26 +398,26 @@ describe('CargoDocumentsController (e2e)', () => {
       409: expect.any(Object),
     });
     expect(
-      specification.paths['/cargo-documents/{id}'].delete?.responses,
+      specification.paths['/shipment-documents/{id}'].delete?.responses,
     ).toHaveProperty('204');
     expect(specification.components?.schemas).toHaveProperty(
-      'CargoDocumentPageResponseDto',
+      'ShipmentDocumentPageResponseDto',
     );
     expect(
-      specification.components?.schemas?.CreateCargoDocumentDto,
+      specification.components?.schemas?.CreateShipmentDocumentDto,
     ).not.toHaveProperty('properties.status');
     expect(
-      specification.components?.schemas?.CargoDocumentResponseDto,
+      specification.components?.schemas?.ShipmentDocumentResponseDto,
     ).toMatchObject({
       required: expect.arrayContaining([
-        'cargoId',
+        'shipmentId',
         'shipperId',
         'compositionVersion',
         'attachments',
       ]),
     });
     expect(
-      specification.components?.schemas?.UpdateCargoDocumentDto,
+      specification.components?.schemas?.UpdateShipmentDocumentDto,
     ).toMatchObject({
       properties: {
         attachments: {
@@ -427,8 +427,8 @@ describe('CargoDocumentsController (e2e)', () => {
       },
     });
     expect(
-      specification.components?.schemas?.UpdateCargoDocumentDto,
-    ).not.toHaveProperty('properties.cargoId');
+      specification.components?.schemas?.UpdateShipmentDocumentDto,
+    ).not.toHaveProperty('properties.shipmentId');
     expect(
       specification.components?.schemas?.DocumentAttachmentResponseDto,
     ).toMatchObject({

@@ -12,17 +12,19 @@ import {
 } from 'class-validator';
 import { CreateDocumentAttachmentDto } from './document-attachment.dto.js';
 
-export class CreateCargoDocumentDto {
+export class CreateShipmentDocumentDto {
   @ApiProperty({
+    type: String,
     format: 'uuid',
     description: 'Carga à qual a documentação pertence.',
   })
   @IsUUID('all', {
     message: 'O identificador da carga deve ser um UUID válido.',
   })
-  cargoId!: string;
+  shipmentId!: string;
 
   @ApiProperty({
+    type: String,
     format: 'uuid',
     description: 'Embarcador responsável pela documentação.',
   })
@@ -32,6 +34,7 @@ export class CreateCargoDocumentDto {
   shipperId!: string;
 
   @ApiProperty({
+    type: Number,
     minimum: 1,
     maximum: 2147483647,
     description:

@@ -1,17 +1,22 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
-import { CargoDocumentStatus } from '@/modules/document-compliance/domain/enums/cargo-document-status.enum.js';
+import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
 
-export class ListCargoDocumentsQueryDto {
-  @ApiPropertyOptional({ format: 'uuid', description: 'Filtro pela carga.' })
+export class ListShipmentDocumentsQueryDto {
+  @ApiPropertyOptional({
+    type: String,
+    format: 'uuid',
+    description: 'Filtro pela carga.',
+  })
   @IsOptional()
   @IsUUID('all', {
     message: 'O identificador da carga deve ser um UUID válido.',
   })
-  cargoId?: string;
+  shipmentId?: string;
 
   @ApiPropertyOptional({
+    type: String,
     format: 'uuid',
     description: 'Filtro pelo embarcador.',
   })
@@ -22,16 +27,18 @@ export class ListCargoDocumentsQueryDto {
   shipperId?: string;
 
   @ApiPropertyOptional({
-    enum: CargoDocumentStatus,
+    type: String,
+    enum: ShipmentDocumentStatus,
     description: 'Filtro pela situação documental.',
   })
   @IsOptional()
-  @IsEnum(CargoDocumentStatus, {
+  @IsEnum(ShipmentDocumentStatus, {
     message: 'O status da documentação é inválido.',
   })
-  status?: CargoDocumentStatus;
+  status?: ShipmentDocumentStatus;
 
   @ApiPropertyOptional({
+    type: Number,
     minimum: 1,
     maximum: Number.MAX_SAFE_INTEGER,
     default: 1,
@@ -47,6 +54,7 @@ export class ListCargoDocumentsQueryDto {
   page?: number;
 
   @ApiPropertyOptional({
+    type: Number,
     minimum: 1,
     maximum: 100,
     default: 20,

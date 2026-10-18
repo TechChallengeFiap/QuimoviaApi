@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import { Prisma } from '@/generated/prisma/client.js';
-import { CargoDocument } from '@/modules/document-compliance/domain/entities/cargo-document.entity.js';
-import { CargoDocumentStatus } from '@/modules/document-compliance/domain/enums/cargo-document-status.enum.js';
-import { PrismaCargoDocumentRepository } from '@/modules/document-compliance/infrastructure/persistence/prisma/prisma-cargo-document.repository.js';
+import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
+import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
+import { PrismaShipmentDocumentRepository } from '@/modules/document-compliance/infrastructure/persistence/prisma/prisma-shipment-document.repository.js';
 import {
   ConflictError,
   ResourceNotFoundError,
@@ -10,8 +10,8 @@ import {
 import type { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import {
   createAttachmentData,
-  createCargoDocumentData,
-} from '../../mocks/cargo-document.fixture.js';
+  createShipmentDocumentData,
+} from '../../mocks/shipment-document.fixture.js';
 
 const prismaError = (code: string) =>
   new Prisma.PrismaClientKnownRequestError('Falha simulada', {
@@ -19,7 +19,7 @@ const prismaError = (code: string) =>
     clientVersion: '7.10.0',
   });
 
-describe('PrismaCargoDocumentRepository', () => {
+describe('PrismaShipmentDocumentRepository', () => {
   const delegate = {
     create: jest.fn<(args: unknown) => Promise<unknown>>(),
     update: jest.fn<(args: unknown) => Promise<unknown>>(),
@@ -28,26 +28,34 @@ describe('PrismaCargoDocumentRepository', () => {
     findMany: jest.fn<(args: unknown) => Promise<unknown>>(),
     count: jest.fn<(args: unknown) => Promise<unknown>>(),
   };
-  const repository = new PrismaCargoDocumentRepository({
-    cargoDocument: delegate,
+  const repository = new PrismaShipmentDocumentRepository({
+    shipmentDocument: delegate,
   } as unknown as PrismaService);
-  let document: CargoDocument;
+  let document: ShipmentDocument;
+
+  const persistedRecord = () => ({
+    ...document.toObject(),
+    attachments: document.attachments.map((attachment) => ({
+      ...attachment,
+      scopes: [{ type: 'CARGO' }] as { type: string; cargoItemId?: string }[],
+    })),
+  });
 
   beforeEach(() => {
     jest.resetAllMocks();
-    document = CargoDocument.create(createCargoDocumentData());
+    document = ShipmentDocument.create(createShipmentDocumentData());
   });
 
   it('cria a raiz e os anexos na mesma gravação e reconstrói o domínio', async () => {
-    delegate.create.mockResolvedValue(document.toObject());
+    delegate.create.mockResolvedValue(persistedRecord());
     expect((await repository.create(document)).toObject()).toEqual(
       document.toObject(),
     );
     expect(delegate.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          cargoId: document.cargoId,
-          attachments: { create: document.attachments },
+          shipmentId: document.shipmentId,
+          attachments: { create: persistedRecord().attachments },
         }),
       }),
     );
@@ -76,7 +84,7 @@ describe('PrismaCargoDocumentRepository', () => {
         }),
       ],
     });
-    delegate.update.mockResolvedValue({ ...document.toObject(), revision: 1 });
+    delegate.update.mockResolvedValue({ ...persistedRecord(), revision: 1 });
     const updated = await repository.update(document);
     expect(updated.revision).toBe(1);
     expect(delegate.update).toHaveBeenCalledWith(
@@ -84,7 +92,7 @@ describe('PrismaCargoDocumentRepository', () => {
         where: {
           id: document.id,
           revision: 0,
-          status: CargoDocumentStatus.PENDING,
+          status: ShipmentDocumentStatus.PENDING,
           submittedAt: null,
         },
         data: {
@@ -92,7 +100,7 @@ describe('PrismaCargoDocumentRepository', () => {
           attachments: {
             upsert: document.attachments.map((attachment) => ({
               where: { id: attachment.id },
-              create: attachment,
+              create: { ...attachment, scopes: [{ type: 'CARGO' }] },
               update: {
                 removedAt: attachment.removedAt,
                 updatedAt: attachment.updatedAt,
@@ -105,7 +113,7 @@ describe('PrismaCargoDocumentRepository', () => {
   });
 
   it('protege a exclusão pelo mesmo estado e revisão', async () => {
-    delegate.delete.mockResolvedValue(document.toObject());
+    delegate.delete.mockResolvedValue(persistedRecord());
     await repository.remove(document.id, 3);
     expect(delegate.delete).toHaveBeenCalledWith({
       where: {
@@ -145,25 +153,25 @@ describe('PrismaCargoDocumentRepository', () => {
 
   it('consulta por identificador ou carga e representa ausência com null', async () => {
     delegate.findUnique
-      .mockResolvedValueOnce(document.toObject())
+      .mockResolvedValueOnce(persistedRecord())
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(document.toObject())
+      .mockResolvedValueOnce(persistedRecord())
       .mockResolvedValueOnce(null);
     expect((await repository.findById(document.id))?.id).toBe(document.id);
     expect(await repository.findById(document.id)).toBeNull();
-    expect((await repository.findByCargoId(document.cargoId))?.id).toBe(
+    expect((await repository.findByShipmentId(document.shipmentId))?.id).toBe(
       document.id,
     );
-    expect(await repository.findByCargoId(document.cargoId)).toBeNull();
+    expect(await repository.findByShipmentId(document.shipmentId)).toBeNull();
   });
 
   it('usa os mesmos filtros na página e contagem com ordenação determinística', async () => {
-    delegate.findMany.mockResolvedValue([document.toObject()]);
+    delegate.findMany.mockResolvedValue([persistedRecord()]);
     delegate.count.mockResolvedValue(12);
     const where = {
-      cargoId: document.cargoId,
+      shipmentId: document.shipmentId,
       shipperId: document.shipperId,
-      status: CargoDocumentStatus.PENDING,
+      status: ShipmentDocumentStatus.PENDING,
     };
     const page = await repository.list({ ...where, page: 3, pageSize: 5 });
     expect(page).toMatchObject({ total: 12, page: 3, pageSize: 5 });
@@ -177,5 +185,28 @@ describe('PrismaCargoDocumentRepository', () => {
       }),
     );
     expect(delegate.count).toHaveBeenCalledWith({ where });
+  });
+  it('maps persisted shipment and item scopes without changing stored JSON', async () => {
+    const itemId = 'c4c68724-2ba9-4f4f-b38d-e8b7131eeae7';
+    const record = persistedRecord();
+    record.attachments[0].scopes = [
+      { type: 'CARGO' },
+      { type: 'CARGO_ITEM', cargoItemId: itemId },
+    ];
+    delegate.findUnique.mockResolvedValue(record);
+    const restored = await repository.findById(document.id);
+    expect(restored?.attachments[0].scopes).toEqual([
+      { type: 'SHIPMENT' },
+      { type: 'SHIPMENT_ITEM', shipmentItemId: itemId },
+    ]);
+    delegate.create.mockResolvedValue(record);
+    await repository.create(restored!);
+    expect(delegate.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          attachments: { create: record.attachments },
+        }),
+      }),
+    );
   });
 });

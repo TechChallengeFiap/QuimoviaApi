@@ -3,14 +3,17 @@ import {
   BadRequestException,
   Catch,
   ExceptionFilter,
+  Inject,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
 
 /** Adapta o contrato 400 deste recurso sem alterar o filtro compartilhado. */
 @Catch(BusinessRuleError, BadRequestException)
-export class CargoDocumentValidationFilter implements ExceptionFilter {
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+export class ShipmentDocumentValidationFilter implements ExceptionFilter {
+  constructor(
+    @Inject(HttpAdapterHost) private readonly httpAdapterHost: HttpAdapterHost,
+  ) {}
 
   catch(
     error: BusinessRuleError | BadRequestException,

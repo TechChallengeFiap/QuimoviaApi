@@ -6,19 +6,12 @@ import {
   IsUUID,
   ValidateIf,
 } from 'class-validator';
-import { CreateCargoDocumentDto } from './create-cargo-document.dto.js';
-import { CreateDocumentAttachmentDto } from './document-attachment.dto.js';
+import { CreateShipmentDocumentDto } from './create-shipment-document.dto.js';
 
-export class UpdateCargoDocumentDto extends PickType(CreateCargoDocumentDto, [
-  'attachments',
-] as const) {
-  @ApiPropertyOptional({
-    type: [CreateDocumentAttachmentDto],
-    description:
-      'Anexos a incluir ou substituir; versões anteriores permanecem no histórico.',
-  })
-  declare attachments?: CreateDocumentAttachmentDto[];
-
+export class UpdateShipmentDocumentDto extends PickType(
+  CreateShipmentDocumentDto,
+  ['attachments'] as const,
+) {
   @ApiPropertyOptional({
     type: [String],
     maxItems: 100,

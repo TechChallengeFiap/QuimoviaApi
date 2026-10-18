@@ -18,6 +18,8 @@ export interface CreateProductDocumentData {
   filePath: string;
 }
 
+export type UpdateProductDocumentData = Partial<CreateProductDocumentData>;
+
 /**
  * Documento vinculado a um produto químico (FISPQ, certificado, licença...).
  *
@@ -45,9 +47,9 @@ export class ProductDocument {
   static create(data: CreateProductDocumentData): ProductDocument {
     return new ProductDocument({
       id: randomUUID(),
-      type: data.type,
+      type: ProductDocument.validateType(data.type),
       number: ProductDocument.validateNumber(data.number),
-      expiresAt: data.expiresAt ?? null,
+      expiresAt: ProductDocument.validateExpiresAt(data.expiresAt ?? null),
       filePath: ProductDocument.validateFilePath(data.filePath),
       createdAt: new Date(),
     });
@@ -56,6 +58,21 @@ export class ProductDocument {
   /** Reconstrói um documento já persistido, sem revalidar os dados. */
   static restore(properties: ProductDocumentProperties): ProductDocument {
     return new ProductDocument(properties);
+  }
+
+  /** A raiz substitui o documento somente após validar toda a revisão. */
+  withChanges(data: UpdateProductDocumentData): ProductDocument {
+    return new ProductDocument({
+      ...this.toObject(),
+      type: ProductDocument.validateType(data.type ?? this.type),
+      number: ProductDocument.validateNumber(data.number ?? this.number),
+      filePath: ProductDocument.validateFilePath(
+        data.filePath ?? this.filePath,
+      ),
+      expiresAt: ProductDocument.validateExpiresAt(
+        data.expiresAt === undefined ? this.expiresAt : data.expiresAt,
+      ),
+    });
   }
 
   /** Um documento sem data de validade nunca expira. */
@@ -77,8 +94,10 @@ export class ProductDocument {
   private static validateNumber(number: string): string {
     const normalizedNumber = number.trim();
 
-    if (normalizedNumber.length === 0) {
-      throw new BusinessRuleError('O número do documento do produto não pode ser vazio.');
+    if (normalizedNumber.length === 0 || normalizedNumber.length > 80) {
+      throw new BusinessRuleError(
+        'O número do documento do produto deve ter entre 1 e 80 caracteres.',
+      );
     }
 
     return normalizedNumber;
@@ -87,10 +106,28 @@ export class ProductDocument {
   private static validateFilePath(filePath: string): string {
     const normalizedFilePath = filePath.trim();
 
-    if (normalizedFilePath.length === 0) {
-      throw new BusinessRuleError('O caminho do arquivo do documento não pode ser vazio.');
+    if (normalizedFilePath.length === 0 || normalizedFilePath.length > 500) {
+      throw new BusinessRuleError(
+        'O caminho do arquivo do documento deve ter entre 1 e 500 caracteres.',
+      );
     }
 
     return normalizedFilePath;
+  }
+
+  private static validateType(type: ProductDocumentType): ProductDocumentType {
+    if (!Object.values(ProductDocumentType).includes(type)) {
+      throw new BusinessRuleError('O tipo do documento do produto é inválido.');
+    }
+    return type;
+  }
+
+  private static validateExpiresAt(expiresAt: Date | null): Date | null {
+    if (expiresAt !== null && !Number.isFinite(expiresAt.getTime())) {
+      throw new BusinessRuleError(
+        'A validade do documento do produto é inválida.',
+      );
+    }
+    return expiresAt;
   }
 }

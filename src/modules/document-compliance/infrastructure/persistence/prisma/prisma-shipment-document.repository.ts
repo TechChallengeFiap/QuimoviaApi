@@ -1,17 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@/generated/prisma/client.js';
-import { CargoDocument } from '@/modules/document-compliance/domain/entities/cargo-document.entity.js';
+import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
 import type {
   DocumentAttachmentProperties,
   DocumentScope,
-} from '@/modules/document-compliance/domain/entities/cargo-document.entity.js';
-import { CargoDocumentStatus } from '@/modules/document-compliance/domain/enums/cargo-document-status.enum.js';
+} from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
+import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
 import { DocumentType } from '@/modules/document-compliance/domain/enums/document-type.enum.js';
 import type {
-  CargoDocumentPage,
-  CargoDocumentRepository,
-  CargoDocumentSearchFilters,
-} from '@/modules/document-compliance/domain/repositories/cargo-document.repository.js';
+  ShipmentDocumentPage,
+  ShipmentDocumentRepository,
+  ShipmentDocumentSearchFilters,
+} from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import {
   ConflictError,
   ResourceNotFoundError,
@@ -20,33 +20,33 @@ import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma
 
 const includeAttachments = {
   attachments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
-} satisfies Prisma.CargoDocumentInclude;
+} satisfies Prisma.ShipmentDocumentInclude;
 
-type PersistedCargoDocument = Prisma.CargoDocumentGetPayload<{
+type PersistedShipmentDocument = Prisma.ShipmentDocumentGetPayload<{
   include: typeof includeAttachments;
 }>;
 
 @Injectable()
-export class PrismaCargoDocumentRepository implements CargoDocumentRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class PrismaShipmentDocumentRepository implements ShipmentDocumentRepository {
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async create(document: CargoDocument): Promise<CargoDocument> {
+  async create(document: ShipmentDocument): Promise<ShipmentDocument> {
     try {
-      const record = await this.prisma.cargoDocument.create({
+      const record = await this.prisma.shipmentDocument.create({
         data: {
           id: document.id,
-          cargoId: document.cargoId,
+          shipmentId: document.shipmentId,
           shipperId: document.shipperId,
           compositionVersion: document.compositionVersion,
           attachments: {
-            create: document.attachments.map(
-              PrismaCargoDocumentRepository.attachmentData,
+            create: document.attachments.map((attachment) =>
+              PrismaShipmentDocumentRepository.attachmentData(attachment),
             ),
           },
         },
         include: includeAttachments,
       });
-      return PrismaCargoDocumentRepository.toDomain(record);
+      return PrismaShipmentDocumentRepository.toDomain(record);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -60,14 +60,14 @@ export class PrismaCargoDocumentRepository implements CargoDocumentRepository {
     }
   }
 
-  async update(document: CargoDocument): Promise<CargoDocument> {
+  async update(document: ShipmentDocument): Promise<ShipmentDocument> {
     try {
       // A revisão impede que uma gravação sobrescreva alterações concorrentes.
-      const record = await this.prisma.cargoDocument.update({
+      const record = await this.prisma.shipmentDocument.update({
         where: {
           id: document.id,
           revision: document.revision,
-          status: CargoDocumentStatus.PENDING,
+          status: ShipmentDocumentStatus.PENDING,
           submittedAt: null,
         },
         data: {
@@ -75,7 +75,8 @@ export class PrismaCargoDocumentRepository implements CargoDocumentRepository {
           attachments: {
             upsert: document.attachments.map((attachment) => ({
               where: { id: attachment.id },
-              create: PrismaCargoDocumentRepository.attachmentData(attachment),
+              create:
+                PrismaShipmentDocumentRepository.attachmentData(attachment),
               update: {
                 removedAt: attachment.removedAt,
                 updatedAt: attachment.updatedAt,
@@ -85,7 +86,7 @@ export class PrismaCargoDocumentRepository implements CargoDocumentRepository {
         },
         include: includeAttachments,
       });
-      return PrismaCargoDocumentRepository.toDomain(record);
+      return PrismaShipmentDocumentRepository.toDomain(record);
     } catch (error) {
       return this.rethrowWriteError(error, document.id);
     }
@@ -93,11 +94,11 @@ export class PrismaCargoDocumentRepository implements CargoDocumentRepository {
 
   async remove(id: string, revision: number): Promise<void> {
     try {
-      await this.prisma.cargoDocument.delete({
+      await this.prisma.shipmentDocument.delete({
         where: {
           id,
           revision,
-          status: CargoDocumentStatus.PENDING,
+          status: ShipmentDocumentStatus.PENDING,
           submittedAt: null,
         },
       });
@@ -106,40 +107,44 @@ export class PrismaCargoDocumentRepository implements CargoDocumentRepository {
     }
   }
 
-  async findById(id: string): Promise<CargoDocument | null> {
-    const record = await this.prisma.cargoDocument.findUnique({
+  async findById(id: string): Promise<ShipmentDocument | null> {
+    const record = await this.prisma.shipmentDocument.findUnique({
       where: { id },
       include: includeAttachments,
     });
-    return record ? PrismaCargoDocumentRepository.toDomain(record) : null;
+    return record ? PrismaShipmentDocumentRepository.toDomain(record) : null;
   }
 
-  async findByCargoId(cargoId: string): Promise<CargoDocument | null> {
-    const record = await this.prisma.cargoDocument.findUnique({
-      where: { cargoId },
+  async findByShipmentId(shipmentId: string): Promise<ShipmentDocument | null> {
+    const record = await this.prisma.shipmentDocument.findUnique({
+      where: { shipmentId },
       include: includeAttachments,
     });
-    return record ? PrismaCargoDocumentRepository.toDomain(record) : null;
+    return record ? PrismaShipmentDocumentRepository.toDomain(record) : null;
   }
 
-  async list(filters: CargoDocumentSearchFilters): Promise<CargoDocumentPage> {
+  async list(
+    filters: ShipmentDocumentSearchFilters,
+  ): Promise<ShipmentDocumentPage> {
     const where = {
-      ...(filters.cargoId ? { cargoId: filters.cargoId } : {}),
+      ...(filters.shipmentId ? { shipmentId: filters.shipmentId } : {}),
       ...(filters.shipperId ? { shipperId: filters.shipperId } : {}),
       ...(filters.status ? { status: filters.status } : {}),
     };
     const [records, total] = await Promise.all([
-      this.prisma.cargoDocument.findMany({
+      this.prisma.shipmentDocument.findMany({
         where,
         include: includeAttachments,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (filters.page - 1) * filters.pageSize,
         take: filters.pageSize,
       }),
-      this.prisma.cargoDocument.count({ where }),
+      this.prisma.shipmentDocument.count({ where }),
     ]);
     return {
-      items: records.map(PrismaCargoDocumentRepository.toDomain),
+      items: records.map((record) =>
+        PrismaShipmentDocumentRepository.toDomain(record),
+      ),
       total,
       page: filters.page,
       pageSize: filters.pageSize,
@@ -151,7 +156,7 @@ export class PrismaCargoDocumentRepository implements CargoDocumentRepository {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2025'
     ) {
-      const record = await this.prisma.cargoDocument.findUnique({
+      const record = await this.prisma.shipmentDocument.findUnique({
         where: { id },
         select: { id: true },
       });
@@ -168,21 +173,33 @@ export class PrismaCargoDocumentRepository implements CargoDocumentRepository {
   private static attachmentData(attachment: DocumentAttachmentProperties) {
     return {
       ...attachment,
-      scopes: attachment.scopes.map((scope) => ({ ...scope })),
+      // Mantém o formato físico dos registros JSON anteriores à padronização.
+      scopes: attachment.scopes.map((scope) => ({
+        type: scope.type === 'SHIPMENT' ? 'CARGO' : 'CARGO_ITEM',
+        ...(scope.shipmentItemId ? { cargoItemId: scope.shipmentItemId } : {}),
+      })),
     };
   }
 
-  private static toDomain(record: PersistedCargoDocument): CargoDocument {
-    return CargoDocument.restore({
+  private static toDomain(record: PersistedShipmentDocument): ShipmentDocument {
+    return ShipmentDocument.restore({
       ...record,
-      status: record.status as CargoDocumentStatus,
+      status: record.status as ShipmentDocumentStatus,
       attachments: record.attachments.map((attachment) => ({
         id: attachment.id,
         name: attachment.name,
         type: attachment.type as DocumentType,
         fileReference: attachment.fileReference,
         // O formato JSON é validado pelo agregado antes de cada gravação.
-        scopes: attachment.scopes as unknown as DocumentScope[],
+        scopes: (
+          attachment.scopes as unknown as {
+            type: 'CARGO' | 'CARGO_ITEM';
+            cargoItemId?: string;
+          }[]
+        ).map((scope): DocumentScope => ({
+          type: scope.type === 'CARGO' ? 'SHIPMENT' : 'SHIPMENT_ITEM',
+          ...(scope.cargoItemId ? { shipmentItemId: scope.cargoItemId } : {}),
+        })),
         issuedAt: attachment.issuedAt,
         expiresAt: attachment.expiresAt,
         replacesAttachmentId: attachment.replacesAttachmentId,
