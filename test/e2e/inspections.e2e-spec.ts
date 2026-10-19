@@ -7,6 +7,19 @@ import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/
 import { InspectionModule } from '@/modules/inspection/inspection.module.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { InspectionRepositoryMock } from '../mocks/inspection-repository.mock.js';
+import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.module.js';
+import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
+import { ChemicalShipmentMock } from '../mocks/chemical-shipment.mock.js';
+import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
+import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 
 const CARGO_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 const CARGO_ITEM_ID = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
@@ -14,6 +27,8 @@ const INSPECTOR_ID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
 
 describe('InspectionsController (e2e)', () => {
   let app: INestApplication;
+  let chemicalShipments: ChemicalShipmentMock;
+  let users: UserRepositoryMock;
 
   const payload = {
     cargoId: CARGO_ID,
@@ -27,11 +42,49 @@ describe('InspectionsController (e2e)', () => {
     // Os casos de uso registram os erros esperados (404, 422) no log.
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
+    chemicalShipments = new ChemicalShipmentMock();
+    await chemicalShipments.create(
+      ChemicalShipment.restore({
+        id: CARGO_ID,
+        productId: 'prod-001',
+        quantityProduct: 100,
+        status: StatusShipment.ANALYZING,
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-001',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      }),
+    );
+
+    users = new UserRepositoryMock();
+    await users.create(
+      User.restore({
+        id: INSPECTOR_ID,
+        name: 'Carlos Fiscal',
+        email: 'carlos.fiscal@quimovia.com',
+        passwordHash: 'hash',
+        role: UserRole.PORT_OPERATOR,
+        status: UserStatus.ACTIVE,
+        lastLoginAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [InspectionModule],
+      imports: [PrismaModule, InspectionModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue({})
       .overrideProvider(INSPECTION_REPOSITORY)
       .useClass(InspectionRepositoryMock)
+      .overrideProvider(CHEMICAL_SHIPMENT_REPOSITORY)
+      .useValue(chemicalShipments)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
+      .overrideProvider(USER_REPOSITORY)
+      .useValue(users)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -53,7 +106,7 @@ describe('InspectionsController (e2e)', () => {
 
   it('cadastra uma inspeção pendente com as verificações sem resultado', async () => {
     const response = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload)
       .expect(201);
 
@@ -70,12 +123,26 @@ describe('InspectionsController (e2e)', () => {
         { requirement: 'PACKAGING_INTEGRITY', result: null, observation: null },
         { requirement: 'NO_LEAKAGE', result: null, observation: null },
       ],
+      cargo: {
+        id: CARGO_ID,
+        productId: 'prod-001',
+        quantityProduct: 100,
+        status: 'ANALYZING',
+        responsibleUserId: 'user-001',
+      },
+      inspector: {
+        id: INSPECTOR_ID,
+        name: 'Carlos Fiscal',
+        email: 'carlos.fiscal@quimovia.com',
+        role: 'PORT_OPERATOR',
+        status: 'ACTIVE',
+      },
     });
   });
 
   it('cadastra a inspeção de um item da carga', async () => {
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({ ...payload, scope: 'CARGO_ITEM', cargoItemId: CARGO_ITEM_ID })
       .expect(201)
       .expect(({ body }) => {
@@ -83,9 +150,43 @@ describe('InspectionsController (e2e)', () => {
       });
   });
 
+  it('retorna 404 ao cadastrar inspeção com carga química inexistente', async () => {
+    await request(app.getHttpServer())
+      .post('/inspections')
+      .send({ ...payload, cargoId: 'b567d1fc-3b1d-44a5-9273-5a02a8327d6a' })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.message).toContain('Carga Química não encontrado(a)');
+      });
+  });
+
+  it('retorna 404 ao cadastrar inspeção com Fiscal inexistente', async () => {
+    await request(app.getHttpServer())
+      .post('/inspections')
+      .send({ ...payload, inspectorId: 'b567d1fc-3b1d-44a5-9273-5a02a8327d6a' })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.message).toContain('Usuário não encontrado(a)');
+      });
+  });
+
+  it('retorna 404 ao tentar reatribuir para um Fiscal inexistente', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/inspections')
+      .send(payload);
+
+    await request(app.getHttpServer())
+      .patch(`/inspections/${created.body.id}`)
+      .send({ inspectorId: 'b567d1fc-3b1d-44a5-9273-5a02a8327d6a' })
+      .expect(404)
+      .expect(({ body }) => {
+        expect(body.message).toContain('Usuário não encontrado(a)');
+      });
+  });
+
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({
         cargoId: 'nao-e-uuid',
         compositionVersion: 0,
@@ -98,25 +199,25 @@ describe('InspectionsController (e2e)', () => {
 
   it('rejeita verificações repetidas', async () => {
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({ ...payload, requirements: ['NO_LEAKAGE', 'NO_LEAKAGE'] })
       .expect(400);
   });
 
   it('retorna 422 quando o escopo de item não informa o item da carga', async () => {
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({ ...payload, scope: 'CARGO_ITEM' })
       .expect(422);
   });
 
   it('busca uma inspeção pelo id e retorna 404 para id inexistente', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
 
     await request(app.getHttpServer())
-      .get(`/inspecoes/${created.body.id}`)
+      .get(`/inspections/${created.body.id}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body.id).toBe(created.body.id);
@@ -124,19 +225,32 @@ describe('InspectionsController (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .get('/inspecoes/id-inexistente')
+      .get('/inspections/id-inexistente')
       .expect(404);
   });
 
   it('lista as inspeções paginadas e filtradas pela carga', async () => {
     const otherCargoId = '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b';
-    await request(app.getHttpServer()).post('/inspecoes').send(payload);
+    await chemicalShipments.create(
+      ChemicalShipment.restore({
+        id: otherCargoId,
+        productId: 'prod-001',
+        quantityProduct: 100,
+        status: StatusShipment.ANALYZING,
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-001',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      }),
+    );
+    await request(app.getHttpServer()).post('/inspections').send(payload);
     await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send({ ...payload, cargoId: otherCargoId });
 
     const response = await request(app.getHttpServer())
-      .get(`/inspecoes?cargoId=${otherCargoId}&page=1&pageSize=10`)
+      .get(`/inspections?cargoId=${otherCargoId}&page=1&pageSize=10`)
       .expect(200);
 
     expect(response.body).toMatchObject({ total: 1, page: 1, pageSize: 10 });
@@ -145,18 +259,18 @@ describe('InspectionsController (e2e)', () => {
 
   it('rejeita filtros inválidos na listagem', async () => {
     await request(app.getHttpServer())
-      .get('/inspecoes?cargoId=nao-e-uuid&pageSize=500')
+      .get('/inspections?cargoId=nao-e-uuid&pageSize=500')
       .expect(400);
   });
 
   it('inicia, registra os resultados e conclui uma inspeção', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({ status: 'IN_PROGRESS' })
       .expect(200)
       .expect(({ body }) => {
@@ -165,7 +279,7 @@ describe('InspectionsController (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({
         results: [
           { requirement: 'PACKAGING_INTEGRITY', result: 'COMPLIANT' },
@@ -196,26 +310,26 @@ describe('InspectionsController (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({ inspectorId: INSPECTOR_ID })
       .expect(422);
   });
 
   it('aplica as regras de negócio na atualização', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({
         results: [{ requirement: 'NO_LEAKAGE', result: 'COMPLIANT' }],
       })
       .expect(422);
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({
         status: 'IN_PROGRESS',
         results: [{ requirement: 'NO_LEAKAGE', result: 'NON_COMPLIANT' }],
@@ -223,23 +337,23 @@ describe('InspectionsController (e2e)', () => {
       .expect(422);
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({ status: 'COMPLETED' })
       .expect(422);
   });
 
   it('rejeita payload inválido na atualização', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${created.body.id}`)
+      .patch(`/inspections/${created.body.id}`)
       .send({ status: 'XPTO' })
       .expect(400);
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${created.body.id}`)
+      .patch(`/inspections/${created.body.id}`)
       .send({
         results: [
           { requirement: 'NO_LEAKAGE', result: 'COMPLIANT' },
@@ -251,39 +365,39 @@ describe('InspectionsController (e2e)', () => {
 
   it('retorna 404 ao atualizar uma inspeção inexistente', async () => {
     await request(app.getHttpServer())
-      .patch('/inspecoes/id-inexistente')
+      .patch('/inspections/id-inexistente')
       .send({ status: 'IN_PROGRESS' })
       .expect(404);
   });
 
   it('remove uma inspeção pendente e passa a retornar 404 nas buscas', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
     const id = created.body.id as string;
 
-    await request(app.getHttpServer()).delete(`/inspecoes/${id}`).expect(204);
-    await request(app.getHttpServer()).get(`/inspecoes/${id}`).expect(404);
+    await request(app.getHttpServer()).delete(`/inspections/${id}`).expect(204);
+    await request(app.getHttpServer()).get(`/inspections/${id}`).expect(404);
   });
 
   it('não remove uma inspeção já iniciada', async () => {
     const created = await request(app.getHttpServer())
-      .post('/inspecoes')
+      .post('/inspections')
       .send(payload);
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
-      .patch(`/inspecoes/${id}`)
+      .patch(`/inspections/${id}`)
       .send({ status: 'IN_PROGRESS' })
       .expect(200);
 
-    await request(app.getHttpServer()).delete(`/inspecoes/${id}`).expect(422);
-    await request(app.getHttpServer()).get(`/inspecoes/${id}`).expect(200);
+    await request(app.getHttpServer()).delete(`/inspections/${id}`).expect(422);
+    await request(app.getHttpServer()).get(`/inspections/${id}`).expect(200);
   });
 
   it('retorna 404 ao remover uma inspeção inexistente', async () => {
     await request(app.getHttpServer())
-      .delete('/inspecoes/id-inexistente')
+      .delete('/inspections/id-inexistente')
       .expect(404);
   });
 });

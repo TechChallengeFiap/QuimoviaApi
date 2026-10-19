@@ -7,7 +7,7 @@ import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import {
   ConflictError,
   ResourceNotFoundError,
-} from '@/shared/domain/errors/domain.error.ts';
+} from '@/shared/domain/errors/domain.error.js';
 import { Session } from '@/modules/user/domain/entities/session.entity.js';
 import { PasswordHasherMock } from '../../../mocks/password-hasher.mock.js';
 import { SessionRepositoryMock } from '../../../mocks/session-repository.mock.js';

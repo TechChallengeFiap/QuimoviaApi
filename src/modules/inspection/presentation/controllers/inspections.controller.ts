@@ -41,20 +41,20 @@ import { InspectionPageResponseDto } from '@/modules/inspection/presentation/dto
 import { InspectionResponseDto } from '@/modules/inspection/presentation/dtos/inspection-response.dto.js';
 import { ListInspectionsQueryDto } from '@/modules/inspection/presentation/dtos/list-inspections-query.dto.js';
 import { UpdateInspectionDto } from '@/modules/inspection/presentation/dtos/update-inspection.dto.js';
-
-const INSPECTION_ID_EXAMPLE = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
-const CARGO_ID_EXAMPLE = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-const CARGO_ITEM_ID_EXAMPLE = '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed';
-const INSPECTOR_ID_EXAMPLE = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
-
-const INSPECTION_NOT_FOUND_EXAMPLE = {
-  message: `Inspeção não encontrado(a) para o identificador "${INSPECTION_ID_EXAMPLE}".`,
-  error: 'Not Found',
-  statusCode: HttpStatus.NOT_FOUND,
-};
+import {
+  CARGO_ID_EXAMPLE,
+  CARGO_ITEM_ID_EXAMPLE,
+  CARGO_NOT_FOUND_EXAMPLE,
+  ENRICHED_INSPECTION_PAGE_RESPONSE_EXAMPLE,
+  ENRICHED_INSPECTION_RESPONSE_EXAMPLE,
+  INSPECTION_ID_EXAMPLE,
+  INSPECTION_NOT_FOUND_EXAMPLE,
+  INSPECTOR_ID_EXAMPLE,
+  INSPECTOR_NOT_FOUND_EXAMPLE,
+} from './inspections.swagger.js';
 
 @ApiTags('Inspeções')
-@Controller('inspecoes')
+@Controller('inspections')
 @UseFilters(DomainExceptionFilter)
 export class InspectionsController {
   constructor(
@@ -116,6 +116,7 @@ export class InspectionsController {
   @ApiCreatedResponse({
     description: 'Inspeção cadastrada com sucesso.',
     type: InspectionResponseDto,
+    example: ENRICHED_INSPECTION_RESPONSE_EXAMPLE,
   })
   @ApiBadRequestResponse({
     description: 'Dados inválidos no corpo da requisição.',
@@ -139,6 +140,21 @@ export class InspectionsController {
           'A inspeção de um item da carga exige o identificador do item.',
         error: 'Unprocessable Entity',
         statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Carga Química ou Fiscal não encontrado(a).',
+    schema: {
+      examples: {
+        cargaNaoEncontrada: {
+          summary: 'Carga Química não encontrada',
+          value: CARGO_NOT_FOUND_EXAMPLE,
+        },
+        fiscalNaoEncontrado: {
+          summary: 'Fiscal não encontrado',
+          value: INSPECTOR_NOT_FOUND_EXAMPLE,
+        },
       },
     },
   })
@@ -203,6 +219,7 @@ export class InspectionsController {
   @ApiOkResponse({
     description: 'Lista de inspeções retornada com sucesso.',
     type: InspectionPageResponseDto,
+    example: ENRICHED_INSPECTION_PAGE_RESPONSE_EXAMPLE,
   })
   @ApiBadRequestResponse({
     description: 'Filtros ou parâmetros de paginação inválidos.',
@@ -240,6 +257,7 @@ export class InspectionsController {
   @ApiOkResponse({
     description: 'Inspeção encontrada com sucesso.',
     type: InspectionResponseDto,
+    example: ENRICHED_INSPECTION_RESPONSE_EXAMPLE,
   })
   @ApiNotFoundResponse({
     description: 'Inspeção não encontrada.',
@@ -306,6 +324,7 @@ export class InspectionsController {
   @ApiOkResponse({
     description: 'Inspeção atualizada com sucesso.',
     type: InspectionResponseDto,
+    example: ENRICHED_INSPECTION_RESPONSE_EXAMPLE,
   })
   @ApiBadRequestResponse({
     description: 'Dados inválidos no corpo da requisição.',
@@ -320,8 +339,19 @@ export class InspectionsController {
     },
   })
   @ApiNotFoundResponse({
-    description: 'Inspeção não encontrada.',
-    schema: { example: INSPECTION_NOT_FOUND_EXAMPLE },
+    description: 'Inspeção ou novo Fiscal não encontrado(a).',
+    schema: {
+      examples: {
+        inspecaoNaoEncontrada: {
+          summary: 'Inspeção não encontrada',
+          value: INSPECTION_NOT_FOUND_EXAMPLE,
+        },
+        fiscalNaoEncontrado: {
+          summary: 'Novo Fiscal não encontrado',
+          value: INSPECTOR_NOT_FOUND_EXAMPLE,
+        },
+      },
+    },
   })
   @ApiUnprocessableEntityResponse({
     description:

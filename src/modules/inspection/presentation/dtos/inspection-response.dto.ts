@@ -1,8 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
 import { InspectionScope } from '@/modules/inspection/domain/enums/inspection-scope.enum.js';
 import { InspectionStatus } from '@/modules/inspection/domain/enums/inspection-status.enum.js';
 import { InspectionItemResponseDto } from './inspection-item-response.dto.js';
+import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.js';
+import { ChemicalShipmentResponseDto } from '@/modules/chemical-shipment/presentation/dtos/chemical-shipment-response.dto.js';
 
 /** Representação de uma inspeção exposta pela API. */
 export class InspectionResponseDto {
@@ -19,6 +21,13 @@ export class InspectionResponseDto {
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   })
   cargoId: string;
+
+  @ApiPropertyOptional({
+    type: () => ChemicalShipmentResponseDto,
+    nullable: true,
+    description: 'Dados completos da carga química inspecionada',
+  })
+  cargo?: ChemicalShipmentResponseDto | null;
 
   @ApiProperty({
     type: Number,
@@ -49,6 +58,13 @@ export class InspectionResponseDto {
     example: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
   })
   inspectorId: string;
+
+  @ApiPropertyOptional({
+    type: () => UserResponseDto,
+    nullable: true,
+    description: 'Dados completos do Fiscal responsável pela inspeção',
+  })
+  inspector?: UserResponseDto | null;
 
   @ApiProperty({
     enum: InspectionStatus,
@@ -114,6 +130,12 @@ export class InspectionResponseDto {
       completedAt: inspection.completedAt,
       createdAt: inspection.createdAt,
       updatedAt: inspection.updatedAt,
+      cargo: inspection.cargo
+        ? ChemicalShipmentResponseDto.fromEntity(inspection.cargo)
+        : null,
+      inspector: inspection.inspector
+        ? UserResponseDto.fromEntity(inspection.inspector)
+        : null,
     });
   }
 }

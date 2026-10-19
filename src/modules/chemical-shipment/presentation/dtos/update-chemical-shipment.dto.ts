@@ -1,31 +1,19 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { CreateChemicalShipmentDTO } from './create-chemical-shipment.dto.ts';
-import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.ts';
+import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { IsEnum, ValidateIf } from 'class-validator';
+import { CreateChemicalShipmentDTO } from './create-chemical-shipment.dto.js';
+import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.js';
 
 export class UpdateChemicalShipmentDto extends PartialType(
   CreateChemicalShipmentDTO,
 ) {
-  @ApiProperty({
-    required: false,
-    type: () => StatusShipment,
+  @ApiPropertyOptional({
+    type: String,
+    enum: StatusShipment,
+    example: StatusShipment.INSPECTION,
   })
-  declare status?: StatusShipment;
-
-  @ApiProperty({
-    required: false,
-    type: () => String,
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsEnum(StatusShipment, {
+    message: 'O status da carga química é inválido.',
   })
-  declare productId?: string;
-
-  @ApiProperty({
-    required: false,
-    type: () => String,
-  })
-  declare responsibleUserId?: string;
-
-  @ApiProperty({
-    required: false,
-    type: () => String,
-  })
-  declare documentsIds?: string;
+  status?: StatusShipment;
 }

@@ -1,7 +1,7 @@
-import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.ts';
-import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.ts';
+import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.js';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { ChemicalShipmentMock } from '../../mocks/chemical-shipment.mock.js';
 
 describe('FindChemicalShipmentByIdUseCase', () => {
   let chemicalShipments: ChemicalShipmentMock;
@@ -24,6 +24,7 @@ describe('FindChemicalShipmentByIdUseCase', () => {
         productId: 'prod-001',
         responsibleUserId: 'user-001',
         documentsIds: 'doc-001',
+        quantityProduct: 100,
       }),
     );
 

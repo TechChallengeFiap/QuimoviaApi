@@ -280,23 +280,23 @@ A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de 
 - `PATCH /chemical-shipment/:id` — Atualiza dados da carga ou avança seu status segundo as regras de transição.
 - `DELETE /chemical-shipment/:id` — Realiza a inativação/remoção da carga química.
 
-#### Inspeções Portuárias (`/inspecoes`)
+#### Inspeções Portuárias (`/inspections`)
 
-- `POST /inspecoes` — Registra nova inspeção técnica para a carga total ou item específico.
-- `GET /inspecoes` — Lista inspeções cadastradas com filtros de status e escopo.
-- `GET /inspecoes/:id` — Consulta o resultado e detalhes de uma inspeção por identificador.
-- `PATCH /inspecoes/:id` — Atualiza o status (`IN_PROGRESS`, `COMPLETED`) e resultado dos itens (`COMPLIANT`, `NON_COMPLIANT`).
-- `DELETE /inspecoes/:id` — Remove registro de inspeção.
+- `POST /inspections` — Registra nova inspeção técnica para a carga total ou item específico.
+- `GET /inspections` — Lista inspeções cadastradas com filtros de status e escopo.
+- `GET /inspections/:id` — Consulta o resultado e detalhes de uma inspeção por identificador.
+- `PATCH /inspections/:id` — Atualiza o status (`IN_PROGRESS`, `COMPLETED`) e resultado dos itens (`COMPLIANT`, `NON_COMPLIANT`).
+- `DELETE /inspections/:id` — Remove registro de inspeção.
 
-#### Usuários e Acessos (`/usuarios`)
+#### Usuários e Acessos (`/users`)
 
 Cadastrar, editar e remover usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis).
 
-- `POST /usuarios` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
-- `GET /usuarios` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
-- `GET /usuarios/:id` — Busca informações cadastrais do usuário.
-- `PATCH /usuarios/:id` — Atualiza dados cadastrais ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
-- `DELETE /usuarios/:id` — Remove usuário do sistema.
+- `POST /users` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
+- `GET /users` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
+- `GET /users/:id` — Busca informações cadastrais do usuário.
+- `PATCH /users/:id` — Atualiza dados cadastrais ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
+- `DELETE /users/:id` — Remove usuário do sistema.
 
 ---
 

@@ -57,7 +57,7 @@ describe('UsersController (e2e)', () => {
 
   it('cria um usuário e não expõe o hash da senha na resposta', async () => {
     const response = await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Maria Silva',
@@ -85,12 +85,12 @@ describe('UsersController (e2e)', () => {
     };
 
     await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send(data)
       .expect(201);
     await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send(data)
       .expect(409);
@@ -98,7 +98,7 @@ describe('UsersController (e2e)', () => {
 
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Ok',
@@ -111,7 +111,7 @@ describe('UsersController (e2e)', () => {
 
   it('busca um usuário pelo id e retorna 404 para id inexistente', async () => {
     const created = await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Maria Silva',
@@ -121,20 +121,20 @@ describe('UsersController (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .get(`/usuarios/${created.body.id}`)
+      .get(`/users/${created.body.id}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body.email).toBe('maria.find@quimovia.com');
       });
 
     await request(app.getHttpServer())
-      .get('/usuarios/id-inexistente')
+      .get('/users/id-inexistente')
       .expect(404);
   });
 
   it('lista usuários paginados', async () => {
     await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Maria Silva',
@@ -144,7 +144,7 @@ describe('UsersController (e2e)', () => {
       });
 
     const response = await request(app.getHttpServer())
-      .get('/usuarios')
+      .get('/users')
       .expect(200);
 
     expect(response.body).toMatchObject({ page: 1, pageSize: 20 });
@@ -153,7 +153,7 @@ describe('UsersController (e2e)', () => {
 
   it('atualiza um usuário, incluindo bloquear e desbloquear', async () => {
     const created = await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Maria Silva',
@@ -165,7 +165,7 @@ describe('UsersController (e2e)', () => {
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
-      .patch(`/usuarios/${id}`)
+      .patch(`/users/${id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Maria Souza', status: 'BLOCKED' })
       .expect(200)
@@ -175,7 +175,7 @@ describe('UsersController (e2e)', () => {
       });
 
     await request(app.getHttpServer())
-      .patch(`/usuarios/${id}`)
+      .patch(`/users/${id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'ACTIVE' })
       .expect(200)
@@ -186,7 +186,7 @@ describe('UsersController (e2e)', () => {
 
   it('remove um usuário e passa a retornar 404 nas buscas seguintes', async () => {
     const created = await request(app.getHttpServer())
-      .post('/usuarios')
+      .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Maria Silva',
@@ -198,15 +198,15 @@ describe('UsersController (e2e)', () => {
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
-      .delete(`/usuarios/${id}`)
+      .delete(`/users/${id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(204);
-    await request(app.getHttpServer()).get(`/usuarios/${id}`).expect(404);
+    await request(app.getHttpServer()).get(`/users/${id}`).expect(404);
   });
 
   it('retorna 404 ao remover um usuário inexistente', async () => {
     await request(app.getHttpServer())
-      .delete('/usuarios/id-inexistente')
+      .delete('/users/id-inexistente')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(404);
   });
@@ -224,7 +224,7 @@ describe('UsersController (e2e)', () => {
       role = 'PORT_OPERATOR',
     ): Promise<string> {
       const response = await request(app.getHttpServer())
-        .post('/usuarios')
+        .post('/users')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ ...newUser, email, role })
         .expect(201);
@@ -245,14 +245,14 @@ describe('UsersController (e2e)', () => {
       const id = await createUser('maria.auth@quimovia.com');
 
       await request(app.getHttpServer())
-        .post('/usuarios')
+        .post('/users')
         .send(newUser)
         .expect(401);
       await request(app.getHttpServer())
-        .patch(`/usuarios/${id}`)
+        .patch(`/users/${id}`)
         .send({ status: 'INACTIVE' })
         .expect(401);
-      await request(app.getHttpServer()).delete(`/usuarios/${id}`).expect(401);
+      await request(app.getHttpServer()).delete(`/users/${id}`).expect(401);
     });
 
     it('responde 403 para os outros perfis, sem alterar nada', async () => {
@@ -263,17 +263,17 @@ describe('UsersController (e2e)', () => {
       const token = await loginAs('maria.gestora@quimovia.com');
 
       const response = await request(app.getHttpServer())
-        .post('/usuarios')
+        .post('/users')
         .set('Authorization', `Bearer ${token}`)
         .send(newUser)
         .expect(403);
       await request(app.getHttpServer())
-        .patch(`/usuarios/${id}`)
+        .patch(`/users/${id}`)
         .set('Authorization', `Bearer ${token}`)
         .send({ role: 'SYSTEM_ADMIN' })
         .expect(403);
       await request(app.getHttpServer())
-        .delete(`/usuarios/${id}`)
+        .delete(`/users/${id}`)
         .set('Authorization', `Bearer ${token}`)
         .expect(403);
 
@@ -284,13 +284,13 @@ describe('UsersController (e2e)', () => {
         statusCode: 403,
       });
       await request(app.getHttpServer())
-        .get(`/usuarios/${id}`)
+        .get(`/users/${id}`)
         .expect(200)
         .expect(({ body }) => {
           expect(body.role).toBe('OPERATIONS_MANAGER');
         });
       await request(app.getHttpServer())
-        .get('/usuarios')
+        .get('/users')
         .expect(200)
         .expect(({ body }) => {
           expect(
@@ -304,29 +304,29 @@ describe('UsersController (e2e)', () => {
       const token = await loginAs('maria.promovida@quimovia.com');
 
       await request(app.getHttpServer())
-        .post('/usuarios')
+        .post('/users')
         .set('Authorization', `Bearer ${token}`)
         .send(newUser)
         .expect(403);
 
       await request(app.getHttpServer())
-        .patch(`/usuarios/${id}`)
+        .patch(`/users/${id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ role: 'SYSTEM_ADMIN' })
         .expect(200);
       await request(app.getHttpServer())
-        .post('/usuarios')
+        .post('/users')
         .set('Authorization', `Bearer ${token}`)
         .send(newUser)
         .expect(201);
 
       await request(app.getHttpServer())
-        .patch(`/usuarios/${id}`)
+        .patch(`/users/${id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ role: 'PORT_OPERATOR' })
         .expect(200);
       await request(app.getHttpServer())
-        .delete(`/usuarios/${id}`)
+        .delete(`/users/${id}`)
         .set('Authorization', `Bearer ${token}`)
         .expect(403);
     });

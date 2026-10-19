@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.ts';
+import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.js';
 
 interface ChemicalShipmentResponseDtoData {
   id: string;
   productId: string;
+  quantityProduct: number;
   status: StatusShipment;
   responsibleUserId: string;
   responsibleUser?: UserResponseDto | null;
@@ -24,6 +25,9 @@ export class ChemicalShipmentResponseDto {
 
   @ApiProperty({ type: String, example: 'prod-001' })
   productId: string;
+
+  @ApiProperty({ type: Number, example: 100 })
+  quantityProduct: number;
 
   @ApiProperty({ enum: StatusShipment, example: StatusShipment.ANALYZING })
   status: StatusShipment;
@@ -58,6 +62,7 @@ export class ChemicalShipmentResponseDto {
     return new ChemicalShipmentResponseDto({
       id: shipment.id,
       productId: shipment.productId,
+      quantityProduct: shipment.quantityProduct,
       status: shipment.status,
       responsibleUserId: shipment.responsibleUserId,
       responsibleUser: shipment.responsibleUser

@@ -78,7 +78,7 @@ const BUSINESS_RULE_EXAMPLE = {
 };
 
 @ApiTags('Operações dos usuários')
-@Controller('usuarios')
+@Controller('users')
 @UseFilters(DomainExceptionFilter)
 export class UsersController {
   constructor(

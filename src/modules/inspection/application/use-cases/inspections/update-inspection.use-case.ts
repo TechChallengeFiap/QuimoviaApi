@@ -9,6 +9,12 @@ import {
 } from '@/shared/domain/errors/domain.error.js';
 import { INSPECTION_REPOSITORY } from '@/modules/inspection/domain/repositories/inspection.repository.js';
 import type { InspectionRepository } from '@/modules/inspection/domain/repositories/inspection.repository.js';
+import {
+  USER_REPOSITORY,
+  type UserRepository,
+} from '@/modules/user/domain/repositories/user.repository.js';
+import type { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 
 export interface InspectionResultInput {
   requirement: InspectionRequirement;
@@ -28,7 +34,9 @@ export class UpdateInspectionUseCase {
 
   constructor(
     @Inject(INSPECTION_REPOSITORY)
-    private readonly inspections: InspectionRepository,
+    private readonly inspectionsRepository: InspectionRepository,
+    @Inject(USER_REPOSITORY)
+    private readonly usersRepository: UserRepository,
   ) {}
 
   /**
@@ -38,14 +46,15 @@ export class UpdateInspectionUseCase {
    */
   async execute(id: string, input: UpdateInspectionInput): Promise<Inspection> {
     try {
-      const inspection = await this.inspections.findById(id);
+      const { newInspector } = await this.validateInput(input);
+      const inspection = await this.inspectionsRepository.findById(id);
 
       if (!inspection) {
         throw new ResourceNotFoundError('Inspeção', id);
       }
 
       if (input.inspectorId !== undefined) {
-        inspection.assignInspector(input.inspectorId);
+        inspection.assignInspector(input.inspectorId, newInspector);
       }
 
       if (input.status === InspectionStatus.IN_PROGRESS) {
@@ -67,7 +76,7 @@ export class UpdateInspectionUseCase {
         this.changeStatus(inspection, input.status);
       }
 
-      return await this.inspections.update(inspection);
+      return await this.inspectionsRepository.update(inspection);
     } catch (error) {
       this.logger.error(
         `Erro ao atualizar a inspeção com id ${id}: ${error instanceof Error ? error.message : String(error)}`,
@@ -75,6 +84,26 @@ export class UpdateInspectionUseCase {
       );
       throw error;
     }
+  }
+
+  private async validateInput(
+    input: UpdateInspectionInput,
+  ): Promise<{ newInspector?: User }> {
+    if (input.inspectorId) {
+      const inspectorExists = await this.usersRepository.findById(
+        input.inspectorId,
+      );
+      if (!inspectorExists) {
+        throw new ResourceNotFoundError('Usuário', input.inspectorId);
+      }
+      if (inspectorExists.status !== UserStatus.ACTIVE) {
+        throw new BusinessRuleError(
+          'O novo fiscal responsável pela inspeção deve estar ativo no sistema.',
+        );
+      }
+      return { newInspector: inspectorExists };
+    }
+    return {};
   }
 
   /**

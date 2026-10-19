@@ -29,19 +29,20 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.ts';
-import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.ts';
-import { ChemicalShipmentResponseDto } from '@/modules/chemical-shipment/presentation/dtos/chemical-shipment-response.dto.ts';
-import { ChemicalShipmentPageResponseDto } from '../dtos/chemical-shipment-page-response.dto.ts';
-import { ListChemicalShipmentsQueryDto } from '../dtos/list-chemical-shipment-query.dto.ts';
-import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.ts';
-import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.ts';
-import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.ts';
-import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.ts';
-import { DomainError } from '@/shared/domain/errors/domain.error.ts';
-import { UpdateChemicalShipmentDto } from '../dtos/update-chemical-shipment.dto.ts';
-import { UpdateChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/update-chemical-shipment.use-case.ts';
-import { DeleteChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.ts';
+import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.js';
+import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.js';
+import { ChemicalShipmentResponseDto } from '@/modules/chemical-shipment/presentation/dtos/chemical-shipment-response.dto.js';
+import { ChemicalShipmentPageResponseDto } from '../dtos/chemical-shipment-page-response.dto.js';
+import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.js';
+import { ListChemicalShipmentsQueryDto } from '../dtos/list-chemical-shipment-query.dto.js';
+import { ListChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/list-chemical-shipment.use-case.js';
+import { FindChemicalShipmentByIdUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/find-chemical-shipment-by-id.use-case.js';
+import { StatusShipment } from '../../domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
+import { DomainError } from '@/shared/domain/errors/domain.error.js';
+import { UpdateChemicalShipmentDto } from '../dtos/update-chemical-shipment.dto.js';
+import { UpdateChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/update-chemical-shipment.use-case.js';
+import { DeleteChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.js';
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
 @UseFilters(DomainExceptionFilter)
@@ -78,6 +79,7 @@ export class ChemicalShipmentController {
           'Payload com dados mínimos obrigatórios para criar a carga química',
         value: {
           productId: 'prod-001',
+          quantityProduct: 100,
           responsibleUserId: 'user-001',
           documentsIds: 'doc-001',
         },
@@ -337,7 +339,8 @@ export class ChemicalShipmentController {
   })
   async updateChemicalShipment(
     @Param('id') id: string,
-    @Body() updateChemicalShipmentDto: UpdateChemicalShipmentDto,
+    @Body(validationPipeFor(UpdateChemicalShipmentDto))
+    updateChemicalShipmentDto: UpdateChemicalShipmentDto,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
       const updatedShipment = await this.updateChemicalShipmentUseCase.execute(
