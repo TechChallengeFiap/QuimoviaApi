@@ -156,6 +156,17 @@ describe('UpdateUserUseCase', () => {
     ).rejects.toThrow(ConflictError);
   });
 
+  it('rejeita alterar para o e-mail de um usuário excluído, que continua reservado', async () => {
+    const deleted = await registerUser('excluido@quimovia.com');
+    deleted.delete();
+    await users.update(deleted);
+    const user = await registerUser('free@quimovia.com');
+
+    await expect(
+      useCase.execute(user.id, { email: 'excluido@quimovia.com' }, admin),
+    ).rejects.toThrow(ConflictError);
+  });
+
   it('desbloqueia corretamente ao pedir status ACTIVE para um usuário bloqueado', async () => {
     const user = await registerUser();
     user.block();

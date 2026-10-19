@@ -449,4 +449,123 @@ describe('UsersController (e2e)', () => {
         .expect(401);
     });
   });
+
+  describe('exclusão lógica', () => {
+    const payload = {
+      name: 'Maria Silva',
+      email: 'maria.excluida@quimovia.com',
+      password: 'S3nhaForte!',
+      role: 'PORT_OPERATOR',
+    };
+
+    async function createUser(): Promise<string> {
+      const response = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(payload)
+        .expect(201);
+
+      return response.body.id as string;
+    }
+
+    it('tira o usuário das buscas, da listagem e do login, e encerra a sessão dele', async () => {
+      const id = await createUser();
+      const login = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: payload.email, password: payload.password })
+        .expect(200);
+      const token = login.body.accessToken as string;
+
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+
+      await request(app.getHttpServer()).get(`/users/${id}`).expect(404);
+      await request(app.getHttpServer())
+        .get('/users')
+        .expect(200)
+        .expect(({ body }) => {
+          expect(
+            body.items.map((user: { id: string }) => user.id),
+          ).not.toContain(id);
+        });
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Maria Souza' })
+        .expect(404);
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: payload.email, password: payload.password })
+        .expect(401);
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Maria Souza' })
+        .expect(401);
+    });
+
+    it('reativa o mesmo registro ao cadastrar de novo o e-mail excluído', async () => {
+      const id = await createUser();
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          ...payload,
+          name: 'Maria Souza',
+          password: 'N0vaS3nhaForte!',
+          role: 'TECHNICAL_MANAGER',
+        })
+        .expect(201)
+        .expect(({ body }) => {
+          expect(body).toMatchObject({
+            id,
+            name: 'Maria Souza',
+            email: payload.email,
+            role: 'TECHNICAL_MANAGER',
+            status: 'ACTIVE',
+          });
+        });
+
+      await request(app.getHttpServer()).get(`/users/${id}`).expect(200);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: payload.email, password: 'N0vaS3nhaForte!' })
+        .expect(200);
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(payload)
+        .expect(409);
+    });
+
+    it('não permite trocar o e-mail para o de um usuário excluído', async () => {
+      const id = await createUser();
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+      const other = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ...payload, email: 'joao.ativo@quimovia.com' })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/users/${other.body.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ email: payload.email })
+        .expect(409);
+    });
+  });
 });

@@ -25,26 +25,34 @@ export class CreateUserUseCase {
     @Inject(PASSWORD_HASHER) private readonly passwordHasher: PasswordHasher,
   ) {}
 
+  /**
+   * Um e-mail de usuário excluído não gera um novo registro: o cadastro
+   * excluído é reativado com os novos dados, mantendo o id e o histórico.
+   */
   async execute(input: CreateUserInput): Promise<User> {
     try {
       const email = input.email.trim().toLowerCase();
-      const existing = await this.users.findByEmail(email);
+      const existing = await this.users.findByEmailIncludingDeleted(email);
 
-      if (existing) {
+      if (existing && !existing.isDeleted) {
         throw new ConflictError(
           `Já existe um usuário cadastrado com o e-mail "${email}".`,
         );
       }
 
-      const user = User.create({
+      const data = {
         name: input.name,
-        email,
         passwordHash: await this.passwordHasher.hash(input.password),
         role: input.role,
         status: input.status,
-      });
+      };
 
-      return await this.users.create(user);
+      if (existing) {
+        existing.reregister(data);
+        return await this.users.update(existing);
+      }
+
+      return await this.users.create(User.create({ ...data, email }));
     } catch (error) {
       this.logger.error(
         `Erro ao cadastrar o usuário: ${error instanceof Error ? error.message : String(error)}`,
