@@ -461,7 +461,7 @@ export class ProtectedRouteController {
 export class ProtectedRouteModule {}
 ```
 
-Para restringir a rota a alguns perfis, use `@UseGuards(AuthGuard, RolesGuard)` com `@Roles(UserRole.SYSTEM_ADMIN)`, sempre com o `AuthGuard` primeiro: sem token a resposta é 401 e, com um perfil fora da lista, 403. É assim que a gestão de usuários fica restrita ao Administrador do Sistema. Como só ele cadastra usuários, o primeiro administrador é criado pelo seed (`npm run migrate:seed`, que executa `prisma/seed.ts`).
+Para restringir a rota a alguns perfis, use `@UseGuards(AuthGuard, RolesGuard)` com `@Roles(UserRole.SYSTEM_ADMIN)`, sempre com o `AuthGuard` primeiro: sem token a resposta é 401 e, com um perfil fora da lista, 403. É assim que o cadastro, a remoção e a troca de perfil (`PATCH /users/:id/role`) ficam restritos ao Administrador do Sistema. Quando a regra depende do dado, e não só do perfil, ela fica no caso de uso: a edição (`PATCH /users/:id`) usa só o `AuthGuard`, recebe a sessão com `@CurrentSession()`, e o `UpdateUserUseCase` lança `AccessDeniedError` (403) quando quem não é administrador tenta alterar outro usuário ou se bloquear. Como só ele cadastra usuários, o primeiro administrador é criado pelo seed (`npm run migrate:seed`, que executa `prisma/seed.ts`).
 
 Quando um contexto precisar **reagir** a um fato de outro, como a conclusão de uma inspeção, a comunicação será por evento, que ainda não existe no projeto. Em qualquer caso, as dependências entre contextos não podem formar ciclos.
 

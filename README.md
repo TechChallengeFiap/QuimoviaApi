@@ -290,12 +290,13 @@ A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de 
 
 #### Usuários e Acessos (`/users`)
 
-Cadastrar, editar e remover usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis).
+Cadastrar, remover e trocar o perfil de usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis). Na edição, o administrador altera qualquer usuário, e os demais perfis só os próprios dados, sem poder se bloquear.
 
 - `POST /users` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
 - `GET /users` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
 - `GET /users/:id` — Busca informações cadastrais do usuário.
-- `PATCH /users/:id` — Atualiza dados cadastrais ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
+- `PATCH /users/:id` — Atualiza nome, e-mail, senha ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
+- `PATCH /users/:id/role` — Troca o perfil de acesso do usuário (só o administrador).
 - `DELETE /users/:id` — Remove usuário do sistema.
 
 ---
@@ -325,7 +326,7 @@ Os testes automatizados validam cenários críticos exigidos no Tech Challenge, 
 - Bloqueio de movimentação de cargas marcadas como `BLOCKED`;
 - Validação e hash criptográfico de senhas;
 - Login, sessões com expiração e encerramento, e exigência do token de acesso nas rotas protegidas pelo `AuthGuard`;
-- Gestão de usuários restrita ao Administrador do Sistema, com a troca de perfil valendo na próxima requisição;
+- Gestão de usuários restrita ao Administrador do Sistema, com a troca de perfil em rota própria e valendo na próxima requisição; os demais usuários editam só os próprios dados;
 - Tratamento de exceções e mapeamento padronizado de erros de domínio.
 
 ---
