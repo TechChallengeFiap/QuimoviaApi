@@ -21,7 +21,10 @@ async function bootstrap() {
 
   const config = buildSwaggerConfig();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  // Mantém o token informado em "Authorize" mesmo depois de recarregar a página.
+  SwaggerModule.setup('api', app, documentFactory, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }

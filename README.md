@@ -144,10 +144,10 @@ O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e cone
 | `DATABASE_URL`           | URL de conexão utilizada pelo Prisma ORM                                                                 | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
 | `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
 | `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48`                                                                       |
-| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `3600`                                                                                                     |
+| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `31536000` (1 ano) no ambiente local; `3600` em produção                                                   |
 | `ADMIN_NAME`             | Nome do administrador inicial criado pelo seed (opcional)                                                | `Administrador do Sistema`                                                                                 |
 | `ADMIN_EMAIL`            | E-mail do administrador inicial criado pelo seed                                                         | `admin@quimovia.com`                                                                                       |
-| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | definida por você                                                                                          |
+| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | `Quimovia@2026` (padrão do `.env.example`; troque fora do ambiente local)                                  |
 
 ### 5.3. Executando com Docker e Localmente
 
@@ -175,7 +175,7 @@ copy .env.example .env
 
 > **Importante:** O `docker-compose.yml` utiliza essas variáveis para inicializar o MySQL. Verifique se as credenciais de `MYSQL_*` e a string de conexão em `DATABASE_URL` estão configuradas corretamente.
 
-> **Autenticação:** o `JWT_SECRET` e o `ADMIN_PASSWORD` vêm em branco no exemplo e precisam ser preenchidos. Sem um `JWT_SECRET` válido a API não sobe, e sem o `ADMIN_PASSWORD` o seed não cria o administrador. Para gerar o segredo, use por exemplo `openssl rand -base64 48`.
+> **Autenticação:** só o `JWT_SECRET` vem em branco no exemplo e precisa ser preenchido; sem ele, a API não sobe. Para gerá-lo, use por exemplo `openssl rand -base64 48`. O exemplo já traz o administrador inicial (`admin@quimovia.com` / `Quimovia@2026`) e o token com prazo de 1 ano, para facilitar o uso local e a avaliação.
 
 #### 3. Subir o container do banco de dados (MySQL)
 
@@ -215,7 +215,7 @@ Só o Administrador do Sistema pode cadastrar usuários. Por isso, um banco novo
 npm run migrate:seed
 ```
 
-> O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado.
+> O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado. Com o `.env.example`, o login do administrador é `admin@quimovia.com` com a senha `Quimovia@2026`.
 
 #### 7. Iniciar a API em Desenvolvimento
 
@@ -257,7 +257,16 @@ A API possui documentação interativa completa via Swagger. Com a aplicação e
 
 A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `401`, `403`, `404`, `422`).
 
-Para testar as rotas que exigem login pelo Swagger, como o logout, faça login em `POST /auth/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**.
+Para testar as rotas que exigem login pelo Swagger, faça login em `POST /auth/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**. O Swagger guarda o token mesmo depois de recarregar a página.
+
+#### Roteiro rápido para avaliar a API
+
+1. Copie o `.env.example` para `.env` e preencha o `JWT_SECRET` (`openssl rand -base64 48`).
+2. Suba o banco: `docker compose up -d`.
+3. Crie as tabelas e o administrador: `npm run migrate:dev` e `npm run migrate:seed`.
+4. Suba a API: `npm run start:dev`.
+5. No Swagger ([http://localhost:3000/api](http://localhost:3000/api)), faça login em `POST /auth/login` com `admin@quimovia.com` / `Quimovia@2026`.
+6. Copie o `accessToken`, clique em **Authorize** e cole o token. Ele vale por 1 ano e continua salvo no Swagger, então o login é feito uma vez só.
 
 ### 6.2. Principais Endpoints
 
