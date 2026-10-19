@@ -127,9 +127,7 @@ describe('UsersController (e2e)', () => {
         expect(body.email).toBe('maria.find@quimovia.com');
       });
 
-    await request(app.getHttpServer())
-      .get('/users/id-inexistente')
-      .expect(404);
+    await request(app.getHttpServer()).get('/users/id-inexistente').expect(404);
   });
 
   it('lista usuários paginados', async () => {
@@ -241,7 +239,7 @@ describe('UsersController (e2e)', () => {
       return response.body.accessToken as string;
     }
 
-    it('exige o token de acesso para cadastrar, editar e remover', async () => {
+    it('exige o token de acesso para cadastrar, editar, trocar o perfil e remover', async () => {
       const id = await createUser('maria.auth@quimovia.com');
 
       await request(app.getHttpServer())
@@ -252,6 +250,10 @@ describe('UsersController (e2e)', () => {
         .patch(`/users/${id}`)
         .send({ status: 'INACTIVE' })
         .expect(401);
+      await request(app.getHttpServer())
+        .patch(`/users/${id}/role`)
+        .send({ role: 'SYSTEM_ADMIN' })
+        .expect(401);
       await request(app.getHttpServer()).delete(`/users/${id}`).expect(401);
     });
 
@@ -260,6 +262,7 @@ describe('UsersController (e2e)', () => {
         'maria.gestora@quimovia.com',
         'OPERATIONS_MANAGER',
       );
+      const otherId = await createUser('joao.operador@quimovia.com');
       const token = await loginAs('maria.gestora@quimovia.com');
 
       const response = await request(app.getHttpServer())
@@ -268,10 +271,20 @@ describe('UsersController (e2e)', () => {
         .send(newUser)
         .expect(403);
       await request(app.getHttpServer())
-        .patch(`/users/${id}`)
+        .patch(`/users/${id}/role`)
         .set('Authorization', `Bearer ${token}`)
         .send({ role: 'SYSTEM_ADMIN' })
         .expect(403);
+      await request(app.getHttpServer())
+        .patch(`/users/${otherId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Outro Nome' })
+        .expect(403)
+        .expect(({ body }) => {
+          expect(body.message).toBe(
+            'Apenas o Administrador do Sistema pode alterar os dados de outro usuário.',
+          );
+        });
       await request(app.getHttpServer())
         .delete(`/users/${id}`)
         .set('Authorization', `Bearer ${token}`)
@@ -288,6 +301,12 @@ describe('UsersController (e2e)', () => {
         .expect(200)
         .expect(({ body }) => {
           expect(body.role).toBe('OPERATIONS_MANAGER');
+        });
+      await request(app.getHttpServer())
+        .get(`/users/${otherId}`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.name).toBe(newUser.name);
         });
       await request(app.getHttpServer())
         .get('/users')
@@ -310,7 +329,7 @@ describe('UsersController (e2e)', () => {
         .expect(403);
 
       await request(app.getHttpServer())
-        .patch(`/users/${id}`)
+        .patch(`/users/${id}/role`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ role: 'SYSTEM_ADMIN' })
         .expect(200);
@@ -321,7 +340,7 @@ describe('UsersController (e2e)', () => {
         .expect(201);
 
       await request(app.getHttpServer())
-        .patch(`/users/${id}`)
+        .patch(`/users/${id}/role`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ role: 'PORT_OPERATOR' })
         .expect(200);
@@ -329,6 +348,105 @@ describe('UsersController (e2e)', () => {
         .delete(`/users/${id}`)
         .set('Authorization', `Bearer ${token}`)
         .expect(403);
+    });
+  });
+
+  describe('edição dos próprios dados', () => {
+    const password = 'S3nhaForte!';
+
+    async function createAndLogin(email: string): Promise<{
+      id: string;
+      token: string;
+    }> {
+      const created = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Maria Silva', email, password, role: 'PORT_OPERATOR' })
+        .expect(201);
+      const login = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password })
+        .expect(200);
+
+      return {
+        id: created.body.id as string,
+        token: login.body.accessToken as string,
+      };
+    }
+
+    it('permite trocar nome, e-mail e senha, e o login passa a usar os novos dados', async () => {
+      const { id, token } = await createAndLogin('maria.self@quimovia.com');
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Maria Souza',
+          email: 'maria.souza@quimovia.com',
+          password: 'N0vaS3nhaForte!',
+        })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body).toMatchObject({
+            name: 'Maria Souza',
+            email: 'maria.souza@quimovia.com',
+            role: 'PORT_OPERATOR',
+          });
+        });
+
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'maria.souza@quimovia.com',
+          password: 'N0vaS3nhaForte!',
+        })
+        .expect(200);
+    });
+
+    it('recusa o perfil no corpo da edição, que tem rota própria', async () => {
+      const { id, token } = await createAndLogin('maria.role@quimovia.com');
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ role: 'SYSTEM_ADMIN' })
+        .expect(400);
+      await request(app.getHttpServer())
+        .get(`/users/${id}`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.role).toBe('PORT_OPERATOR');
+        });
+    });
+
+    it('não permite bloquear a própria conta', async () => {
+      const { id, token } = await createAndLogin('maria.block@quimovia.com');
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ status: 'BLOCKED' })
+        .expect(403)
+        .expect(({ body }) => {
+          expect(body.message).toBe(
+            'Apenas o Administrador do Sistema pode bloquear um usuário.',
+          );
+        });
+    });
+
+    it('permite inativar a própria conta, o que encerra a sessão', async () => {
+      const { id, token } = await createAndLogin('maria.inativa@quimovia.com');
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ status: 'INACTIVE' })
+        .expect(200);
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Maria Souza' })
+        .expect(401);
     });
   });
 });

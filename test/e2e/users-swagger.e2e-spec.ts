@@ -112,7 +112,7 @@ describe('Swagger do módulo user (e2e)', () => {
       schema: { $ref: '#/components/schemas/UpdateUserDto' },
       examples: {
         alterarNome: { value: { name: 'Maria Souza' } },
-        alterarPerfil: { value: { role: 'OPERATIONS_MANAGER' } },
+        alterarSenha: { value: { password: 'N0vaS3nhaForte!' } },
         bloquear: { value: { status: 'BLOCKED' } },
         desbloquear: { value: { status: 'ACTIVE' } },
       },
@@ -120,6 +120,22 @@ describe('Swagger do módulo user (e2e)', () => {
     expect(document.components?.schemas?.UpdateUserDto).not.toHaveProperty(
       'required',
     );
+    expect(document.components?.schemas?.UpdateUserDto).not.toHaveProperty(
+      'properties.role',
+    );
+  });
+
+  it('documenta o corpo da troca de perfil com o ChangeUserRoleDto', () => {
+    expect(jsonRequestBodyOf('/users/{id}/role', 'patch')).toMatchObject({
+      schema: { $ref: '#/components/schemas/ChangeUserRoleDto' },
+      examples: { promover: { value: { role: 'OPERATIONS_MANAGER' } } },
+    });
+    expect(document.components?.schemas?.ChangeUserRoleDto).toMatchObject({
+      required: ['role'],
+      properties: {
+        role: { allOf: [{ $ref: '#/components/schemas/UserRole' }] },
+      },
+    });
   });
 
   it('usa exemplos de payload que passam na validação dos DTOs', async () => {
@@ -127,6 +143,8 @@ describe('Swagger do módulo user (e2e)', () => {
       await import('@/modules/user/presentation/dtos/create-user.dto.js');
     const { UpdateUserDto } =
       await import('@/modules/user/presentation/dtos/update-user.dto.js');
+    const { ChangeUserRoleDto } =
+      await import('@/modules/user/presentation/dtos/change-user-role.dto.js');
     const payloads: {
       name: string;
       dto: ClassConstructor<object>;
@@ -140,9 +158,13 @@ describe('Swagger do módulo user (e2e)', () => {
         ...example,
         dto: UpdateUserDto,
       })),
+      ...requestExamplesOf('/users/{id}/role', 'patch').map((example) => ({
+        ...example,
+        dto: ChangeUserRoleDto,
+      })),
     ];
 
-    expect(payloads).toHaveLength(6);
+    expect(payloads).toHaveLength(7);
 
     for (const { name, dto, value } of payloads) {
       const errors = await validate(plainToInstance(dto, value), {
@@ -204,6 +226,7 @@ describe('Swagger do módulo user (e2e)', () => {
       userById?.get,
       userById?.patch,
       userById?.delete,
+      document.paths['/users/{id}/role']?.patch,
     ]) {
       expect(operation?.parameters).toEqual([
         expect.objectContaining({
@@ -241,6 +264,13 @@ describe('Swagger do módulo user (e2e)', () => {
       '409',
       '422',
     ]);
+    expect(statusesOf('/users/{id}/role', 'patch')).toEqual([
+      '200',
+      '400',
+      '401',
+      '403',
+      '404',
+    ]);
     expect(statusesOf('/users/{id}', 'delete')).toEqual([
       '204',
       '401',
@@ -255,14 +285,15 @@ describe('Swagger do módulo user (e2e)', () => {
     expect(paths['/users']?.post?.operationId).toBe(
       'UsersController_createUser',
     );
-    expect(paths['/users']?.get?.operationId).toBe(
-      'UsersController_listUsers',
-    );
+    expect(paths['/users']?.get?.operationId).toBe('UsersController_listUsers');
     expect(paths['/users/{id}']?.get?.operationId).toBe(
       'UsersController_findUserById',
     );
     expect(paths['/users/{id}']?.patch?.operationId).toBe(
       'UsersController_updateUser',
+    );
+    expect(paths['/users/{id}/role']?.patch?.operationId).toBe(
+      'UsersController_changeUserRole',
     );
     expect(paths['/users/{id}']?.delete?.operationId).toBe(
       'UsersController_deleteUser',

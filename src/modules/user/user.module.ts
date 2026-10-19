@@ -4,6 +4,7 @@ import { DeleteUserUseCase } from '@/modules/user/application/use-cases/users/de
 import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/find-user-by-id.use-case.js';
 import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/list-users.use-case.js';
 import { UpdateUserUseCase } from '@/modules/user/application/use-cases/users/update-user.use-case.js';
+import { ChangeUserRoleUseCase } from '@/modules/user/application/use-cases/users/change-user-role.use-case.js';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
@@ -27,6 +28,7 @@ import { UsersController } from '@/modules/user/presentation/controllers/users.c
     ListUsersUseCase,
     FindUserByIdUseCase,
     UpdateUserUseCase,
+    ChangeUserRoleUseCase,
     DeleteUserUseCase,
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
     { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },

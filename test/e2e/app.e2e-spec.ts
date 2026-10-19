@@ -56,6 +56,7 @@ describe('AppController (e2e)', () => {
     expect(protectedOperations.sort()).toEqual([
       'DELETE /users/{id}',
       'PATCH /users/{id}',
+      'PATCH /users/{id}/role',
       'POST /auth/logout',
       'POST /users',
     ]);

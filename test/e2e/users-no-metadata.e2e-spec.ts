@@ -96,6 +96,14 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
         expect(body.status).toBe('BLOCKED');
       });
     await request(app.getHttpServer())
+      .patch(`/users/${id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'OPERATIONS_MANAGER' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.role).toBe('OPERATIONS_MANAGER');
+      });
+    await request(app.getHttpServer())
       .delete(`/users/${id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(204);
@@ -104,9 +112,7 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
   it('traduz os erros de domínio para 404 e 409', async () => {
     const duplicated = { ...payload, email: 'duplicado@quimovia.com' };
 
-    await request(app.getHttpServer())
-      .get('/users/id-inexistente')
-      .expect(404);
+    await request(app.getHttpServer()).get('/users/id-inexistente').expect(404);
     await request(app.getHttpServer())
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -119,7 +125,7 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       .expect(409);
   });
 
-  it('valida o corpo do cadastro e da atualização com o DTO esperado', async () => {
+  it('valida o corpo do cadastro, da atualização e da troca de perfil com o DTO esperado', async () => {
     await request(app.getHttpServer())
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -141,6 +147,21 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       .patch(`/users/${created.body.id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'XPTO' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'SYSTEM_ADMIN' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'XPTO' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({})
       .expect(400);
   });
 
