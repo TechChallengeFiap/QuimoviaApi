@@ -43,6 +43,9 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
       await import('@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js');
     const { USER_REPOSITORY } =
       await import('@/modules/user/domain/repositories/user.repository.js');
+    const { AUTH_CONFIG } =
+      await import('@/modules/user/infrastructure/auth/auth.config.js');
+    const { TEST_AUTH_CONFIG } = await import('../mocks/auth-config.mock.js');
     const { InspectionRepositoryMock } =
       await import('../mocks/inspection-repository.mock.js');
     const { ChemicalShipmentMock } =
@@ -99,6 +102,8 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
       .useClass(InspectionRepositoryMock)
       .overrideProvider(CHEMICAL_SHIPMENT_REPOSITORY)
       .useValue(chemicalShipmentsMock)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
       .overrideProvider(USER_REPOSITORY)
       .useValue(usersMock)
       .compile();

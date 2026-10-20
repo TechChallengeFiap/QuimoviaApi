@@ -32,6 +32,11 @@ describe.each([false, true])(
         await import('@/modules/user/domain/repositories/session.repository.js');
       const { SessionRepositoryMock } =
         await import('../mocks/session-repository.mock.js');
+      const { PASSWORD_HASHER } =
+        await import('@/modules/user/application/contracts/password-hasher.contract.js');
+      const { PasswordHasherMock } =
+        await import('../mocks/password-hasher.mock.js');
+      const { loginAsAdmin } = await import('../mocks/admin-session.mock.js');
       const { CHEMICAL_PRODUCT_REPOSITORY } =
         await import('@/modules/chemical-products/domain/repositories/chemical-product.repository.js');
       const { ChemicalProductRepositoryMock } =
@@ -64,6 +69,8 @@ describe.each([false, true])(
         .useClass(UserRepositoryMock)
         .overrideProvider(SESSION_REPOSITORY)
         .useClass(SessionRepositoryMock)
+        .overrideProvider(PASSWORD_HASHER)
+        .useClass(PasswordHasherMock)
         .overrideProvider(CHEMICAL_PRODUCT_REPOSITORY)
         .useClass(ChemicalProductRepositoryMock)
         .overrideProvider(CHEMICAL_SHIPMENT_REPOSITORY)
@@ -89,8 +96,10 @@ describe.each([false, true])(
       );
       await app.init();
 
+      const adminToken = await loginAsAdmin(app, app.get(USER_REPOSITORY));
       const user = await request(app.getHttpServer())
         .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: 'Responsável Técnico',
           email: `tecnico-${randomUUID()}@quimovia.com`,

@@ -15,6 +15,7 @@ import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
  */
 describe('UsersController sem a metadata de decorators (e2e)', () => {
   let app: INestApplication;
+  let adminToken: string;
 
   const payload = {
     name: 'Maria Silva',
@@ -41,6 +42,10 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       await import('../mocks/password-hasher.mock.js');
     const { SessionRepositoryMock } =
       await import('../mocks/session-repository.mock.js');
+    const { AUTH_CONFIG } =
+      await import('@/modules/user/infrastructure/auth/auth.config.js');
+    const { TEST_AUTH_CONFIG } = await import('../mocks/auth-config.mock.js');
+    const { loginAsAdmin } = await import('../mocks/admin-session.mock.js');
 
     const moduleFixture = await Test.createTestingModule({
       imports: [UserModule],
@@ -51,6 +56,8 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       .useClass(PasswordHasherMock)
       .overrideProvider(SESSION_REPOSITORY)
       .useClass(SessionRepositoryMock)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -62,6 +69,8 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       }),
     );
     await app.init();
+
+    adminToken = await loginAsAdmin(app, app.get(USER_REPOSITORY));
   });
 
   afterAll(async () => {
@@ -72,6 +81,7 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
   it('cadastra, busca, atualiza e remove um usuário', async () => {
     const created = await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(payload)
       .expect(201);
     const id = created.body.id as string;
@@ -79,48 +89,79 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
     await request(app.getHttpServer()).get(`/users/${id}`).expect(200);
     await request(app.getHttpServer())
       .patch(`/users/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'BLOCKED' })
       .expect(200)
       .expect(({ body }) => {
         expect(body.status).toBe('BLOCKED');
       });
-    await request(app.getHttpServer()).delete(`/users/${id}`).expect(204);
+    await request(app.getHttpServer())
+      .patch(`/users/${id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'OPERATIONS_MANAGER' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.role).toBe('OPERATIONS_MANAGER');
+      });
+    await request(app.getHttpServer())
+      .delete(`/users/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(204);
   });
 
   it('traduz os erros de domínio para 404 e 409', async () => {
     const duplicated = { ...payload, email: 'duplicado@quimovia.com' };
 
-    await request(app.getHttpServer())
-      .get('/users/id-inexistente')
-      .expect(404);
+    await request(app.getHttpServer()).get('/users/id-inexistente').expect(404);
     await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(duplicated)
       .expect(201);
     await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(duplicated)
       .expect(409);
   });
 
-  it('valida o corpo do cadastro e da atualização com o DTO esperado', async () => {
+  it('valida o corpo do cadastro, da atualização e da troca de perfil com o DTO esperado', async () => {
     await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ ...payload, password: '123' })
       .expect(400);
     await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ ...payload, email: 'extra@quimovia.com', admin: true })
       .expect(400);
 
     const created = await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ ...payload, email: 'status@quimovia.com' })
       .expect(201);
 
     await request(app.getHttpServer())
       .patch(`/users/${created.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'XPTO' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'SYSTEM_ADMIN' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'XPTO' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({})
       .expect(400);
   });
 

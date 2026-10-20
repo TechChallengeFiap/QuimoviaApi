@@ -11,8 +11,10 @@ import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { ChemicalShipmentMock } from '../mocks/chemical-shipment.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
+import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
@@ -79,6 +81,8 @@ describe('InspectionsController (e2e)', () => {
       .useClass(InspectionRepositoryMock)
       .overrideProvider(CHEMICAL_SHIPMENT_REPOSITORY)
       .useValue(chemicalShipments)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
       .overrideProvider(USER_REPOSITORY)
       .useValue(users)
       .compile();

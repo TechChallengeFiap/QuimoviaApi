@@ -3,9 +3,11 @@ import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import {
+  AccessDeniedError,
   ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
+import type { AuthenticatedSession } from '@/modules/user/application/use-cases/auth/validate-session.use-case.js';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import type { PasswordHasher } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
@@ -17,9 +19,17 @@ export interface UpdateUserInput {
   name?: string;
   email?: string;
   password?: string;
-  role?: UserRole;
   status?: UserStatus;
 }
+
+/** Quem pede a alteração: o próprio usuário ou o Administrador do Sistema. */
+export type UpdateUserRequester = Pick<AuthenticatedSession, 'userId' | 'role'>;
+
+export const UPDATE_OTHER_USER_DENIED_MESSAGE =
+  'Apenas o Administrador do Sistema pode alterar os dados de outro usuário.';
+
+export const BLOCK_USER_DENIED_MESSAGE =
+  'Apenas o Administrador do Sistema pode bloquear um usuário.';
 
 @Injectable()
 export class UpdateUserUseCase {
@@ -31,8 +41,18 @@ export class UpdateUserUseCase {
     @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
   ) {}
 
-  async execute(id: string, input: UpdateUserInput): Promise<User> {
+  /**
+   * O perfil não é alterado aqui: a troca de perfil é exclusiva do
+   * administrador e tem caso de uso próprio (ChangeUserRoleUseCase).
+   */
+  async execute(
+    id: string,
+    input: UpdateUserInput,
+    requester: UpdateUserRequester,
+  ): Promise<User> {
     try {
+      this.ensureCanUpdate(id, input, requester);
+
       const user = await this.users.findById(id);
 
       if (!user) {
@@ -51,10 +71,6 @@ export class UpdateUserUseCase {
 
       if (input.password !== undefined) {
         user.changePassword(await this.passwordHasher.hash(input.password));
-      }
-
-      if (input.role !== undefined) {
-        user.changeRole(input.role);
       }
 
       if (input.status !== undefined) {
@@ -77,6 +93,29 @@ export class UpdateUserUseCase {
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Quem não é administrador só altera os próprios dados e não pode se
+   * bloquear: o bloqueio, assim como o desbloqueio, é decisão do
+   * Administrador do Sistema.
+   */
+  private ensureCanUpdate(
+    id: string,
+    input: UpdateUserInput,
+    requester: UpdateUserRequester,
+  ): void {
+    if (requester.role === UserRole.SYSTEM_ADMIN) {
+      return;
+    }
+
+    if (requester.userId !== id) {
+      throw new AccessDeniedError(UPDATE_OTHER_USER_DENIED_MESSAGE);
+    }
+
+    if (input.status === UserStatus.BLOCKED) {
+      throw new AccessDeniedError(BLOCK_USER_DENIED_MESSAGE);
     }
   }
 

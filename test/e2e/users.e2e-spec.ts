@@ -6,14 +6,18 @@ import request from 'supertest';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { UserModule } from '@/modules/user/user.module.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
+import { loginAsAdmin } from '../mocks/admin-session.mock.js';
+import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 
 describe('UsersController (e2e)', () => {
   let app: INestApplication;
+  let adminToken: string;
 
   beforeEach(async () => {
     // Os casos de uso registram os erros esperados (404, 409) no log.
@@ -28,6 +32,8 @@ describe('UsersController (e2e)', () => {
       .useClass(PasswordHasherMock)
       .overrideProvider(SESSION_REPOSITORY)
       .useClass(SessionRepositoryMock)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -40,6 +46,8 @@ describe('UsersController (e2e)', () => {
     );
     app.useGlobalFilters(new DomainExceptionFilter(app.get(HttpAdapterHost)));
     await app.init();
+
+    adminToken = await loginAsAdmin(app, app.get(USER_REPOSITORY));
   });
 
   afterEach(async () => {
@@ -50,6 +58,7 @@ describe('UsersController (e2e)', () => {
   it('cria um usuário e não expõe o hash da senha na resposta', async () => {
     const response = await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Maria Silva',
         email: 'maria@quimovia.com',
@@ -75,13 +84,22 @@ describe('UsersController (e2e)', () => {
       role: 'PORT_OPERATOR',
     };
 
-    await request(app.getHttpServer()).post('/users').send(data).expect(201);
-    await request(app.getHttpServer()).post('/users').send(data).expect(409);
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(data)
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(data)
+      .expect(409);
   });
 
   it('rejeita payload inválido', async () => {
     await request(app.getHttpServer())
       .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Ok',
         email: 'invalido',
@@ -92,12 +110,15 @@ describe('UsersController (e2e)', () => {
   });
 
   it('busca um usuário pelo id e retorna 404 para id inexistente', async () => {
-    const created = await request(app.getHttpServer()).post('/users').send({
-      name: 'Maria Silva',
-      email: 'maria.find@quimovia.com',
-      password: 'S3nhaForte!',
-      role: 'PORT_OPERATOR',
-    });
+    const created = await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Maria Silva',
+        email: 'maria.find@quimovia.com',
+        password: 'S3nhaForte!',
+        role: 'PORT_OPERATOR',
+      });
 
     await request(app.getHttpServer())
       .get(`/users/${created.body.id}`)
@@ -106,18 +127,19 @@ describe('UsersController (e2e)', () => {
         expect(body.email).toBe('maria.find@quimovia.com');
       });
 
-    await request(app.getHttpServer())
-      .get('/users/id-inexistente')
-      .expect(404);
+    await request(app.getHttpServer()).get('/users/id-inexistente').expect(404);
   });
 
   it('lista usuários paginados', async () => {
-    await request(app.getHttpServer()).post('/users').send({
-      name: 'Maria Silva',
-      email: 'maria.list@quimovia.com',
-      password: 'S3nhaForte!',
-      role: 'PORT_OPERATOR',
-    });
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Maria Silva',
+        email: 'maria.list@quimovia.com',
+        password: 'S3nhaForte!',
+        role: 'PORT_OPERATOR',
+      });
 
     const response = await request(app.getHttpServer())
       .get('/users')
@@ -128,17 +150,21 @@ describe('UsersController (e2e)', () => {
   });
 
   it('atualiza um usuário, incluindo bloquear e desbloquear', async () => {
-    const created = await request(app.getHttpServer()).post('/users').send({
-      name: 'Maria Silva',
-      email: 'maria.update@quimovia.com',
-      password: 'S3nhaForte!',
-      role: 'PORT_OPERATOR',
-    });
+    const created = await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Maria Silva',
+        email: 'maria.update@quimovia.com',
+        password: 'S3nhaForte!',
+        role: 'PORT_OPERATOR',
+      });
 
     const id = created.body.id as string;
 
     await request(app.getHttpServer())
       .patch(`/users/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Maria Souza', status: 'BLOCKED' })
       .expect(200)
       .expect(({ body }) => {
@@ -148,6 +174,7 @@ describe('UsersController (e2e)', () => {
 
     await request(app.getHttpServer())
       .patch(`/users/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'ACTIVE' })
       .expect(200)
       .expect(({ body }) => {
@@ -156,22 +183,270 @@ describe('UsersController (e2e)', () => {
   });
 
   it('remove um usuário e passa a retornar 404 nas buscas seguintes', async () => {
-    const created = await request(app.getHttpServer()).post('/users').send({
-      name: 'Maria Silva',
-      email: 'maria.delete@quimovia.com',
-      password: 'S3nhaForte!',
-      role: 'PORT_OPERATOR',
-    });
+    const created = await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Maria Silva',
+        email: 'maria.delete@quimovia.com',
+        password: 'S3nhaForte!',
+        role: 'PORT_OPERATOR',
+      });
 
     const id = created.body.id as string;
 
-    await request(app.getHttpServer()).delete(`/users/${id}`).expect(204);
+    await request(app.getHttpServer())
+      .delete(`/users/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(204);
     await request(app.getHttpServer()).get(`/users/${id}`).expect(404);
   });
 
   it('retorna 404 ao remover um usuário inexistente', async () => {
     await request(app.getHttpServer())
       .delete('/users/id-inexistente')
+      .set('Authorization', `Bearer ${adminToken}`)
       .expect(404);
+  });
+
+  describe('gestão restrita ao Administrador do Sistema', () => {
+    const newUser = {
+      name: 'Joao Souza',
+      email: 'joao@quimovia.com',
+      password: 'S3nhaForte!',
+      role: 'PORT_OPERATOR',
+    };
+
+    async function createUser(
+      email: string,
+      role = 'PORT_OPERATOR',
+    ): Promise<string> {
+      const response = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ...newUser, email, role })
+        .expect(201);
+
+      return response.body.id as string;
+    }
+
+    async function loginAs(email: string): Promise<string> {
+      const response = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password: newUser.password })
+        .expect(200);
+
+      return response.body.accessToken as string;
+    }
+
+    it('exige o token de acesso para cadastrar, editar, trocar o perfil e remover', async () => {
+      const id = await createUser('maria.auth@quimovia.com');
+
+      await request(app.getHttpServer())
+        .post('/users')
+        .send(newUser)
+        .expect(401);
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .send({ status: 'INACTIVE' })
+        .expect(401);
+      await request(app.getHttpServer())
+        .patch(`/users/${id}/role`)
+        .send({ role: 'SYSTEM_ADMIN' })
+        .expect(401);
+      await request(app.getHttpServer()).delete(`/users/${id}`).expect(401);
+    });
+
+    it('responde 403 para os outros perfis, sem alterar nada', async () => {
+      const id = await createUser(
+        'maria.gestora@quimovia.com',
+        'OPERATIONS_MANAGER',
+      );
+      const otherId = await createUser('joao.operador@quimovia.com');
+      const token = await loginAs('maria.gestora@quimovia.com');
+
+      const response = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newUser)
+        .expect(403);
+      await request(app.getHttpServer())
+        .patch(`/users/${id}/role`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ role: 'SYSTEM_ADMIN' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .patch(`/users/${otherId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Outro Nome' })
+        .expect(403)
+        .expect(({ body }) => {
+          expect(body.message).toBe(
+            'Apenas o Administrador do Sistema pode alterar os dados de outro usuário.',
+          );
+        });
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403);
+
+      expect(response.body).toEqual({
+        message:
+          'O perfil do usuário não tem permissão para executar esta operação.',
+        error: 'Forbidden',
+        statusCode: 403,
+      });
+      await request(app.getHttpServer())
+        .get(`/users/${id}`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.role).toBe('OPERATIONS_MANAGER');
+        });
+      await request(app.getHttpServer())
+        .get(`/users/${otherId}`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.name).toBe(newUser.name);
+        });
+      await request(app.getHttpServer())
+        .get('/users')
+        .expect(200)
+        .expect(({ body }) => {
+          expect(
+            body.items.map((user: { email: string }) => user.email),
+          ).not.toContain(newUser.email);
+        });
+    });
+
+    it('aplica a troca de perfil já na próxima requisição, sem novo login', async () => {
+      const id = await createUser('maria.promovida@quimovia.com');
+      const token = await loginAs('maria.promovida@quimovia.com');
+
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newUser)
+        .expect(403);
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: 'SYSTEM_ADMIN' })
+        .expect(200);
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newUser)
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}/role`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: 'PORT_OPERATOR' })
+        .expect(200);
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403);
+    });
+  });
+
+  describe('edição dos próprios dados', () => {
+    const password = 'S3nhaForte!';
+
+    async function createAndLogin(email: string): Promise<{
+      id: string;
+      token: string;
+    }> {
+      const created = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Maria Silva', email, password, role: 'PORT_OPERATOR' })
+        .expect(201);
+      const login = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password })
+        .expect(200);
+
+      return {
+        id: created.body.id as string,
+        token: login.body.accessToken as string,
+      };
+    }
+
+    it('permite trocar nome, e-mail e senha, e o login passa a usar os novos dados', async () => {
+      const { id, token } = await createAndLogin('maria.self@quimovia.com');
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Maria Souza',
+          email: 'maria.souza@quimovia.com',
+          password: 'N0vaS3nhaForte!',
+        })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body).toMatchObject({
+            name: 'Maria Souza',
+            email: 'maria.souza@quimovia.com',
+            role: 'PORT_OPERATOR',
+          });
+        });
+
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'maria.souza@quimovia.com',
+          password: 'N0vaS3nhaForte!',
+        })
+        .expect(200);
+    });
+
+    it('recusa o perfil no corpo da edição, que tem rota própria', async () => {
+      const { id, token } = await createAndLogin('maria.role@quimovia.com');
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ role: 'SYSTEM_ADMIN' })
+        .expect(400);
+      await request(app.getHttpServer())
+        .get(`/users/${id}`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.role).toBe('PORT_OPERATOR');
+        });
+    });
+
+    it('não permite bloquear a própria conta', async () => {
+      const { id, token } = await createAndLogin('maria.block@quimovia.com');
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ status: 'BLOCKED' })
+        .expect(403)
+        .expect(({ body }) => {
+          expect(body.message).toBe(
+            'Apenas o Administrador do Sistema pode bloquear um usuário.',
+          );
+        });
+    });
+
+    it('permite inativar a própria conta, o que encerra a sessão', async () => {
+      const { id, token } = await createAndLogin('maria.inativa@quimovia.com');
+
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ status: 'INACTIVE' })
+        .expect(200);
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Maria Souza' })
+        .expect(401);
+    });
   });
 });

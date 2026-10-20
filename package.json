@@ -24,6 +24,7 @@
     "migrate:dev": "prisma migrate dev",
     "migrate:generate": "prisma generate",
     "migrate:deploy": "prisma migrate deploy",
+    "migrate:seed": "npx tsx --tsconfig tsconfig.json prisma/seed.ts",
     "prepare": "ts-patch install"
   },
   "dependencies": {

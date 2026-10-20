@@ -8,10 +8,12 @@ import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { ChemicalProductRepositoryMock } from '../mocks/chemical-product-repository.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
+import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 
 const validProduct = {
   code: 'H2SO4-98',
@@ -40,6 +42,8 @@ describe('ChemicalProductsController (e2e)', () => {
     })
       .overrideProvider(CHEMICAL_PRODUCT_REPOSITORY)
       .useClass(ChemicalProductRepositoryMock)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
       .overrideProvider(SESSION_REPOSITORY)
