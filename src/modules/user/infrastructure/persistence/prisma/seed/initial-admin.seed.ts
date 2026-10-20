@@ -52,7 +52,8 @@ export function loadInitialAdminConfig(
  * primeiro usuário.
  *
  * Pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, o
- * usuário existente é mantido como está.
+ * usuário existente é mantido como está. Se o administrador tiver sido
+ * excluído, o cadastro dele é reativado.
  */
 export async function seedInitialAdmin(
   users: UserRepository,

@@ -122,7 +122,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Cadastra um novo usuário',
     description:
-      'Cria um usuário com a senha armazenada em hash. Quando o status não é informado, o usuário é criado como ACTIVE.',
+      'Cria um usuário com a senha armazenada em hash. Quando o status não é informado, o usuário é criado como ACTIVE. Se o e-mail for de um usuário excluído, não é criado um novo registro: o cadastro excluído é reativado com os dados enviados, mantendo o mesmo id.',
   })
   @ApiBody({
     type: CreateUserDto,
@@ -450,8 +450,9 @@ export class UsersController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.SYSTEM_ADMIN)
   @ApiOperation({
-    summary: 'Remove um usuário',
-    description: 'Remove definitivamente o usuário informado.',
+    summary: 'Exclui um usuário',
+    description:
+      'Exclusão lógica: o usuário deixa de aparecer nas buscas e na listagem e perde o acesso, com as sessões encerradas, mas o registro é mantido para o histórico. Um novo cadastro com o mesmo e-mail reativa esse registro.',
   })
   @ApiParam({
     name: 'id',
@@ -459,7 +460,7 @@ export class UsersController {
     description: 'Identificador do usuário',
     example: USER_ID_EXAMPLE,
   })
-  @ApiNoContentResponse({ description: 'Usuário removido com sucesso.' })
+  @ApiNoContentResponse({ description: 'Usuário excluído com sucesso.' })
   @ApiNotFoundResponse({
     description: 'Usuário não encontrado.',
     schema: { example: USER_NOT_FOUND_EXAMPLE },

@@ -268,7 +268,7 @@ As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer 
 - `POST /auth/login` — Confere e-mail e senha, inicia uma sessão e devolve o token de acesso (`401` para credenciais inválidas e `403` para conta inativa ou bloqueada).
 - `POST /auth/logout` — Encerra a sessão do token enviado, que deixa de valer na hora.
 
-Bloquear ou inativar um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
+Bloquear, inativar ou excluir um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
 
 A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de usuários.
 
@@ -297,7 +297,7 @@ Cadastrar, remover e trocar o perfil de usuários exige o token de um Administra
 - `GET /users/:id` — Busca informações cadastrais do usuário.
 - `PATCH /users/:id` — Atualiza nome, e-mail, senha ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
 - `PATCH /users/:id/role` — Troca o perfil de acesso do usuário (só o administrador).
-- `DELETE /users/:id` — Remove usuário do sistema.
+- `DELETE /users/:id` — Exclui o usuário logicamente (`isDeleted` e `deletedAt`): ele some das buscas e da listagem e perde o acesso, mas o registro é mantido. Cadastrar de novo o mesmo e-mail reativa esse registro, com o mesmo id.
 
 ---
 
