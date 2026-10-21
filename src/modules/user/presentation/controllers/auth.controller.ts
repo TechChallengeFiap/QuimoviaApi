@@ -116,6 +116,6 @@ export class AuthController {
   @ApiNoContentResponse({ description: 'Sessão encerrada.' })
   @ApiRequiresAuthentication()
   async logout(@CurrentSession() session: AuthenticatedSession): Promise<void> {
-    await this.logoutUseCase.execute(session.sessionId);
+    await this.logoutUseCase.execute(session.sessionId, session.userId);
   }
 }

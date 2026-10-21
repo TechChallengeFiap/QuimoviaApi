@@ -1,4 +1,3 @@
-export { AuditLogModule } from '@/modules/audit-log/audit-log.module.js';
 export {
   AUDIT_LOG_RECORDER,
   type AuditLogRecorder,

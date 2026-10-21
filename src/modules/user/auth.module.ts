@@ -16,6 +16,7 @@ import { RolesGuard } from '@/modules/user/infrastructure/auth/roles.guard.js';
 import { JwtAccessTokenService } from '@/modules/user/infrastructure/services/jwt-access-token.service.js';
 import { AuthController } from '@/modules/user/presentation/controllers/auth.controller.js';
 import { UserModule } from '@/modules/user/user.module.js';
+import { AuditLogModule } from '@/modules/audit-log/audit-log.module.js';
 
 /**
  * Autenticação do contexto Identidade e Acesso: login, logout, o AuthGuard,
@@ -30,7 +31,11 @@ import { UserModule } from '@/modules/user/user.module.js';
  * módulo é iniciado; sem um JWT_SECRET válido, a aplicação não sobe.
  */
 @Module({
-  imports: [forwardRef(() => UserModule), JwtModule.register({})],
+  imports: [
+    forwardRef(() => UserModule),
+    forwardRef(() => AuditLogModule),
+    JwtModule.register({}),
+  ],
   controllers: [AuthController],
   providers: [
     LoginUseCase,
