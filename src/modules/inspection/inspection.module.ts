@@ -9,6 +9,7 @@ import { PrismaInspectionRepository } from '@/modules/inspection/infrastructure/
 import { InspectionsController } from '@/modules/inspection/presentation/controllers/inspections.controller.js';
 import { ChemicalShipmentModule } from '../chemical-shipment/chemical-shipment.module.js';
 import { UserModule } from '../user/user.module.js';
+import { AuditLogModule } from '@/modules/audit-log/audit-log.module.js';
 
 @Module({
   controllers: [InspectionsController],
@@ -20,6 +21,6 @@ import { UserModule } from '../user/user.module.js';
     DeleteInspectionUseCase,
     { provide: INSPECTION_REPOSITORY, useClass: PrismaInspectionRepository },
   ],
-  imports: [ChemicalShipmentModule, UserModule],
+  imports: [ChemicalShipmentModule, UserModule, AuditLogModule],
 })
 export class InspectionModule {}

@@ -10,8 +10,10 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseFilters,
 } from '@nestjs/common';
+import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -161,9 +163,11 @@ export class InspectionsController {
   async createInspection(
     @Body(validationPipeFor(CreateInspectionDto))
     createInspectionDto: CreateInspectionDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<InspectionResponseDto> {
+    const actor = req?.auth ? { id: req.auth.userId } : null;
     const inspection =
-      await this.createInspectionUseCase.execute(createInspectionDto);
+      await this.createInspectionUseCase.execute(createInspectionDto, actor);
     return InspectionResponseDto.fromEntity(inspection);
   }
 
@@ -369,10 +373,13 @@ export class InspectionsController {
     @Param('id') id: string,
     @Body(validationPipeFor(UpdateInspectionDto))
     updateInspectionDto: UpdateInspectionDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<InspectionResponseDto> {
+    const actor = req?.auth ? { id: req.auth.userId } : null;
     const inspection = await this.updateInspectionUseCase.execute(
       id,
       updateInspectionDto,
+      actor,
     );
     return InspectionResponseDto.fromEntity(inspection);
   }
@@ -406,7 +413,11 @@ export class InspectionsController {
       },
     },
   })
-  async deleteInspection(@Param('id') id: string): Promise<void> {
-    await this.deleteInspectionUseCase.execute(id);
+  async deleteInspection(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<void> {
+    const actor = req?.auth ? { id: req.auth.userId } : null;
+    await this.deleteInspectionUseCase.execute(id, actor);
   }
 }
