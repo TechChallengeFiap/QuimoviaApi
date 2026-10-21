@@ -10,8 +10,10 @@ import {
   Param,
   Patch,
   Post,
+  Req,
   UseFilters,
 } from '@nestjs/common';
+import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -95,8 +97,10 @@ export class ProductDocumentsController {
     @Param('id') productId: string,
     @Body(validationPipeFor(CreateProductDocumentDto, DOCUMENT_VALIDATION))
     dto: CreateProductDocumentDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ChemicalProductResponseDto> {
-    const product = await this.addDocument.execute(productId, dto);
+    const actor = req?.auth ? { id: req.auth.userId } : null;
+    const product = await this.addDocument.execute(productId, dto, actor);
     return ChemicalProductResponseDto.fromEntity(product);
   }
 
@@ -138,9 +142,11 @@ export class ProductDocumentsController {
     @Param('documentId') documentId: string,
     @Body(validationPipeFor(UpdateProductDocumentDto, DOCUMENT_VALIDATION))
     dto: UpdateProductDocumentDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ProductDocumentResponseDto> {
+    const actor = req?.auth ? { id: req.auth.userId } : null;
     return ProductDocumentResponseDto.fromEntity(
-      await this.updateDocument.execute(productId, documentId, dto),
+      await this.updateDocument.execute(productId, documentId, dto, actor),
     );
   }
 
@@ -158,9 +164,11 @@ export class ProductDocumentsController {
   async remove(
     @Param('id') productId: string,
     @Param('documentId') documentId: string,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ChemicalProductResponseDto> {
+    const actor = req?.auth ? { id: req.auth.userId } : null;
     return ChemicalProductResponseDto.fromEntity(
-      await this.removeDocument.execute(productId, documentId),
+      await this.removeDocument.execute(productId, documentId, actor),
     );
   }
 }

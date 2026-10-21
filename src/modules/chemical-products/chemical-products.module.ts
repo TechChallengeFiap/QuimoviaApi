@@ -15,10 +15,11 @@ import { ListProductDocumentsUseCase } from '@/modules/chemical-products/applica
 import { FindProductDocumentByIdUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/find-product-document-by-id.use-case.js';
 import { UpdateProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/update-product-document.use-case.js';
 import { UserModule } from '@/modules/user/user.module.js';
+import { AuditLogModule } from '@/modules/audit-log/audit-log.module.js';
 
 @Module({
   /** UserModule exporta USER_REPOSITORY, usado para validar o usuário responsável. */
-  imports: [UserModule],
+  imports: [UserModule, AuditLogModule],
   controllers: [ChemicalProductsController, ProductDocumentsController],
   providers: [
     CreateChemicalProductUseCase,

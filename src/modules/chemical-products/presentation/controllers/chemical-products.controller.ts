@@ -13,9 +13,11 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseFilters,
   ValidationPipe,
 } from '@nestjs/common';
+import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -199,9 +201,11 @@ export class ChemicalProductsController {
       }),
     )
     dto: CreateChemicalProductDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ChemicalProductResponseDto> {
     try {
-      const product = await this.createProduct.execute(dto);
+      const actor = req?.auth ? { id: req.auth.userId } : null;
+      const product = await this.createProduct.execute(dto, actor);
       return ChemicalProductResponseDto.fromEntity(product);
     } catch (error) {
       this.handleError(error, 'o cadastro do produto químico');
@@ -402,9 +406,11 @@ export class ChemicalProductsController {
       }),
     )
     dto: UpdateChemicalProductDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ChemicalProductResponseDto> {
     try {
-      const product = await this.updateProduct.execute(id, dto);
+      const actor = req?.auth ? { id: req.auth.userId } : null;
+      const product = await this.updateProduct.execute(id, dto, actor);
       return ChemicalProductResponseDto.fromEntity(product);
     } catch (error) {
       this.handleError(error, `a atualização do produto químico com ID ${id}`);
@@ -468,9 +474,11 @@ export class ChemicalProductsController {
       }),
     )
     dto: ChangeChemicalProductStatusDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ChemicalProductResponseDto> {
     try {
-      const product = await this.changeProductStatus.execute(id, dto.status);
+      const actor = req?.auth ? { id: req.auth.userId } : null;
+      const product = await this.changeProductStatus.execute(id, dto.status, actor);
       return ChemicalProductResponseDto.fromEntity(product);
     } catch (error) {
       this.handleError(error, `a alteração de status do produto químico com ID ${id}`);
@@ -502,9 +510,13 @@ export class ChemicalProductsController {
   @ApiInternalServerErrorResponse({
     description: 'Erro interno do servidor ao processar a remoção do produto químico.',
   })
-  async remove(@Param('id') id: string): Promise<void> {
+  async remove(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<void> {
     try {
-      await this.deleteProduct.execute(id);
+      const actor = req?.auth ? { id: req.auth.userId } : null;
+      await this.deleteProduct.execute(id, actor);
     } catch (error) {
       this.handleError(error, `a remoção do produto químico com ID ${id}`);
     }
