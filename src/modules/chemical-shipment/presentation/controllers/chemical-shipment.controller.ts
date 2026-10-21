@@ -13,9 +13,11 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseFilters,
   ValidationPipe,
 } from '@nestjs/common';
+import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -126,10 +128,12 @@ export class ChemicalShipmentController {
       }),
     )
     chemicalShipment: CreateChemicalShipmentDTO,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
+      const actor = req?.auth ? { id: req.auth.userId } : null;
       const shipment =
-        await this.createChemicalShipmentUseCase.execute(chemicalShipment);
+        await this.createChemicalShipmentUseCase.execute(chemicalShipment, actor);
       return ChemicalShipmentResponseDto.fromEntity(shipment);
     } catch (error) {
       this.logger.error(
@@ -341,11 +345,14 @@ export class ChemicalShipmentController {
     @Param('id') id: string,
     @Body(validationPipeFor(UpdateChemicalShipmentDto))
     updateChemicalShipmentDto: UpdateChemicalShipmentDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
+      const actor = req?.auth ? { id: req.auth.userId } : null;
       const updatedShipment = await this.updateChemicalShipmentUseCase.execute(
         id,
         updateChemicalShipmentDto,
+        actor,
       );
 
       return ChemicalShipmentResponseDto.fromEntity(updatedShipment);
@@ -391,9 +398,13 @@ export class ChemicalShipmentController {
     description:
       'Erro interno do servidor ao processar a remoção da carga química.',
   })
-  async deleteChemicalShipment(@Param('id') id: string): Promise<void> {
+  async deleteChemicalShipment(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<void> {
     try {
-      await this.deleteChemicalShipmentUseCase.execute(id);
+      const actor = req?.auth ? { id: req.auth.userId } : null;
+      await this.deleteChemicalShipmentUseCase.execute(id, actor);
     } catch (error) {
       this.logger.error(
         `Erro ao remover carga química com ID ${id}: ${error instanceof Error ? error.message : String(error)}`,
