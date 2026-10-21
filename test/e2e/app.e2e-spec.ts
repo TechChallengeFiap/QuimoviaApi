@@ -55,6 +55,11 @@ describe('AppController (e2e)', () => {
     expect(document.security).toBeUndefined();
     expect(protectedOperations.sort()).toEqual([
       'DELETE /users/{id}',
+      'GET /logs/chemical-products',
+      'GET /logs/chemical-shipments',
+      'GET /logs/inspections',
+      'GET /logs/shipment-documents',
+      'GET /logs/users',
       'PATCH /users/{id}',
       'PATCH /users/{id}/role',
       'POST /auth/logout',

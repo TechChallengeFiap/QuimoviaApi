@@ -9,15 +9,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiExtraModels,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
-  ApiForbiddenResponse,
 } from '@nestjs/swagger';
 import { ListAuditLogsUseCase } from '@/modules/audit-log/application/use-cases/list-audit-logs.use-case.js';
 import { AuditedEntity } from '@/modules/audit-log/domain/enums/audited-entity.enum.js';
 import { ListAuditLogsQueryDto } from '@/modules/audit-log/presentation/dtos/list-audit-logs-query.dto.js';
 import { AuditLogPageResponseDto } from '@/modules/audit-log/presentation/dtos/audit-log-page-response.dto.js';
+import { AuditLogResponseDto } from '@/modules/audit-log/presentation/dtos/audit-log-response.dto.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
 import { Roles } from '@/modules/user/infrastructure/auth/roles.decorator.js';
@@ -40,6 +43,7 @@ const INSUFFICIENT_ROLE_EXAMPLE = {
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(UserRole.SYSTEM_ADMIN)
 @ApiRequiresAuthentication()
+@ApiExtraModels(AuditLogPageResponseDto, AuditLogResponseDto)
 @ApiForbiddenResponse({
   description: 'Apenas o Administrador do Sistema pode consultar logs de auditoria.',
   schema: { example: INSUFFICIENT_ROLE_EXAMPLE },
@@ -58,6 +62,7 @@ export class AuditLogsController {
     description:
       'Retorna registros de auditoria relacionados a usuários (criação, edição, login, logout, troca de perfil e exclusão).',
   })
+  @ApiQuery({ type: ListAuditLogsQueryDto })
   @ApiOkResponse({
     description: 'Lista paginada de logs de usuários retornada com sucesso.',
     type: AuditLogPageResponseDto,
@@ -82,6 +87,7 @@ export class AuditLogsController {
     description:
       'Retorna registros de auditoria de produtos químicos (cadastro, alteração cadastral, mudança de status, inclusão e remoção de documentos e exclusão).',
   })
+  @ApiQuery({ type: ListAuditLogsQueryDto })
   @ApiOkResponse({
     description: 'Lista paginada de logs de produtos químicos retornada com sucesso.',
     type: AuditLogPageResponseDto,
@@ -106,6 +112,7 @@ export class AuditLogsController {
     description:
       'Retorna registros de auditoria de cargas químicas (cadastro, alteração de status/quantidade/documentos e exclusão).',
   })
+  @ApiQuery({ type: ListAuditLogsQueryDto })
   @ApiOkResponse({
     description: 'Lista paginada de logs de cargas químicas retornada com sucesso.',
     type: AuditLogPageResponseDto,
@@ -130,6 +137,7 @@ export class AuditLogsController {
     description:
       'Retorna registros de auditoria de inspeções (cadastro, reatribuição de fiscal, registro de resultados, mudança de status e exclusão).',
   })
+  @ApiQuery({ type: ListAuditLogsQueryDto })
   @ApiOkResponse({
     description: 'Lista paginada de logs de inspeções retornada com sucesso.',
     type: AuditLogPageResponseDto,
@@ -154,6 +162,7 @@ export class AuditLogsController {
     description:
       'Retorna registros de auditoria de documentos de conformidade de cargas (criação, inclusão/substituição/remoção de anexos e exclusão).',
   })
+  @ApiQuery({ type: ListAuditLogsQueryDto })
   @ApiOkResponse({
     description: 'Lista paginada de logs de documentações de cargas retornada com sucesso.',
     type: AuditLogPageResponseDto,

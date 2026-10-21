@@ -4,6 +4,7 @@ import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class ListAuditLogsQueryDto {
   @ApiPropertyOptional({
+    type: String,
     description: 'Filtra os registros de log pelo identificador da entidade auditada',
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   })
@@ -12,6 +13,7 @@ export class ListAuditLogsQueryDto {
   entityId?: string;
 
   @ApiPropertyOptional({
+    type: String,
     description: 'Filtra os registros de log pelo identificador do usuário autor da ação',
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
   })

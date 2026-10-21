@@ -4,7 +4,7 @@ import { AuditLogResponseDto } from './audit-log-response.dto.js';
 
 export class AuditLogPageResponseDto {
   @ApiProperty({
-    type: [AuditLogResponseDto],
+    type: () => [AuditLogResponseDto],
     description: 'Registros de log da página solicitada',
   })
   items: AuditLogResponseDto[];
