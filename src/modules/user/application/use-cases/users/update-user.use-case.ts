@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
@@ -14,6 +14,12 @@ import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.r
 import type { SessionRepository } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import {
+  AUDIT_LOG_RECORDER,
+  type AuditLogRecorder,
+  AuditAction,
+  AuditedEntity,
+} from '@/modules/audit-log/public/index.js';
 
 export interface UpdateUserInput {
   name?: string;
@@ -39,6 +45,9 @@ export class UpdateUserUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(PASSWORD_HASHER) private readonly passwordHasher: PasswordHasher,
     @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
+    @Optional()
+    @Inject(AUDIT_LOG_RECORDER)
+    private readonly auditLogs?: AuditLogRecorder,
   ) {}
 
   /**
@@ -86,7 +95,27 @@ export class UpdateUserUseCase {
         await this.sessions.endAllByUserId(user.id, new Date());
       }
 
-      return await this.users.update(user);
+      const updatedUser = await this.users.update(user);
+
+      if (this.auditLogs) {
+        const requesterUser = await this.users.findById(requester.userId);
+        const actorName = requesterUser?.name ?? 'Usuário';
+        const statusChanged = input.status !== undefined && user.status !== previousStatus;
+
+        await this.auditLogs.record({
+          entityType: AuditedEntity.USER,
+          entityId: updatedUser.id,
+          actorId: requester.userId,
+          actorName,
+          action: statusChanged ? AuditAction.STATUS_CHANGED : AuditAction.UPDATED,
+          description: statusChanged
+            ? `Usuário "${actorName}" alterou o status do usuário "${updatedUser.name}" de ${previousStatus} para ${updatedUser.status}`
+            : `Usuário "${actorName}" atualizou os dados do usuário "${updatedUser.name}"`,
+          details: { previousStatus, currentStatus: updatedUser.status },
+        });
+      }
+
+      return updatedUser;
     } catch (error) {
       this.logger.error(
         `Erro ao atualizar o usuário com id ${id}: ${error instanceof Error ? error.message : String(error)}`,

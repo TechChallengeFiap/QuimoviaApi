@@ -12,9 +12,11 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UseFilters,
 } from '@nestjs/common';
+import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
 import {
   ApiBody,
   ApiOperation,
@@ -89,15 +91,20 @@ export class ShipmentDocumentsController {
     @Body(validationPipeFor(CreateShipmentDocumentDto))
     dto: CreateShipmentDocumentDto,
     @Res({ passthrough: true }) response: Response,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ShipmentDocumentResponseDto> {
-    const document = await this.createDocument.execute({
-      shipmentId: dto.shipmentId,
-      shipperId: dto.shipperId,
-      compositionVersion: dto.compositionVersion,
-      attachments: dto.attachments?.map((attachment) =>
-        CreateDocumentAttachmentDto.toData(attachment),
-      ),
-    });
+    const actor = req?.auth ? { id: req.auth.userId } : null;
+    const document = await this.createDocument.execute(
+      {
+        shipmentId: dto.shipmentId,
+        shipperId: dto.shipperId,
+        compositionVersion: dto.compositionVersion,
+        attachments: dto.attachments?.map((attachment) =>
+          CreateDocumentAttachmentDto.toData(attachment),
+        ),
+      },
+      actor,
+    );
     response.location(`/shipment-documents/${document.id}`);
     return ShipmentDocumentResponseDto.fromEntity(document);
   }
@@ -176,13 +183,19 @@ export class ShipmentDocumentsController {
     @Param('id', documentIdPipe) id: string,
     @Body(validationPipeFor(UpdateShipmentDocumentDto))
     dto: UpdateShipmentDocumentDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ShipmentDocumentResponseDto> {
-    const document = await this.updateDocument.execute(id, {
-      removeAttachmentIds: dto.removeAttachmentIds,
-      attachments: dto.attachments?.map((attachment) =>
-        CreateDocumentAttachmentDto.toData(attachment),
-      ),
-    });
+    const actor = req?.auth ? { id: req.auth.userId } : null;
+    const document = await this.updateDocument.execute(
+      id,
+      {
+        removeAttachmentIds: dto.removeAttachmentIds,
+        attachments: dto.attachments?.map((attachment) =>
+          CreateDocumentAttachmentDto.toData(attachment),
+        ),
+      },
+      actor,
+    );
     return ShipmentDocumentResponseDto.fromEntity(document);
   }
 
@@ -208,7 +221,11 @@ export class ShipmentDocumentsController {
     status: HttpStatus.CONFLICT,
     description: 'Documentação bloqueada ou alterada durante a operação.',
   })
-  async remove(@Param('id', documentIdPipe) id: string): Promise<void> {
-    await this.deleteDocument.execute(id);
+  async remove(
+    @Param('id', documentIdPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<void> {
+    const actor = req?.auth ? { id: req.auth.userId } : null;
+    await this.deleteDocument.execute(id, actor);
   }
 }

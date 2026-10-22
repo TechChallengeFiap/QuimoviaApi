@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
 import { ProductDocumentType } from '@/modules/chemical-products/domain/enums/product-document-type.enum.js';
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
@@ -9,6 +9,12 @@ import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/chemical-products/domain/
 import type { ChemicalProductRepository } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import {
+  AUDIT_LOG_RECORDER,
+  type AuditLogRecorder,
+} from '@/modules/audit-log/application/contracts/audit-log-recorder.contract.js';
+import { AuditAction } from '@/modules/audit-log/domain/enums/audit-action.enum.js';
+import { AuditedEntity } from '@/modules/audit-log/domain/enums/audited-entity.enum.js';
 
 export interface CreateProductDocumentInput {
   type: ProductDocumentType;
@@ -29,14 +35,25 @@ export interface CreateChemicalProductInput {
   documents?: CreateProductDocumentInput[];
 }
 
+export interface ChemicalProductActionActor {
+  id: string;
+  name?: string;
+}
+
 @Injectable()
 export class CreateChemicalProductUseCase {
   constructor(
     @Inject(CHEMICAL_PRODUCT_REPOSITORY) private readonly products: ChemicalProductRepository,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+    @Optional()
+    @Inject(AUDIT_LOG_RECORDER)
+    private readonly auditLogs?: AuditLogRecorder,
   ) {}
 
-  async execute(input: CreateChemicalProductInput): Promise<ChemicalProduct> {
+  async execute(
+    input: CreateChemicalProductInput,
+    actor?: ChemicalProductActionActor | null,
+  ): Promise<ChemicalProduct> {
     const code = input.code.trim().toUpperCase();
     const existing = await this.products.findByCode(code);
 
@@ -62,6 +79,27 @@ export class CreateChemicalProductUseCase {
       documents: input.documents,
     });
 
-    return this.products.create(product);
+    const created = await this.products.create(product);
+
+    if (this.auditLogs) {
+      const actorId = actor?.id ?? responsibleUser.id;
+      const actorName = actor?.name ?? responsibleUser.name;
+
+      await this.auditLogs.record({
+        entityType: AuditedEntity.CHEMICAL_PRODUCT,
+        entityId: created.id,
+        actorId,
+        actorName,
+        action: AuditAction.CREATED,
+        description: `Usuário "${actorName}" cadastrou o produto químico "${created.technicalName}" (${created.code})`,
+        details: {
+          riskClass: created.riskClass,
+          physicalState: created.physicalState,
+          status: created.status,
+        },
+      });
+    }
+
+    return created;
   }
 }

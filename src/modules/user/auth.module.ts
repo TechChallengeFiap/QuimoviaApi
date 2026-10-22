@@ -30,7 +30,10 @@ import { UserModule } from '@/modules/user/user.module.js';
  * módulo é iniciado; sem um JWT_SECRET válido, a aplicação não sobe.
  */
 @Module({
-  imports: [forwardRef(() => UserModule), JwtModule.register({})],
+  imports: [
+    forwardRef(() => UserModule),
+    JwtModule.register({}),
+  ],
   controllers: [AuthController],
   providers: [
     LoginUseCase,
