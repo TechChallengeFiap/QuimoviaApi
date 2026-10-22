@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { Session } from '@/modules/user/domain/entities/session.entity.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import {
@@ -16,6 +16,12 @@ import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.r
 import type { SessionRepository } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import {
+  AUDIT_LOG_RECORDER,
+  type AuditLogRecorder,
+  AuditAction,
+  AuditedEntity,
+} from '@/modules/audit-log/public/index.js';
 
 /** A mesma mensagem para e-mail inexistente e senha errada (RN-ACE-02). */
 export const INVALID_CREDENTIALS_MESSAGE = 'E-mail ou senha inválidos.';
@@ -46,6 +52,9 @@ export class LoginUseCase {
     @Inject(ACCESS_TOKEN_SERVICE)
     private readonly accessTokens: AccessTokenService,
     @Inject(SESSION_SETTINGS) private readonly sessionSettings: SessionSettings,
+    @Optional()
+    @Inject(AUDIT_LOG_RECORDER)
+    private readonly auditLogs?: AuditLogRecorder,
   ) {}
 
   /**
@@ -93,6 +102,17 @@ export class LoginUseCase {
         session.end(now);
         await this.sessions.update(session);
         throw new AccessDeniedError(ACCOUNT_CHANGED_DURING_LOGIN_MESSAGE);
+      }
+
+      if (this.auditLogs) {
+        await this.auditLogs.record({
+          entityType: AuditedEntity.USER,
+          entityId: user.id,
+          actorId: user.id,
+          actorName: user.name,
+          action: AuditAction.LOGGED_IN,
+          description: `Usuário "${user.name}" (${user.email}) realizou login no sistema`,
+        });
       }
 
       return {

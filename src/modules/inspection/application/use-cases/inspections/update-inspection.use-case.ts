@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { Inspection } from '@/modules/inspection/domain/entities/inspection.entity.js';
 import { InspectionItemResult } from '@/modules/inspection/domain/enums/inspection-item-result.enum.js';
 import { InspectionRequirement } from '@/modules/inspection/domain/enums/inspection-requirement.enum.js';
@@ -15,6 +15,13 @@ import {
 } from '@/modules/user/domain/repositories/user.repository.js';
 import type { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
+import {
+  AUDIT_LOG_RECORDER,
+  type AuditLogRecorder,
+} from '@/modules/audit-log/application/contracts/audit-log-recorder.contract.js';
+import { AuditAction } from '@/modules/audit-log/domain/enums/audit-action.enum.js';
+import { AuditedEntity } from '@/modules/audit-log/domain/enums/audited-entity.enum.js';
+import type { InspectionActionActor } from './create-inspection.use-case.js';
 
 export interface InspectionResultInput {
   requirement: InspectionRequirement;
@@ -37,6 +44,9 @@ export class UpdateInspectionUseCase {
     private readonly inspectionsRepository: InspectionRepository,
     @Inject(USER_REPOSITORY)
     private readonly usersRepository: UserRepository,
+    @Optional()
+    @Inject(AUDIT_LOG_RECORDER)
+    private readonly auditLogs?: AuditLogRecorder,
   ) {}
 
   /**
@@ -44,7 +54,11 @@ export class UpdateInspectionUseCase {
    * que uma única requisição possa iniciar a inspeção e registrar resultados,
    * ou registrar os últimos resultados e concluí-la.
    */
-  async execute(id: string, input: UpdateInspectionInput): Promise<Inspection> {
+  async execute(
+    id: string,
+    input: UpdateInspectionInput,
+    actor?: InspectionActionActor | null,
+  ): Promise<Inspection> {
     try {
       const { newInspector } = await this.validateInput(input);
       const inspection = await this.inspectionsRepository.findById(id);
@@ -76,7 +90,38 @@ export class UpdateInspectionUseCase {
         this.changeStatus(inspection, input.status);
       }
 
-      return await this.inspectionsRepository.update(inspection);
+      const updated = await this.inspectionsRepository.update(inspection);
+
+      if (this.auditLogs) {
+        let actorName = actor?.name;
+        if (!actorName && actor?.id) {
+          const user = await this.usersRepository.findById(actor.id);
+          actorName = user?.name;
+        }
+        const actorId = actor?.id ?? updated.inspectorId;
+        const resolvedActorName = actorName ?? 'Fiscal';
+
+        const action = input.status ? AuditAction.STATUS_CHANGED : AuditAction.UPDATED;
+        const description = input.status
+          ? `Usuário "${resolvedActorName}" alterou o status da inspeção "${updated.id}" para "${input.status}"`
+          : `Usuário "${resolvedActorName}" atualizou a inspeção "${updated.id}"`;
+
+        await this.auditLogs.record({
+          entityType: AuditedEntity.INSPECTION,
+          entityId: updated.id,
+          actorId,
+          actorName: resolvedActorName,
+          action,
+          description,
+          details: {
+            cargoId: updated.cargoId,
+            status: updated.status,
+            inspectorId: updated.inspectorId,
+          },
+        });
+      }
+
+      return updated;
     } catch (error) {
       this.logger.error(
         `Erro ao atualizar a inspeção com id ${id}: ${error instanceof Error ? error.message : String(error)}`,

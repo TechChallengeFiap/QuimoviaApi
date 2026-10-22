@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
@@ -7,6 +7,12 @@ import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-h
 import type { PasswordHasher } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import {
+  AUDIT_LOG_RECORDER,
+  type AuditLogRecorder,
+  AuditAction,
+  AuditedEntity,
+} from '@/modules/audit-log/public/index.js';
 
 export interface CreateUserInput {
   name: string;
@@ -16,6 +22,11 @@ export interface CreateUserInput {
   status?: UserStatus;
 }
 
+export interface UserActionActor {
+  id: string;
+  name?: string;
+}
+
 @Injectable()
 export class CreateUserUseCase {
   private readonly logger = new Logger(CreateUserUseCase.name);
@@ -23,13 +34,19 @@ export class CreateUserUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(PASSWORD_HASHER) private readonly passwordHasher: PasswordHasher,
+    @Optional()
+    @Inject(AUDIT_LOG_RECORDER)
+    private readonly auditLogs?: AuditLogRecorder,
   ) {}
 
   /**
    * Um e-mail de usuário excluído não gera um novo registro: o cadastro
    * excluído é reativado com os novos dados, mantendo o id e o histórico.
    */
-  async execute(input: CreateUserInput): Promise<User> {
+  async execute(
+    input: CreateUserInput,
+    actor?: UserActionActor | null,
+  ): Promise<User> {
     try {
       const email = input.email.trim().toLowerCase();
       const existing = await this.users.findByEmailIncludingDeleted(email);
@@ -49,10 +66,33 @@ export class CreateUserUseCase {
 
       if (existing) {
         existing.reregister(data);
-        return await this.users.update(existing);
       }
 
-      return await this.users.create(User.create({ ...data, email }));
+      const createdUser = existing
+        ? await this.users.update(existing)
+        : await this.users.create(User.create({ ...data, email }));
+
+      if (this.auditLogs) {
+        let actorName = actor?.name;
+        if (!actorName && actor?.id) {
+          const actorUser = await this.users.findById(actor.id);
+          actorName = actorUser?.name;
+        }
+        const resolvedActorName = actorName ?? 'Administrador do Sistema';
+        const actorId = actor?.id ?? createdUser.id;
+
+        await this.auditLogs.record({
+          entityType: AuditedEntity.USER,
+          entityId: createdUser.id,
+          actorId,
+          actorName: resolvedActorName,
+          action: AuditAction.CREATED,
+          description: `Usuário "${resolvedActorName}" cadastrou o usuário "${createdUser.name}" (${createdUser.email})`,
+          details: { role: createdUser.role, status: createdUser.status },
+        });
+      }
+
+      return createdUser;
     } catch (error) {
       this.logger.error(
         `Erro ao cadastrar o usuário: ${error instanceof Error ? error.message : String(error)}`,

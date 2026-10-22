@@ -253,3 +253,95 @@ model ProductDocument {
 
   @@index([productId])
 }
+
+// ---------------------------------------------------------------------------
+// Auditoria: histórico das ações dos usuários, uma tabela por entidade.
+//
+// As tabelas não têm chave estrangeira de propósito: o registro precisa
+// sobreviver à remoção da entidade auditada e do próprio autor. Por isso o
+// nome do autor é gravado no momento da ação (actorName), junto da descrição
+// legível ("Maria Silva cadastrou o produto químico H2SO4-98").
+// ---------------------------------------------------------------------------
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
+  STATUS_CHANGED
+  ROLE_CHANGED
+  LOGGED_IN
+  LOGGED_OUT
+  DOCUMENT_ADDED
+  DOCUMENT_UPDATED
+  DOCUMENT_REMOVED
+}
+
+model UserLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model ChemicalProductLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model ChemicalShipmentLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model InspectionLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model ShipmentDocumentLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}

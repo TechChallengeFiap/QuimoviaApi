@@ -53,6 +53,10 @@ describe.each([false, true])(
         await import('@/modules/document-compliance/domain/repositories/shipment-document.repository.js');
       const { ShipmentDocumentRepositoryMock } =
         await import('../mocks/shipment-document-repository.mock.js');
+      const { AUDIT_LOG_REPOSITORY } =
+        await import('@/modules/audit-log/domain/repositories/audit-log.repository.js');
+      const { AuditLogRepositoryMock } =
+        await import('../mocks/audit-log-repository.mock.js');
       const { DomainExceptionFilter } =
         await import('@/shared/presentation/filters/domain-exception.filter.js');
       const { buildSwaggerConfig } =
@@ -79,6 +83,8 @@ describe.each([false, true])(
         .useClass(InspectionRepositoryMock)
         .overrideProvider(SHIPMENT_DOCUMENT_REPOSITORY)
         .useClass(ShipmentDocumentRepositoryMock)
+        .overrideProvider(AUDIT_LOG_REPOSITORY)
+        .useClass(AuditLogRepositoryMock)
         .compile();
 
       app = moduleFixture.createNestApplication();

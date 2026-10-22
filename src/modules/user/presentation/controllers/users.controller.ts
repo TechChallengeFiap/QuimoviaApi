@@ -186,8 +186,9 @@ export class UsersController {
   })
   async createUser(
     @Body(validationPipeFor(CreateUserDto)) createUserDto: CreateUserDto,
+    @CurrentSession() session: AuthenticatedSession,
   ): Promise<UserResponseDto> {
-    const user = await this.createUserUseCase.execute(createUserDto);
+    const user = await this.createUserUseCase.execute(createUserDto, { id: session.userId });
     return UserResponseDto.fromEntity(user);
   }
 
@@ -437,10 +438,12 @@ export class UsersController {
     @Param('id') id: string,
     @Body(validationPipeFor(ChangeUserRoleDto))
     changeUserRoleDto: ChangeUserRoleDto,
+    @CurrentSession() session: AuthenticatedSession,
   ): Promise<UserResponseDto> {
     const user = await this.changeUserRoleUseCase.execute(
       id,
       changeUserRoleDto.role,
+      { id: session.userId },
     );
     return UserResponseDto.fromEntity(user);
   }
@@ -471,7 +474,10 @@ export class UsersController {
       'Apenas o Administrador do Sistema pode executar esta operação.',
     schema: { example: INSUFFICIENT_ROLE_EXAMPLE },
   })
-  async deleteUser(@Param('id') id: string): Promise<void> {
-    await this.deleteUserUseCase.execute(id);
+  async deleteUser(
+    @Param('id') id: string,
+    @CurrentSession() session: AuthenticatedSession,
+  ): Promise<void> {
+    await this.deleteUserUseCase.execute(id, { id: session.userId });
   }
 }
