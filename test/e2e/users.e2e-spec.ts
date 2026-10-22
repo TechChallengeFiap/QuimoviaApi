@@ -630,6 +630,30 @@ describe('UsersController (e2e)', () => {
         .expect(409);
     });
 
+    it('não reativa pelo cadastro público a conta de um usuário excluído', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ...shipper, role: 'PORT_OPERATOR' })
+        .expect(201);
+      await request(app.getHttpServer())
+        .delete(`/users/${created.body.id as string}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send({ ...shipper, password: 'OutraS3nha!' })
+        .expect(409);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: shipper.email, password: 'OutraS3nha!' })
+        .expect(401);
+      await request(app.getHttpServer())
+        .get(`/users/${created.body.id as string}`)
+        .expect(404);
+    });
+
     it('rejeita payload inválido', async () => {
       await request(app.getHttpServer())
         .post('/users/shippers')

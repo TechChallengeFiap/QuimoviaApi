@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { CreateUserUseCase } from '@/modules/user/application/use-cases/users/create-user.use-case.js';
 import { RegisterShipperUseCase } from '@/modules/user/application/use-cases/users/register-shipper.use-case.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { AuditAction } from '@/modules/audit-log/domain/enums/audit-action.enum.js';
@@ -65,6 +66,32 @@ describe('RegisterShipperUseCase', () => {
     await expect(
       useCase.execute({ ...input, name: 'Outro Carlos' }),
     ).rejects.toThrow(ConflictError);
+  });
+
+  it('não reativa o cadastro de um usuário excluído', async () => {
+    const deleted = await users.create(
+      User.create({
+        name: 'Maria Silva',
+        email: 'maria@quimovia.com',
+        passwordHash: 'hash:S3nhaAntiga!',
+        role: UserRole.PORT_OPERATOR,
+      }),
+    );
+    deleted.delete();
+    await users.update(deleted);
+
+    await expect(
+      useCase.execute({ ...input, email: 'maria@quimovia.com' }),
+    ).rejects.toThrow(ConflictError);
+
+    const stored =
+      await users.findByEmailIncludingDeleted('maria@quimovia.com');
+    expect(stored).toMatchObject({
+      id: deleted.id,
+      role: UserRole.PORT_OPERATOR,
+      passwordHash: 'hash:S3nhaAntiga!',
+    });
+    expect(stored?.isDeleted).toBe(true);
   });
 
   it('registra na auditoria o próprio embarcador como autor do cadastro', async () => {

@@ -302,12 +302,12 @@ A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de 
 Cadastrar usuários internos, remover e trocar o perfil de usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis). Na edição, o administrador altera qualquer usuário, e os demais perfis só os próprios dados, sem poder se bloquear. Os embarcadores (usuários externos) se cadastram sozinhos pela rota pública `POST /users/shippers`.
 
 - `POST /users` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
-- `POST /users/shippers` — Cadastro público do embarcador, sem token: o perfil é sempre `SHIPPER_DRIVER` e a conta já nasce ativa; enviar `role` ou `status` retorna `400`.
+- `POST /users/shippers` — Cadastro público do embarcador, sem token: o perfil é sempre `SHIPPER_DRIVER` e a conta já nasce ativa; enviar `role` ou `status` retorna `400`, e o e-mail de um usuário excluído retorna `409` (só o administrador reativa a conta).
 - `GET /users` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
 - `GET /users/:id` — Busca informações cadastrais do usuário.
 - `PATCH /users/:id` — Atualiza nome, e-mail, senha ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
 - `PATCH /users/:id/role` — Troca o perfil de acesso do usuário (só o administrador).
-- `DELETE /users/:id` — Exclui o usuário logicamente (`isDeleted` e `deletedAt`): ele some das buscas e da listagem e perde o acesso, mas o registro é mantido. Cadastrar de novo o mesmo e-mail reativa esse registro, com o mesmo id.
+- `DELETE /users/:id` — Exclui o usuário logicamente (`isDeleted` e `deletedAt`): ele some das buscas e da listagem e perde o acesso, mas o registro é mantido. Cadastrar de novo o mesmo e-mail em `POST /users` reativa esse registro, com o mesmo id.
 
 ---
 

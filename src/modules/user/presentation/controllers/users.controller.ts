@@ -202,7 +202,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Cadastro público do embarcador',
     description:
-      'Rota pública, sem autenticação, para o embarcador criar a própria conta. O perfil é sempre SHIPPER_DRIVER e a conta é criada ativa; perfil e status não podem ser informados. Os usuários internos são cadastrados pelo Administrador do Sistema em POST /users.',
+      'Rota pública, sem autenticação, para o embarcador criar a própria conta. O perfil é sempre SHIPPER_DRIVER e a conta é criada ativa; perfil e status não podem ser informados. O e-mail de um usuário excluído também retorna 409: só o Administrador do Sistema reativa uma conta excluída. Os usuários internos são cadastrados pelo Administrador do Sistema em POST /users.',
   })
   @ApiBody({
     type: RegisterShipperDto,
@@ -517,7 +517,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Exclui um usuário',
     description:
-      'Exclusão lógica: o usuário deixa de aparecer nas buscas e na listagem e perde o acesso, com as sessões encerradas, mas o registro é mantido para o histórico. Um novo cadastro com o mesmo e-mail reativa esse registro.',
+      'Exclusão lógica: o usuário deixa de aparecer nas buscas e na listagem e perde o acesso, com as sessões encerradas, mas o registro é mantido para o histórico. Um novo cadastro interno (POST /users) com o mesmo e-mail reativa esse registro; o cadastro público do embarcador não reativa.',
   })
   @ApiParam({
     name: 'id',

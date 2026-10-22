@@ -50,6 +50,9 @@ export class CreateUserUseCase {
   /**
    * Um e-mail de usuário excluído não gera um novo registro: o cadastro
    * excluído é reativado com os novos dados, mantendo o id e o histórico.
+   * Só o cadastro interno reativa; no auto cadastro, o e-mail excluído é
+   * recusado como os demais, senão quem soubesse o e-mail assumiria o id e o
+   * histórico do usuário excluído.
    */
   async execute(
     input: CreateUserInput,
@@ -59,7 +62,7 @@ export class CreateUserUseCase {
       const email = input.email.trim().toLowerCase();
       const existing = await this.users.findByEmailIncludingDeleted(email);
 
-      if (existing && !existing.isDeleted) {
+      if (existing && (!existing.isDeleted || actor === SELF_REGISTRATION)) {
         throw new ConflictError(
           `Já existe um usuário cadastrado com o e-mail "${email}".`,
         );
