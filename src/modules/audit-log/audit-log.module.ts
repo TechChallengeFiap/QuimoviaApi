@@ -1,5 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
-import { PrismaModule } from '@/shared/infrastructure/persistence/prisma/prisma.module.js';
+import { forwardRef, Global, Module } from '@nestjs/common';
 import { AuthModule } from '@/modules/user/auth.module.js';
 import { AUDIT_LOG_REPOSITORY } from '@/modules/audit-log/domain/repositories/audit-log.repository.js';
 import { PrismaAuditLogRepository } from '@/modules/audit-log/infrastructure/persistence/prisma/prisma-audit-log.repository.js';
@@ -8,8 +7,9 @@ import { RecordAuditLogUseCase } from '@/modules/audit-log/application/use-cases
 import { ListAuditLogsUseCase } from '@/modules/audit-log/application/use-cases/list-audit-logs.use-case.js';
 import { AuditLogsController } from '@/modules/audit-log/presentation/controllers/audit-logs.controller.js';
 
+@Global()
 @Module({
-  imports: [PrismaModule, forwardRef(() => AuthModule)],
+  imports: [forwardRef(() => AuthModule)],
   controllers: [AuditLogsController],
   providers: [
     ListAuditLogsUseCase,

@@ -8,11 +8,7 @@ import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/doma
 import { PrismaShipmentDocumentRepository } from '@/modules/document-compliance/infrastructure/persistence/prisma/prisma-shipment-document.repository.js';
 import { ShipmentDocumentsController } from '@/modules/document-compliance/presentation/controllers/shipment-documents.controller.js';
 
-import { UserModule } from '@/modules/user/user.module.js';
-import { AuditLogModule } from '@/modules/audit-log/audit-log.module.js';
-
 @Module({
-  imports: [UserModule, AuditLogModule],
   controllers: [ShipmentDocumentsController],
   providers: [
     CreateShipmentDocumentUseCase,

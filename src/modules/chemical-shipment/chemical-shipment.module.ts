@@ -10,10 +10,9 @@ import { DeleteChemicalShipmentUseCase } from './application/use-cases/chemical-
 
 import { UserModule } from '@/modules/user/user.module.js';
 import { ChemicalProductsModule } from '../chemical-products/chemical-products.module.js';
-import { AuditLogModule } from '@/modules/audit-log/audit-log.module.js';
 
 @Module({
-  imports: [UserModule, ChemicalProductsModule, AuditLogModule],
+  imports: [UserModule, ChemicalProductsModule],
   controllers: [ChemicalShipmentController],
   providers: [
     CreateChemicalShipmentUseCase,

@@ -7,6 +7,8 @@ import { AppModule } from '@/app.module.js';
 import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { buildSwaggerConfig } from '@/shared/infrastructure/config/swagger.config.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
+import { AUDIT_LOG_REPOSITORY } from '@/modules/audit-log/domain/repositories/audit-log.repository.js';
+import { AuditLogRepositoryMock } from '../mocks/audit-log-repository.mock.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
 
 describe('AppController (e2e)', () => {
@@ -23,6 +25,8 @@ describe('AppController (e2e)', () => {
       })
       .overrideProvider(AUTH_CONFIG)
       .useValue(TEST_AUTH_CONFIG)
+      .overrideProvider(AUDIT_LOG_REPOSITORY)
+      .useClass(AuditLogRepositoryMock)
       .compile();
 
     app = moduleFixture.createNestApplication();

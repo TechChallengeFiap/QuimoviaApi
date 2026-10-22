@@ -13,7 +13,6 @@ import { PrismaSessionRepository } from '@/modules/user/infrastructure/persisten
 import { PrismaUserRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-user.repository.js';
 import { AuthModule } from '@/modules/user/auth.module.js';
 import { UsersController } from '@/modules/user/presentation/controllers/users.controller.js';
-import { AuditLogModule } from '@/modules/audit-log/audit-log.module.js';
 
 /**
  * Cadastro de usuários. Importa o AuthModule para proteger as rotas de
@@ -22,7 +21,7 @@ import { AuditLogModule } from '@/modules/audit-log/audit-log.module.js';
  * forwardRef.
  */
 @Module({
-  imports: [forwardRef(() => AuthModule), forwardRef(() => AuditLogModule)],
+  imports: [forwardRef(() => AuthModule)],
   controllers: [UsersController],
   providers: [
     CreateUserUseCase,
