@@ -299,9 +299,10 @@ A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de 
 
 #### Usuários e Acessos (`/users`)
 
-Cadastrar, remover e trocar o perfil de usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis). Na edição, o administrador altera qualquer usuário, e os demais perfis só os próprios dados, sem poder se bloquear.
+Cadastrar usuários internos, remover e trocar o perfil de usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis). Na edição, o administrador altera qualquer usuário, e os demais perfis só os próprios dados, sem poder se bloquear. Os embarcadores (usuários externos) se cadastram sozinhos pela rota pública `POST /users/shippers`.
 
 - `POST /users` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
+- `POST /users/shippers` — Cadastro público do embarcador, sem token: o perfil é sempre `SHIPPER_DRIVER` e a conta já nasce ativa; enviar `role` ou `status` retorna `400`.
 - `GET /users` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
 - `GET /users/:id` — Busca informações cadastrais do usuário.
 - `PATCH /users/:id` — Atualiza nome, e-mail, senha ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).

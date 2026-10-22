@@ -33,6 +33,7 @@ import { CreateUserUseCase } from '@/modules/user/application/use-cases/users/cr
 import { DeleteUserUseCase } from '@/modules/user/application/use-cases/users/delete-user.use-case.js';
 import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/find-user-by-id.use-case.js';
 import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/list-users.use-case.js';
+import { RegisterShipperUseCase } from '@/modules/user/application/use-cases/users/register-shipper.use-case.js';
 import {
   BLOCK_USER_DENIED_MESSAGE,
   UPDATE_OTHER_USER_DENIED_MESSAGE,
@@ -54,6 +55,7 @@ import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.j
 import { ChangeUserRoleDto } from '@/modules/user/presentation/dtos/change-user-role.dto.js';
 import { CreateUserDto } from '@/modules/user/presentation/dtos/create-user.dto.js';
 import { ListUsersQueryDto } from '@/modules/user/presentation/dtos/list-users-query.dto.js';
+import { RegisterShipperDto } from '@/modules/user/presentation/dtos/register-shipper.dto.js';
 import { UpdateUserDto } from '@/modules/user/presentation/dtos/update-user.dto.js';
 import { UserPageResponseDto } from '@/modules/user/presentation/dtos/user-page-response.dto.js';
 import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.js';
@@ -104,6 +106,8 @@ export class UsersController {
   constructor(
     @Inject(CreateUserUseCase)
     private readonly createUserUseCase: CreateUserUseCase,
+    @Inject(RegisterShipperUseCase)
+    private readonly registerShipperUseCase: RegisterShipperUseCase,
     @Inject(ListUsersUseCase)
     private readonly listUsersUseCase: ListUsersUseCase,
     @Inject(FindUserByIdUseCase)
@@ -188,7 +192,65 @@ export class UsersController {
     @Body(validationPipeFor(CreateUserDto)) createUserDto: CreateUserDto,
     @CurrentSession() session: AuthenticatedSession,
   ): Promise<UserResponseDto> {
-    const user = await this.createUserUseCase.execute(createUserDto, { id: session.userId });
+    const user = await this.createUserUseCase.execute(createUserDto, {
+      id: session.userId,
+    });
+    return UserResponseDto.fromEntity(user);
+  }
+
+  @Post('shippers')
+  @ApiOperation({
+    summary: 'Cadastro público do embarcador',
+    description:
+      'Rota pública, sem autenticação, para o embarcador criar a própria conta. O perfil é sempre SHIPPER_DRIVER e a conta é criada ativa; perfil e status não podem ser informados. Os usuários internos são cadastrados pelo Administrador do Sistema em POST /users.',
+  })
+  @ApiBody({
+    type: RegisterShipperDto,
+    description: 'Dados necessários para o cadastro do embarcador.',
+    examples: {
+      padrao: {
+        summary: 'Cadastro do embarcador',
+        description:
+          'O usuário é criado com o perfil SHIPPER_DRIVER e o status ACTIVE.',
+        value: {
+          name: 'Carlos Pereira',
+          email: 'carlos.pereira@transportadora.com',
+          password: 'S3nhaForte!',
+        },
+      },
+    },
+  })
+  @ApiCreatedResponse({
+    description: 'Embarcador cadastrado com sucesso.',
+    type: UserResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Dados inválidos no corpo da requisição, inclusive o envio de perfil ou status.',
+    schema: {
+      example: {
+        message: [
+          'property role should not exist',
+          'password must be longer than or equal to 8 characters',
+        ],
+        error: 'Bad Request',
+        statusCode: HttpStatus.BAD_REQUEST,
+      },
+    },
+  })
+  @ApiConflictResponse({
+    description: 'Já existe um usuário cadastrado com o e-mail informado.',
+    schema: { example: EMAIL_CONFLICT_EXAMPLE },
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Os dados violam uma regra de negócio do usuário.',
+    schema: { example: BUSINESS_RULE_EXAMPLE },
+  })
+  async registerShipper(
+    @Body(validationPipeFor(RegisterShipperDto))
+    registerShipperDto: RegisterShipperDto,
+  ): Promise<UserResponseDto> {
+    const user = await this.registerShipperUseCase.execute(registerShipperDto);
     return UserResponseDto.fromEntity(user);
   }
 

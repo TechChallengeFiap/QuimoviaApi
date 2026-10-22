@@ -165,6 +165,30 @@ describe('UsersController sem a metadata de decorators (e2e)', () => {
       .expect(400);
   });
 
+  it('cadastra o embarcador pela rota pública e valida o corpo com o RegisterShipperDto', async () => {
+    const shipper = {
+      name: 'Carlos Pereira',
+      email: 'carlos.pereira@transportadora.com',
+      password: 'S3nhaForte!',
+    };
+
+    await request(app.getHttpServer())
+      .post('/users/shippers')
+      .send({ ...shipper, role: 'SYSTEM_ADMIN' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post('/users/shippers')
+      .send(shipper)
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.role).toBe('SHIPPER_DRIVER');
+      });
+    await request(app.getHttpServer())
+      .post('/users/shippers')
+      .send(shipper)
+      .expect(409);
+  });
+
   it('valida e converte os parâmetros da listagem', async () => {
     await request(app.getHttpServer()).get('/users?page=0').expect(400);
 

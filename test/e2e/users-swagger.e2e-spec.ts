@@ -107,6 +107,33 @@ describe('Swagger do módulo user (e2e)', () => {
     });
   });
 
+  it('documenta o cadastro público do embarcador sem perfil, sem status e sem autenticação', () => {
+    expect(jsonRequestBodyOf('/users/shippers', 'post')).toMatchObject({
+      schema: { $ref: '#/components/schemas/RegisterShipperDto' },
+      examples: { padrao: { value: { name: 'Carlos Pereira' } } },
+    });
+    expect(document.components?.schemas?.RegisterShipperDto).toMatchObject({
+      required: ['name', 'email', 'password'],
+      properties: {
+        name: { type: 'string', minLength: 3 },
+        email: { type: 'string', format: 'email' },
+        password: {
+          type: 'string',
+          format: 'password',
+          minLength: 8,
+          writeOnly: true,
+        },
+      },
+    });
+    expect(document.components?.schemas?.RegisterShipperDto).not.toHaveProperty(
+      'properties.role',
+    );
+    expect(document.components?.schemas?.RegisterShipperDto).not.toHaveProperty(
+      'properties.status',
+    );
+    expect(document.paths['/users/shippers']?.post?.security).toBeUndefined();
+  });
+
   it('documenta o corpo da atualização com o UpdateUserDto e exemplos de payload', () => {
     expect(jsonRequestBodyOf('/users/{id}', 'patch')).toMatchObject({
       schema: { $ref: '#/components/schemas/UpdateUserDto' },
@@ -145,6 +172,8 @@ describe('Swagger do módulo user (e2e)', () => {
       await import('@/modules/user/presentation/dtos/update-user.dto.js');
     const { ChangeUserRoleDto } =
       await import('@/modules/user/presentation/dtos/change-user-role.dto.js');
+    const { RegisterShipperDto } =
+      await import('@/modules/user/presentation/dtos/register-shipper.dto.js');
     const payloads: {
       name: string;
       dto: ClassConstructor<object>;
@@ -153,6 +182,10 @@ describe('Swagger do módulo user (e2e)', () => {
       ...requestExamplesOf('/users', 'post').map((example) => ({
         ...example,
         dto: CreateUserDto,
+      })),
+      ...requestExamplesOf('/users/shippers', 'post').map((example) => ({
+        ...example,
+        dto: RegisterShipperDto,
       })),
       ...requestExamplesOf('/users/{id}', 'patch').map((example) => ({
         ...example,
@@ -164,7 +197,7 @@ describe('Swagger do módulo user (e2e)', () => {
       })),
     ];
 
-    expect(payloads).toHaveLength(7);
+    expect(payloads).toHaveLength(8);
 
     for (const { name, dto, value } of payloads) {
       const errors = await validate(plainToInstance(dto, value), {
@@ -253,6 +286,12 @@ describe('Swagger do módulo user (e2e)', () => {
       '409',
       '422',
     ]);
+    expect(statusesOf('/users/shippers', 'post')).toEqual([
+      '201',
+      '400',
+      '409',
+      '422',
+    ]);
     expect(statusesOf('/users', 'get')).toEqual(['200', '400']);
     expect(statusesOf('/users/{id}', 'get')).toEqual(['200', '404']);
     expect(statusesOf('/users/{id}', 'patch')).toEqual([
@@ -284,6 +323,9 @@ describe('Swagger do módulo user (e2e)', () => {
 
     expect(paths['/users']?.post?.operationId).toBe(
       'UsersController_createUser',
+    );
+    expect(paths['/users/shippers']?.post?.operationId).toBe(
+      'UsersController_registerShipper',
     );
     expect(paths['/users']?.get?.operationId).toBe('UsersController_listUsers');
     expect(paths['/users/{id}']?.get?.operationId).toBe(
