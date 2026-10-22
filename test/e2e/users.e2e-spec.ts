@@ -449,4 +449,95 @@ describe('UsersController (e2e)', () => {
         .expect(401);
     });
   });
+
+  describe('cadastro público do embarcador', () => {
+    const shipper = {
+      name: 'Carlos Pereira',
+      email: 'carlos.pereira@transportadora.com',
+      password: 'S3nhaForte!',
+    };
+
+    it('cadastra o embarcador sem token, com o perfil SHIPPER_DRIVER e ativo', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send(shipper)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        name: 'Carlos Pereira',
+        email: 'carlos.pereira@transportadora.com',
+        role: 'SHIPPER_DRIVER',
+        status: 'ACTIVE',
+      });
+      expect(response.body.passwordHash).toBeUndefined();
+      expect(response.body.password).toBeUndefined();
+    });
+
+    it('permite ao embarcador cadastrado fazer login', async () => {
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send(shipper)
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: shipper.email, password: shipper.password })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.user.role).toBe('SHIPPER_DRIVER');
+        });
+    });
+
+    it.each([
+      ['o perfil', { role: 'SYSTEM_ADMIN' }],
+      ['o status', { status: 'INACTIVE' }],
+    ])('rejeita o cadastro que informa %s', async (_campo, extra) => {
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send({ ...shipper, ...extra })
+        .expect(400);
+    });
+
+    it('rejeita e-mail já cadastrado, inclusive por um usuário interno', async () => {
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ...shipper, role: 'PORT_OPERATOR' })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send(shipper)
+        .expect(409);
+    });
+
+    it('rejeita payload inválido', async () => {
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send({ name: 'Ok', email: 'invalido', password: '123' })
+        .expect(400);
+    });
+
+    it('não dá ao embarcador acesso às rotas de gestão de usuários', async () => {
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send(shipper)
+        .expect(201);
+      const login = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: shipper.email, password: shipper.password })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${login.body.accessToken as string}`)
+        .send({
+          name: 'Maria Silva',
+          email: 'maria.shipper@quimovia.com',
+          password: 'S3nhaForte!',
+          role: 'SYSTEM_ADMIN',
+        })
+        .expect(403);
+    });
+  });
 });

@@ -27,6 +27,14 @@ export interface UserActionActor {
   name?: string;
 }
 
+/**
+ * Ator do auto cadastro: quem cadastra é o próprio usuário criado, e não um
+ * usuário autenticado.
+ */
+export const SELF_REGISTRATION = 'SELF_REGISTRATION';
+
+export type CreateUserActor = UserActionActor | typeof SELF_REGISTRATION | null;
+
 @Injectable()
 export class CreateUserUseCase {
   private readonly logger = new Logger(CreateUserUseCase.name);
@@ -39,7 +47,10 @@ export class CreateUserUseCase {
     private readonly auditLogs?: AuditLogRecorder,
   ) {}
 
-  async execute(input: CreateUserInput, actor?: UserActionActor | null): Promise<User> {
+  async execute(
+    input: CreateUserInput,
+    actor?: CreateUserActor,
+  ): Promise<User> {
     try {
       const email = input.email.trim().toLowerCase();
       const existing = await this.users.findByEmail(email);
@@ -61,21 +72,18 @@ export class CreateUserUseCase {
       const createdUser = await this.users.create(user);
 
       if (this.auditLogs) {
-        let actorName = actor?.name;
-        if (!actorName && actor?.id) {
-          const actorUser = await this.users.findById(actor.id);
-          actorName = actorUser?.name;
-        }
-        const resolvedActorName = actorName ?? 'Administrador do Sistema';
-        const actorId = actor?.id ?? createdUser.id;
+        const auditActor = await this.resolveAuditActor(actor, createdUser);
 
         await this.auditLogs.record({
           entityType: AuditedEntity.USER,
           entityId: createdUser.id,
-          actorId,
-          actorName: resolvedActorName,
+          actorId: auditActor.id,
+          actorName: auditActor.name,
           action: AuditAction.CREATED,
-          description: `Usuário "${resolvedActorName}" cadastrou o usuário "${createdUser.name}" (${createdUser.email})`,
+          description:
+            actor === SELF_REGISTRATION
+              ? `Usuário "${createdUser.name}" (${createdUser.email}) realizou o próprio cadastro`
+              : `Usuário "${auditActor.name}" cadastrou o usuário "${createdUser.name}" (${createdUser.email})`,
           details: { role: createdUser.role, status: createdUser.status },
         });
       }
@@ -88,5 +96,25 @@ export class CreateUserUseCase {
       );
       throw error;
     }
+  }
+
+  private async resolveAuditActor(
+    actor: CreateUserActor | undefined,
+    createdUser: User,
+  ): Promise<{ id: string; name: string }> {
+    if (actor === SELF_REGISTRATION) {
+      return { id: createdUser.id, name: createdUser.name };
+    }
+
+    let actorName = actor?.name;
+    if (!actorName && actor?.id) {
+      const actorUser = await this.users.findById(actor.id);
+      actorName = actorUser?.name;
+    }
+
+    return {
+      id: actor?.id ?? createdUser.id,
+      name: actorName ?? 'Administrador do Sistema',
+    };
   }
 }
