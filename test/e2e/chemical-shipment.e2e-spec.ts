@@ -29,6 +29,8 @@ import {
 import { ShipmentDocumentRepositoryMock } from '../mocks/shipment-document-repository.mock.js';
 import { AUDIT_LOG_REPOSITORY } from '@/modules/audit-log/domain/repositories/audit-log.repository.js';
 import { AuditLogRepositoryMock } from '../mocks/audit-log-repository.mock.js';
+import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
+import { PasswordHasherMock } from '../mocks/password-hasher.mock.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
@@ -51,6 +53,7 @@ describe('ChemicalShipmentController (e2e)', () => {
   let products: ChemicalProductRepository;
   let shipments: ChemicalShipmentRepository;
   let documents: ShipmentDocumentRepository;
+  let auditLogs: AuditLogRepositoryMock;
 
   let responsibleUser: User;
   let activeProduct: ChemicalProduct;
@@ -67,6 +70,8 @@ describe('ChemicalShipmentController (e2e)', () => {
       })
       .overrideProvider(AUTH_CONFIG)
       .useValue(TEST_AUTH_CONFIG)
+      .overrideProvider(PASSWORD_HASHER)
+      .useClass(PasswordHasherMock)
       .overrideProvider(USER_REPOSITORY)
       .useClass(UserRepositoryMock)
       .overrideProvider(SESSION_REPOSITORY)
@@ -96,6 +101,7 @@ describe('ChemicalShipmentController (e2e)', () => {
     products = app.get(CHEMICAL_PRODUCT_REPOSITORY);
     shipments = app.get(CHEMICAL_SHIPMENT_REPOSITORY);
     documents = app.get(SHIPMENT_DOCUMENT_REPOSITORY);
+    auditLogs = app.get(AUDIT_LOG_REPOSITORY);
 
     responsibleUser = await users.create(
       User.create({
@@ -473,6 +479,49 @@ describe('ChemicalShipmentController (e2e)', () => {
         .patch(`/chemical-shipment/${created.id}/status`)
         .send({ status: 'STATUS_TOTALMENTE_INVALIDO' })
         .expect(400);
+    });
+
+    it('registra o operador autenticado nos logs de auditoria quando diferente do responsável técnico', async () => {
+      const operatorPassword = 'SenhaOperador123!';
+      const operator = await users.create(
+        User.create({
+          name: 'Operador Portuário Santos',
+          email: 'operador.santos@quimovia.com',
+          passwordHash: `hash:${operatorPassword}`,
+          role: UserRole.PORT_OPERATOR,
+        }),
+      );
+
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'operador.santos@quimovia.com',
+          password: operatorPassword,
+        })
+        .expect(200);
+
+      const operatorToken = loginRes.body.accessToken;
+      expect(operatorToken).toBeDefined();
+
+      const created = await createValidShipment();
+
+      await request(app.getHttpServer())
+        .patch(`/chemical-shipment/${created.id}/status`)
+        .set('Authorization', `Bearer ${operatorToken}`)
+        .send({ status: StatusShipment.ANALYZING })
+        .expect(200);
+
+      const recorded = auditLogs.entries.find(
+        (entry) =>
+          entry.entityId === created.id &&
+          entry.action === 'STATUS_CHANGED',
+      );
+
+      expect(recorded).toBeDefined();
+      expect(recorded?.actorId).toBe(operator.id);
+      expect(recorded?.actorId).not.toBe(responsibleUser.id);
+      expect(recorded?.actorName).toBe('Operador Portuário Santos');
+      expect(recorded?.description).toContain('Operador Portuário Santos');
     });
   });
 

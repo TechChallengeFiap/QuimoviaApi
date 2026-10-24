@@ -15,9 +15,11 @@ import {
   Query,
   Req,
   UseFilters,
+  UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
 import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
+import { OptionalAuthGuard } from '@/modules/user/infrastructure/auth/optional-auth.guard.js';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -57,6 +59,7 @@ import { CancelChemicalShipmentUseCase } from '@/modules/chemical-shipment/appli
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
 @UseFilters(DomainExceptionFilter)
+@UseGuards(OptionalAuthGuard)
 export class ChemicalShipmentController {
   private readonly logger = new Logger(ChemicalShipmentController.name);
 
@@ -149,7 +152,7 @@ export class ChemicalShipmentController {
       }),
     )
     chemicalShipment: CreateChemicalShipmentDTO,
-    @Req() req: AuthenticatedRequest,
+    @Req() req?: AuthenticatedRequest,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
       const actor = req?.auth ? { id: req.auth.userId } : null;
@@ -367,7 +370,7 @@ export class ChemicalShipmentController {
     @Param('id') id: string,
     @Body(validationPipeFor(UpdateChemicalShipmentDto))
     updateChemicalShipmentDto: UpdateChemicalShipmentDto,
-    @Req() req: AuthenticatedRequest,
+    @Req() req?: AuthenticatedRequest,
   ): Promise<ChemicalShipmentResponseDto> {
     try {
       const actor = req?.auth ? { id: req.auth.userId } : null;
@@ -422,7 +425,7 @@ export class ChemicalShipmentController {
   })
   async deleteChemicalShipment(
     @Param('id') id: string,
-    @Req() req: AuthenticatedRequest,
+    @Req() req?: AuthenticatedRequest,
   ): Promise<void> {
     try {
       const actor = req?.auth ? { id: req.auth.userId } : null;
@@ -555,7 +558,7 @@ export class ChemicalShipmentController {
     @Param('id') id: string,
     @Body(validationPipeFor(ChangeChemicalShipmentStatusDto))
     dto: ChangeChemicalShipmentStatusDto,
-    @Req() req: AuthenticatedRequest,
+    @Req() req?: AuthenticatedRequest,
   ): Promise<ChemicalShipmentResponseDto> {
     const shipment = await this.changeStatusUseCase.execute(
       id,
@@ -598,7 +601,7 @@ export class ChemicalShipmentController {
   })
   async release(
     @Param('id') id: string,
-    @Req() req: AuthenticatedRequest,
+    @Req() req?: AuthenticatedRequest,
   ): Promise<ChemicalShipmentResponseDto> {
     const shipment = await this.releaseUseCase.execute(
       id,
@@ -640,7 +643,7 @@ export class ChemicalShipmentController {
   })
   async block(
     @Param('id') id: string,
-    @Req() req: AuthenticatedRequest,
+    @Req() req?: AuthenticatedRequest,
   ): Promise<ChemicalShipmentResponseDto> {
     const shipment = await this.blockUseCase.execute(
       id,
@@ -682,7 +685,7 @@ export class ChemicalShipmentController {
   })
   async cancel(
     @Param('id') id: string,
-    @Req() req: AuthenticatedRequest,
+    @Req() req?: AuthenticatedRequest,
   ): Promise<ChemicalShipmentResponseDto> {
     const shipment = await this.cancelUseCase.execute(
       id,

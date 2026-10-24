@@ -13,6 +13,7 @@ import {
 } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/index.js';
 import {
   BusinessRuleError,
+  ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import { AuditAction, AuditedEntity } from '@/modules/audit-log/public/index.js';
@@ -260,6 +261,26 @@ describe('Chemical Shipment Status Use Cases', () => {
       expect(updateSpy).not.toHaveBeenCalled();
       const unchanged = await shipmentsRepo.findById(shipment.id);
       expect(unchanged?.status).toBe(StatusShipment.REGISTERED);
+    });
+
+    it('rejeita escrita concorrente obsoleta com ConflictError se o status mudar durante a operação', async () => {
+      const shipment = await createRegisteredShipment();
+      await startAnalysisUseCase.execute(shipment.id);
+      await sendToInspectionUseCase.execute(shipment.id);
+      docChecker.markAsDocumented(shipment.id);
+
+      // Simula alteração concorrente que ocorreu no banco entre a checagem e a persistência
+      const originalUpdate = shipmentsRepo.update.bind(shipmentsRepo);
+      jest
+        .spyOn(shipmentsRepo, 'update')
+        .mockImplementation(async (entity, expectedStatus) => {
+          // Força status divergente no repositório para simular escrita obsoleta
+          return originalUpdate(entity, StatusShipment.CANCELLED);
+        });
+
+      await expect(releaseUseCase.execute(shipment.id)).rejects.toThrow(
+        ConflictError,
+      );
     });
   });
 });

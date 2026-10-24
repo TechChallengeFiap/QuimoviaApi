@@ -39,7 +39,7 @@ export class CancelChemicalShipmentUseCase {
 
     const previousStatus = shipment.status;
     shipment.cancel();
-    const updated = await this.chemicalShipments.update(shipment);
+    const updated = await this.chemicalShipments.update(shipment, previousStatus);
 
     await recordShipmentStatusAudit({
       shipment: updated,

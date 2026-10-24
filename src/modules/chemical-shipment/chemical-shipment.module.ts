@@ -17,11 +17,17 @@ import { CancelChemicalShipmentUseCase } from './application/use-cases/chemical-
 import { ChangeChemicalShipmentStatusUseCase } from './application/use-cases/chemical-shipment/status/change-chemical-shipment-status.use-case.js';
 
 import { UserModule } from '@/modules/user/user.module.js';
+import { AuthModule } from '@/modules/user/auth.module.js';
 import { ChemicalProductsModule } from '../chemical-products/chemical-products.module.js';
 import { DocumentComplianceModule } from '@/modules/document-compliance/public/index.js';
 
 @Module({
-  imports: [UserModule, ChemicalProductsModule, DocumentComplianceModule],
+  imports: [
+    UserModule,
+    AuthModule,
+    ChemicalProductsModule,
+    DocumentComplianceModule,
+  ],
   controllers: [ChemicalShipmentController],
   providers: [
     CreateChemicalShipmentUseCase,

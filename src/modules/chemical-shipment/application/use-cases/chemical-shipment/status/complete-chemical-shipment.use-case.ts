@@ -39,7 +39,7 @@ export class CompleteChemicalShipmentUseCase {
 
     const previousStatus = shipment.status;
     shipment.complete();
-    const updated = await this.chemicalShipments.update(shipment);
+    const updated = await this.chemicalShipments.update(shipment, previousStatus);
 
     await recordShipmentStatusAudit({
       shipment: updated,

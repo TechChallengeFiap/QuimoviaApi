@@ -46,7 +46,7 @@ export class ReleaseChemicalShipmentUseCase {
     const hasDocs = await this.documentation.hasRequiredDocumentation(shipment.id);
     const previousStatus = shipment.status;
     shipment.release(hasDocs);
-    const updated = await this.chemicalShipments.update(shipment);
+    const updated = await this.chemicalShipments.update(shipment, previousStatus);
 
     await recordShipmentStatusAudit({
       shipment: updated,

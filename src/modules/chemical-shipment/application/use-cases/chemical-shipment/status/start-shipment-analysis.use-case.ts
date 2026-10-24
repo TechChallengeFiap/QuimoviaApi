@@ -39,7 +39,7 @@ export class StartShipmentAnalysisUseCase {
 
     const previousStatus = shipment.status;
     shipment.startAnalysis();
-    const updated = await this.chemicalShipments.update(shipment);
+    const updated = await this.chemicalShipments.update(shipment, previousStatus);
 
     await recordShipmentStatusAudit({
       shipment: updated,

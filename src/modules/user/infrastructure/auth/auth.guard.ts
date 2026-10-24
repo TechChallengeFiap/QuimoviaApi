@@ -46,7 +46,7 @@ export class AuthGuard implements CanActivate {
   }
 
   /** Lê o token do cabeçalho "Authorization: Bearer <token>". */
-  private static extractBearerToken(header?: string): string | null {
+  static extractBearerToken(header?: string): string | null {
     const [scheme, token, ...rest] = header?.trim().split(/\s+/) ?? [];
 
     if (scheme?.toLowerCase() !== 'bearer' || !token || rest.length > 0) {

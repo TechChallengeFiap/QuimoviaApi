@@ -19,6 +19,7 @@ import { ChangeChemicalShipmentStatusUseCase } from '@/modules/chemical-shipment
 import { ReleaseChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/release-chemical-shipment.use-case.js';
 import { BlockChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/block-chemical-shipment.use-case.js';
 import { CancelChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/cancel-chemical-shipment.use-case.js';
+import { OptionalAuthGuard } from '@/modules/user/infrastructure/auth/optional-auth.guard.js';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
@@ -31,10 +32,18 @@ describe('ChemicalShipmentController', () => {
   let releaseUseCase: jest.Mocked<ReleaseChemicalShipmentUseCase>;
   let blockUseCase: jest.Mocked<BlockChemicalShipmentUseCase>;
   let cancelUseCase: jest.Mocked<CancelChemicalShipmentUseCase>;
-  let executeChangeStatus: ReturnType<typeof jest.fn>;
-  let executeRelease: ReturnType<typeof jest.fn>;
-  let executeBlock: ReturnType<typeof jest.fn>;
-  let executeCancel: ReturnType<typeof jest.fn>;
+  let executeChangeStatus: jest.MockedFunction<
+    ChangeChemicalShipmentStatusUseCase['execute']
+  >;
+  let executeRelease: jest.MockedFunction<
+    ReleaseChemicalShipmentUseCase['execute']
+  >;
+  let executeBlock: jest.MockedFunction<
+    BlockChemicalShipmentUseCase['execute']
+  >;
+  let executeCancel: jest.MockedFunction<
+    CancelChemicalShipmentUseCase['execute']
+  >;
 
   const mockShipment = ChemicalShipment.create({
     productId: 'prod-001',
@@ -64,22 +73,30 @@ describe('ChemicalShipmentController', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<DeleteChemicalShipmentUseCase>;
 
-    executeChangeStatus = jest.fn();
+    executeChangeStatus = jest.fn() as unknown as jest.MockedFunction<
+      ChangeChemicalShipmentStatusUseCase['execute']
+    >;
     changeStatusUseCase = {
       execute: executeChangeStatus,
     } as unknown as jest.Mocked<ChangeChemicalShipmentStatusUseCase>;
 
-    executeRelease = jest.fn();
+    executeRelease = jest.fn() as unknown as jest.MockedFunction<
+      ReleaseChemicalShipmentUseCase['execute']
+    >;
     releaseUseCase = {
       execute: executeRelease,
     } as unknown as jest.Mocked<ReleaseChemicalShipmentUseCase>;
 
-    executeBlock = jest.fn();
+    executeBlock = jest.fn() as unknown as jest.MockedFunction<
+      BlockChemicalShipmentUseCase['execute']
+    >;
     blockUseCase = {
       execute: executeBlock,
     } as unknown as jest.Mocked<BlockChemicalShipmentUseCase>;
 
-    executeCancel = jest.fn();
+    executeCancel = jest.fn() as unknown as jest.MockedFunction<
+      CancelChemicalShipmentUseCase['execute']
+    >;
     cancelUseCase = {
       execute: executeCancel,
     } as unknown as jest.Mocked<CancelChemicalShipmentUseCase>;
@@ -100,7 +117,10 @@ describe('ChemicalShipmentController', () => {
         { provide: BlockChemicalShipmentUseCase, useValue: blockUseCase },
         { provide: CancelChemicalShipmentUseCase, useValue: cancelUseCase },
       ],
-    }).compile();
+    })
+      .overrideGuard(OptionalAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ChemicalShipmentController>(
       ChemicalShipmentController,
