@@ -186,56 +186,73 @@ copy .env.example .env
 
 > **Autenticação:** o `JWT_SECRET` e o `ADMIN_PASSWORD` vêm em branco no exemplo e precisam ser preenchidos. Sem um `JWT_SECRET` válido a API não sobe, e sem o `ADMIN_PASSWORD` o seed não cria o administrador. Para gerar o segredo, use por exemplo `openssl rand -base64 48`.
 
-#### 3. Subir o container do banco de dados (MySQL)
+### 5.3. Executando com Docker e Localmente
 
-Utilize o Docker Compose para iniciar o banco em segundo plano (a porta exposta é `3333` para evitar conflitos locais):
+Você pode executar o Quimovia de duas formas: **100% via Docker** (API + Banco de Dados em containers) ou **modo híbrido** (banco no Docker e API rodando localmente para desenvolvimento).
 
-```bash
-docker compose up -d
-```
+---
 
-> **Verificação:** Para conferir o status do container, execute `docker compose ps`. O container `quimovia-mysql` deve estar com status _healthy/running_.
+#### Opção A: Execução Completa via Docker (Recomendada / Avaliação)
 
-#### 4. Gerar o Prisma Client
+Com apenas um comando, o Docker Compose inicializa o banco MySQL, aguarda o _healthcheck_ de prontidão, compila a imagem da API via multi-stage build, aplica as migrações do Prisma, executa o seed do administrador inicial e sobe a aplicação:
 
-Gera os clientes tipados com base em `prisma/schema.prisma` dentro de `src/generated/prisma`:
+1. **Configurar as variáveis de ambiente:**
+   ```bash
+   # Linux / macOS
+   cp .env.example .env
 
-```bash
-npm run migrate:generate
-```
+   # Windows (PowerShell / CMD)
+   copy .env.example .env
+   ```
+   > Certifique-se de preencher `JWT_SECRET` (mínimo 32 caracteres) e `ADMIN_PASSWORD` (mínimo 8 caracteres) no `.env`.
 
-#### 5. Executar as Migrações do Banco
+2. **Subir todos os serviços (API + MySQL):**
+   ```bash
+   docker compose up -d --build
+   ```
 
-Aplica as tabelas, enums e índices no banco de dados recém-iniciado:
+3. **Verificar os serviços:**
+   ```bash
+   docker compose ps
+   ```
+   Ambos os containers (`quimovia-mysql` e `quimovia-api`) devem estar com status _running_ e _healthy_.
 
-```bash
-# Ambiente de desenvolvimento (cria e aplica)
-npm run migrate:dev
+4. **Acessar a API:**
+   - **API REST:** [http://localhost:3000](http://localhost:3000)
+   - **Documentação Interativa Swagger:** [http://localhost:3000/api](http://localhost:3000/api)
 
-# Ou para deploy / ambiente já versionado
-npm run migrate:deploy
-```
+5. **Para parar os containers:**
+   ```bash
+   docker compose down
+   ```
 
-#### 6. Criar o administrador inicial
+---
 
-Só o Administrador do Sistema pode cadastrar usuários. Por isso, um banco novo precisa de um primeiro administrador, criado com os dados de `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME`:
+#### Opção B: Desenvolvimento Local (Banco no Docker + API na Máquina)
 
-```bash
-npm run migrate:seed
-```
+Se você estiver desenvolvendo e quiser aproveitar o hot-reload (`tsx watch`):
 
-> O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado.
+1. **Subir apenas o container do MySQL:**
+   ```bash
+   docker compose up -d mysql
+   ```
 
-#### 7. Iniciar a API em Desenvolvimento
+2. **Gerar o Prisma Client e aplicar migrações:**
+   ```bash
+   npm run migrate:generate
+   npm run migrate:dev
+   ```
 
-```bash
-npm run start:dev
-```
+3. **Criar o administrador inicial (Seed):**
+   ```bash
+   npm run migrate:seed
+   ```
 
-A aplicação estará acessível em: `http://localhost:3000`  
-A documentação Swagger estará disponível em: `http://localhost:3000/api`
-
-> A API não sobe sem um `JWT_SECRET` válido no `.env`.
+4. **Iniciar a API em modo desenvolvimento:**
+   ```bash
+   npm run start:dev
+   ```
+   A aplicação estará acessível em `http://localhost:3000` (Swagger: `http://localhost:3000/api`).
 
 ---
 
