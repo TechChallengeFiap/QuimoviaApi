@@ -25,11 +25,13 @@ import {
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
+  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.js';
 import { CreateChemicalShipmentDTO } from '@/modules/chemical-shipment/presentation/dtos/create-chemical-shipment.dto.js';
@@ -45,6 +47,13 @@ import { DomainError } from '@/shared/domain/errors/domain.error.js';
 import { UpdateChemicalShipmentDto } from '../dtos/update-chemical-shipment.dto.js';
 import { UpdateChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '../../application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.js';
+import { ChangeChemicalShipmentStatusDto } from '../dtos/change-chemical-shipment-status.dto.js';
+import { ShipmentTransitionsResponseDto } from '../dtos/shipment-transitions-response.dto.js';
+import { ChangeChemicalShipmentStatusUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/change-chemical-shipment-status.use-case.js';
+import { ReleaseChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/release-chemical-shipment.use-case.js';
+import { BlockChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/block-chemical-shipment.use-case.js';
+import { CancelChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/cancel-chemical-shipment.use-case.js';
+
 @Controller('chemical-shipment')
 @ApiTags('Cargas Químicas')
 @UseFilters(DomainExceptionFilter)
@@ -62,14 +71,26 @@ export class ChemicalShipmentController {
     private readonly updateChemicalShipmentUseCase: UpdateChemicalShipmentUseCase,
     @Inject(DeleteChemicalShipmentUseCase)
     private readonly deleteChemicalShipmentUseCase: DeleteChemicalShipmentUseCase,
+    @Inject(ChangeChemicalShipmentStatusUseCase)
+    private readonly changeStatusUseCase: ChangeChemicalShipmentStatusUseCase,
+    @Inject(ReleaseChemicalShipmentUseCase)
+    private readonly releaseUseCase: ReleaseChemicalShipmentUseCase,
+    @Inject(BlockChemicalShipmentUseCase)
+    private readonly blockUseCase: BlockChemicalShipmentUseCase,
+    @Inject(CancelChemicalShipmentUseCase)
+    private readonly cancelUseCase: CancelChemicalShipmentUseCase,
   ) {}
+
+  private static actorFrom(req?: AuthenticatedRequest | null) {
+    return req?.auth ? { id: req.auth.userId } : null;
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Cadastrar nova carga química',
     description:
-      'Cria um novo registro de carga química com status inicial ANALYZING.',
+      'Cria um novo registro de carga química com status inicial REGISTERED.',
   })
   @ApiBody({
     type: CreateChemicalShipmentDTO,
@@ -298,7 +319,8 @@ export class ChemicalShipmentController {
         description:
           'Payload com dados mínimos obrigatórios para atualizar a carga química',
         value: {
-          status: StatusShipment.APPROVED,
+          quantityProduct: 150,
+          documentsIds: 'DOC-456',
         },
       },
     },
@@ -419,5 +441,253 @@ export class ChemicalShipmentController {
         'Erro interno do servidor ao processar a remoção da carga química.',
       );
     }
+  }
+
+  @Get(':id/transitions')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Consultar transições permitidas para a carga química',
+    description:
+      'Retorna o status atual da carga, seu rótulo legível, se é terminal e a lista de transições permitidas.',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID da carga química',
+    example: '3f1c2a9e-8b7d-4c6e-9a1f-2b3c4d5e6f70',
+  })
+  @ApiOkResponse({
+    description: 'Transições permitidas retornadas com sucesso.',
+    type: ShipmentTransitionsResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Carga química não encontrada.',
+  })
+  async getTransitions(
+    @Param('id') id: string,
+  ): Promise<ShipmentTransitionsResponseDto> {
+    const shipment = await this.findChemicalShipmentByIdUseCase.execute(id);
+    return ShipmentTransitionsResponseDto.fromEntity(shipment);
+  }
+
+  @Patch(':id/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Alterar o status da carga química',
+    description:
+      'Fluxo principal: REGISTERED → ANALYZING → INSPECTION → APPROVED → IN_TRANSIT → COMPLETED. ' +
+      'Alternativos: REGISTERED/ANALYZING/INSPECTION/APPROVED/REPROVED → CANCELLED; INSPECTION → REPROVED. ' +
+      'COMPLETED e CANCELLED são terminais. APPROVED exige documentação obrigatória válida.',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID da carga química',
+    example: '3f1c2a9e-8b7d-4c6e-9a1f-2b3c4d5e6f70',
+  })
+  @ApiBody({
+    type: ChangeChemicalShipmentStatusDto,
+    description: 'Novo status desejado para a carga química.',
+    examples: {
+      analise: {
+        summary: 'Registrada → Em análise',
+        value: { status: StatusShipment.ANALYZING },
+      },
+      inspecao: {
+        summary: 'Em análise → Em inspeção',
+        value: { status: StatusShipment.INSPECTION },
+      },
+      liberada: {
+        summary: 'Em inspeção → Liberada (requer documentação)',
+        value: { status: StatusShipment.APPROVED },
+      },
+      movimentacao: {
+        summary: 'Liberada → Em movimentação',
+        value: { status: StatusShipment.IN_TRANSIT },
+      },
+      finalizada: {
+        summary: 'Em movimentação → Finalizada',
+        value: { status: StatusShipment.COMPLETED },
+      },
+      cancelada: {
+        summary: 'Cancelamento a partir de status permitido',
+        value: { status: StatusShipment.CANCELLED },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description: 'Status da carga química alterado com sucesso.',
+    type: ChemicalShipmentResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Status fornecido fora do enum permitido.',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: ['O status da carga química é inválido.'],
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Carga química não encontrada.',
+    schema: {
+      example: {
+        statusCode: 404,
+        message:
+          'Carga Química não encontrado(a) para o identificador "3f1c2a9e-8b7d-4c6e-9a1f-2b3c4d5e6f70".',
+        error: 'Not Found',
+      },
+    },
+  })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'Transição proibida pela regra de negócio ou documentação ausente.',
+    schema: {
+      example: {
+        statusCode: 422,
+        message: 'Uma carga bloqueada não pode entrar em movimentação.',
+        error: 'Unprocessable Entity',
+      },
+    },
+  })
+  async changeStatus(
+    @Param('id') id: string,
+    @Body(validationPipeFor(ChangeChemicalShipmentStatusDto))
+    dto: ChangeChemicalShipmentStatusDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ChemicalShipmentResponseDto> {
+    const shipment = await this.changeStatusUseCase.execute(
+      id,
+      dto.status,
+      ChemicalShipmentController.actorFrom(req),
+    );
+    return ChemicalShipmentResponseDto.fromEntity(shipment);
+  }
+
+  @Patch(':id/release')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Liberar carga química',
+    description:
+      'Transição especializada de Em inspeção (INSPECTION) para Liberada (APPROVED). Exige documentação obrigatória válida e vigente.',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID da carga química',
+    example: '3f1c2a9e-8b7d-4c6e-9a1f-2b3c4d5e6f70',
+  })
+  @ApiOkResponse({
+    description: 'Carga química liberada com sucesso.',
+    type: ChemicalShipmentResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Carga química não encontrada.',
+  })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'Documentação obrigatória ausente/inválida ou transição proibida.',
+    schema: {
+      example: {
+        statusCode: 422,
+        message: 'Uma carga não pode ser liberada sem documentação obrigatória.',
+        error: 'Unprocessable Entity',
+      },
+    },
+  })
+  async release(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ChemicalShipmentResponseDto> {
+    const shipment = await this.releaseUseCase.execute(
+      id,
+      ChemicalShipmentController.actorFrom(req),
+    );
+    return ChemicalShipmentResponseDto.fromEntity(shipment);
+  }
+
+  @Patch(':id/block')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Bloquear carga química',
+    description:
+      'Transição especializada de Em inspeção (INSPECTION) para Bloqueada (REPROVED). Cargas bloqueadas não podem entrar em movimentação.',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID da carga química',
+    example: '3f1c2a9e-8b7d-4c6e-9a1f-2b3c4d5e6f70',
+  })
+  @ApiOkResponse({
+    description: 'Carga química bloqueada com sucesso.',
+    type: ChemicalShipmentResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Carga química não encontrada.',
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Transição proibida.',
+    schema: {
+      example: {
+        statusCode: 422,
+        message:
+          'Transição de status inválida: "Liberada" → "Bloqueada". A partir de "Liberada" são permitidos: "Cancelada".',
+        error: 'Unprocessable Entity',
+      },
+    },
+  })
+  async block(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ChemicalShipmentResponseDto> {
+    const shipment = await this.blockUseCase.execute(
+      id,
+      ChemicalShipmentController.actorFrom(req),
+    );
+    return ChemicalShipmentResponseDto.fromEntity(shipment);
+  }
+
+  @Patch(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancelar carga química',
+    description:
+      'Transição especializada para Cancelada (CANCELLED). Permitido a partir de Registrada, Em análise, Em inspeção, Liberada e Bloqueada. Estados terminais não podem ser cancelados.',
+  })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'ID da carga química',
+    example: '3f1c2a9e-8b7d-4c6e-9a1f-2b3c4d5e6f70',
+  })
+  @ApiOkResponse({
+    description: 'Carga química cancelada com sucesso.',
+    type: ChemicalShipmentResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Carga química não encontrada.',
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Carga já finalizada ou cancelada.',
+    schema: {
+      example: {
+        statusCode: 422,
+        message:
+          'Uma carga cancelada não pode ser reativada nem sofrer novas alterações de status.',
+        error: 'Unprocessable Entity',
+      },
+    },
+  })
+  async cancel(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ChemicalShipmentResponseDto> {
+    const shipment = await this.cancelUseCase.execute(
+      id,
+      ChemicalShipmentController.actorFrom(req),
+    );
+    return ChemicalShipmentResponseDto.fromEntity(shipment);
   }
 }

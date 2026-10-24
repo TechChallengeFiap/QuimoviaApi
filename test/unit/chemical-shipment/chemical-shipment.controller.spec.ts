@@ -15,6 +15,10 @@ import {
 } from '@nestjs/common';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.js';
+import { ChangeChemicalShipmentStatusUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/change-chemical-shipment-status.use-case.js';
+import { ReleaseChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/release-chemical-shipment.use-case.js';
+import { BlockChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/block-chemical-shipment.use-case.js';
+import { CancelChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/cancel-chemical-shipment.use-case.js';
 
 describe('ChemicalShipmentController', () => {
   let controller: ChemicalShipmentController;
@@ -23,6 +27,14 @@ describe('ChemicalShipmentController', () => {
   let findByIdUseCase: jest.Mocked<FindChemicalShipmentByIdUseCase>;
   let updateUseCase: jest.Mocked<UpdateChemicalShipmentUseCase>;
   let deleteUseCase: jest.Mocked<DeleteChemicalShipmentUseCase>;
+  let changeStatusUseCase: jest.Mocked<ChangeChemicalShipmentStatusUseCase>;
+  let releaseUseCase: jest.Mocked<ReleaseChemicalShipmentUseCase>;
+  let blockUseCase: jest.Mocked<BlockChemicalShipmentUseCase>;
+  let cancelUseCase: jest.Mocked<CancelChemicalShipmentUseCase>;
+  let executeChangeStatus: ReturnType<typeof jest.fn>;
+  let executeRelease: ReturnType<typeof jest.fn>;
+  let executeBlock: ReturnType<typeof jest.fn>;
+  let executeCancel: ReturnType<typeof jest.fn>;
 
   const mockShipment = ChemicalShipment.create({
     productId: 'prod-001',
@@ -52,6 +64,26 @@ describe('ChemicalShipmentController', () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<DeleteChemicalShipmentUseCase>;
 
+    executeChangeStatus = jest.fn();
+    changeStatusUseCase = {
+      execute: executeChangeStatus,
+    } as unknown as jest.Mocked<ChangeChemicalShipmentStatusUseCase>;
+
+    executeRelease = jest.fn();
+    releaseUseCase = {
+      execute: executeRelease,
+    } as unknown as jest.Mocked<ReleaseChemicalShipmentUseCase>;
+
+    executeBlock = jest.fn();
+    blockUseCase = {
+      execute: executeBlock,
+    } as unknown as jest.Mocked<BlockChemicalShipmentUseCase>;
+
+    executeCancel = jest.fn();
+    cancelUseCase = {
+      execute: executeCancel,
+    } as unknown as jest.Mocked<CancelChemicalShipmentUseCase>;
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ChemicalShipmentController],
       providers: [
@@ -60,6 +92,13 @@ describe('ChemicalShipmentController', () => {
         { provide: FindChemicalShipmentByIdUseCase, useValue: findByIdUseCase },
         { provide: UpdateChemicalShipmentUseCase, useValue: updateUseCase },
         { provide: DeleteChemicalShipmentUseCase, useValue: deleteUseCase },
+        {
+          provide: ChangeChemicalShipmentStatusUseCase,
+          useValue: changeStatusUseCase,
+        },
+        { provide: ReleaseChemicalShipmentUseCase, useValue: releaseUseCase },
+        { provide: BlockChemicalShipmentUseCase, useValue: blockUseCase },
+        { provide: CancelChemicalShipmentUseCase, useValue: cancelUseCase },
       ],
     }).compile();
 
@@ -297,6 +336,135 @@ describe('ChemicalShipmentController', () => {
       await expect(
         controller.deleteChemicalShipment(mockShipment.id),
       ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
+  describe('getTransitions (diferencial)', () => {
+    it('deve retornar as transições permitidas para a carga química', async () => {
+      findByIdUseCase.execute.mockResolvedValue(mockShipment);
+
+      const result = await controller.getTransitions(mockShipment.id);
+
+      expect(result.shipmentId).toBe(mockShipment.id);
+      expect(result.currentStatus).toBe(StatusShipment.REGISTERED);
+      expect(result.currentStatusLabel).toBe('Registrada');
+      expect(result.isTerminal).toBe(false);
+      expect(result.allowedTransitions).toEqual([
+        { status: StatusShipment.ANALYZING, label: 'Em análise' },
+        { status: StatusShipment.CANCELLED, label: 'Cancelada' },
+      ]);
+    });
+  });
+
+  describe('changeStatus', () => {
+    it('deve alterar o status da carga com sucesso', async () => {
+      const analyzingShipment = ChemicalShipment.restore({
+        id: mockShipment.id,
+        createdAt: mockShipment.createdAt,
+        updatedAt: new Date(),
+        productId: mockShipment.productId,
+        quantityProduct: mockShipment.quantityProduct,
+        responsibleUserId: mockShipment.responsibleUserId,
+        documentsIds: mockShipment.documentsIds,
+        status: StatusShipment.ANALYZING,
+        deletedAt: null,
+      });
+      executeChangeStatus.mockResolvedValue(analyzingShipment);
+
+      const result = await controller.changeStatus(
+        mockShipment.id,
+        { status: StatusShipment.ANALYZING },
+        { auth: { userId: 'user-001' } } as any,
+      );
+
+      expect(result.id).toBe(mockShipment.id);
+      expect(result.status).toBe(StatusShipment.ANALYZING);
+      expect(executeChangeStatus).toHaveBeenCalledWith(
+        mockShipment.id,
+        StatusShipment.ANALYZING,
+        { id: 'user-001' },
+      );
+    });
+  });
+
+  describe('release', () => {
+    it('deve liberar a carga química com sucesso', async () => {
+      const releasedShipment = ChemicalShipment.restore({
+        id: mockShipment.id,
+        createdAt: mockShipment.createdAt,
+        updatedAt: new Date(),
+        productId: mockShipment.productId,
+        quantityProduct: mockShipment.quantityProduct,
+        responsibleUserId: mockShipment.responsibleUserId,
+        documentsIds: mockShipment.documentsIds,
+        status: StatusShipment.APPROVED,
+        deletedAt: null,
+      });
+      executeRelease.mockResolvedValue(releasedShipment);
+
+      const result = await controller.release(
+        mockShipment.id,
+        { auth: { userId: 'user-001' } } as any,
+      );
+
+      expect(result.status).toBe(StatusShipment.APPROVED);
+      expect(executeRelease).toHaveBeenCalledWith(mockShipment.id, {
+        id: 'user-001',
+      });
+    });
+  });
+
+  describe('block', () => {
+    it('deve bloquear a carga química com sucesso', async () => {
+      const blockedShipment = ChemicalShipment.restore({
+        id: mockShipment.id,
+        createdAt: mockShipment.createdAt,
+        updatedAt: new Date(),
+        productId: mockShipment.productId,
+        quantityProduct: mockShipment.quantityProduct,
+        responsibleUserId: mockShipment.responsibleUserId,
+        documentsIds: mockShipment.documentsIds,
+        status: StatusShipment.REPROVED,
+        deletedAt: null,
+      });
+      executeBlock.mockResolvedValue(blockedShipment);
+
+      const result = await controller.block(
+        mockShipment.id,
+        { auth: { userId: 'user-001' } } as any,
+      );
+
+      expect(result.status).toBe(StatusShipment.REPROVED);
+      expect(executeBlock).toHaveBeenCalledWith(mockShipment.id, {
+        id: 'user-001',
+      });
+    });
+  });
+
+  describe('cancel', () => {
+    it('deve cancelar a carga química com sucesso', async () => {
+      const cancelledShipment = ChemicalShipment.restore({
+        id: mockShipment.id,
+        createdAt: mockShipment.createdAt,
+        updatedAt: new Date(),
+        productId: mockShipment.productId,
+        quantityProduct: mockShipment.quantityProduct,
+        responsibleUserId: mockShipment.responsibleUserId,
+        documentsIds: mockShipment.documentsIds,
+        status: StatusShipment.CANCELLED,
+        deletedAt: null,
+      });
+      executeCancel.mockResolvedValue(cancelledShipment);
+
+      const result = await controller.cancel(
+        mockShipment.id,
+        { auth: { userId: 'user-001' } } as any,
+      );
+
+      expect(result.status).toBe(StatusShipment.CANCELLED);
+      expect(executeCancel).toHaveBeenCalledWith(mockShipment.id, {
+        id: 'user-001',
+      });
     });
   });
 });
