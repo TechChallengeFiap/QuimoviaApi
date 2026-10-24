@@ -7,6 +7,8 @@ import { UpdateShipmentDocumentUseCase } from '@/modules/document-compliance/app
 import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import { PrismaShipmentDocumentRepository } from '@/modules/document-compliance/infrastructure/persistence/prisma/prisma-shipment-document.repository.js';
 import { ShipmentDocumentsController } from '@/modules/document-compliance/presentation/controllers/shipment-documents.controller.js';
+import { SHIPMENT_DOCUMENTATION_CHECKER } from './public/shipment-documentation-checker.contract.js';
+import { CheckShipmentDocumentationUseCase } from './application/use-cases/shipment-documents/check-shipment-documentation.use-case.js';
 
 @Module({
   controllers: [ShipmentDocumentsController],
@@ -19,6 +21,10 @@ import { ShipmentDocumentsController } from '@/modules/document-compliance/prese
     {
       provide: SHIPMENT_DOCUMENT_REPOSITORY,
       useClass: PrismaShipmentDocumentRepository,
+    },
+    {
+      provide: SHIPMENT_DOCUMENTATION_CHECKER,
+      useClass: CheckShipmentDocumentationUseCase,
     },
   ],
 })
