@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import {
@@ -231,6 +231,35 @@ describe('Chemical Shipment Status Use Cases', () => {
       await expect(
         changeStatusUseCase.execute(shipment.id, 'STATUS_INEXISTENTE' as any),
       ).rejects.toThrow(BusinessRuleError);
+    });
+
+    it('consulta a documentação apenas na liberação', async () => {
+      const shipment = await createRegisteredShipment();
+      const docCheckSpy = jest.spyOn(docChecker, 'hasRequiredDocumentation');
+
+      await startAnalysisUseCase.execute(shipment.id);
+      expect(docCheckSpy).not.toHaveBeenCalled();
+
+      await sendToInspectionUseCase.execute(shipment.id);
+      expect(docCheckSpy).not.toHaveBeenCalled();
+
+      docChecker.markAsDocumented(shipment.id);
+      await releaseUseCase.execute(shipment.id);
+      expect(docCheckSpy).toHaveBeenCalledTimes(1);
+      expect(docCheckSpy).toHaveBeenCalledWith(shipment.id);
+    });
+
+    it('rejeita transição proibida e não persiste alterações', async () => {
+      const shipment = await createRegisteredShipment();
+      const updateSpy = jest.spyOn(shipmentsRepo, 'update');
+
+      await expect(
+        changeStatusUseCase.execute(shipment.id, StatusShipment.COMPLETED),
+      ).rejects.toThrow(BusinessRuleError);
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      const unchanged = await shipmentsRepo.findById(shipment.id);
+      expect(unchanged?.status).toBe(StatusShipment.REGISTERED);
     });
   });
 });

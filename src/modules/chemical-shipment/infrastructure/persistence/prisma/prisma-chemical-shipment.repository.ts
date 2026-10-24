@@ -35,7 +35,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             id: chemicalShipment.id,
             createdAt: chemicalShipment.createdAt,
             updatedAt: chemicalShipment.updatedAt,
-            status: chemicalShipment.status as any,
+            status: chemicalShipment.status,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
             responsibleUserId: chemicalShipment.responsibleUserId,
@@ -61,7 +61,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
       const pageSize = Number(filters.pageSize);
 
       const where = {
-        status: filters.status as any,
+        status: filters.status,
         productId: filters.productId,
         responsibleUserId: filters.responsibleUserId,
         documentsIds: filters.documentsIds,
@@ -127,7 +127,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             id: chemicalShipment.id,
             createdAt: chemicalShipment.createdAt,
             updatedAt: chemicalShipment.updatedAt,
-            status: chemicalShipment.status as any,
+            status: chemicalShipment.status,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
             responsibleUserId: chemicalShipment.responsibleUserId,
