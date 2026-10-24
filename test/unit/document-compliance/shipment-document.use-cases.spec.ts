@@ -13,6 +13,9 @@ import {
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import { ShipmentDocumentRepositoryMock } from '../../mocks/shipment-document-repository.mock.js';
+import { UserRepositoryMock } from '../../mocks/user-repository.mock.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import {
   createAttachmentData,
   createShipmentDocumentData,
@@ -21,22 +24,59 @@ import {
 
 describe('Casos de uso de ShipmentDocument', () => {
   let documents: ShipmentDocumentRepositoryMock;
+  let users: UserRepositoryMock;
+  let responsibleUser: User;
   let createDocument: CreateShipmentDocumentUseCase;
   let findDocument: FindShipmentDocumentByIdUseCase;
   let listDocuments: ListShipmentDocumentsUseCase;
   let updateDocument: UpdateShipmentDocumentUseCase;
   let deleteDocument: DeleteShipmentDocumentUseCase;
 
-  beforeEach(() => {
-    documents = new ShipmentDocumentRepositoryMock();
-    createDocument = new CreateShipmentDocumentUseCase(documents);
+  beforeEach(async () => {
+    users = new UserRepositoryMock();
+    responsibleUser = await users.create(
+      User.create({
+        name: 'Maria Silva',
+        email: 'maria@example.com',
+        passwordHash: 'internal-password-hash',
+        role: UserRole.TECHNICAL_MANAGER,
+      }),
+    );
+    documents = new ShipmentDocumentRepositoryMock(users);
+    createDocument = new CreateShipmentDocumentUseCase(documents, users);
     findDocument = new FindShipmentDocumentByIdUseCase(documents);
     listDocuments = new ListShipmentDocumentsUseCase(documents);
-    updateDocument = new UpdateShipmentDocumentUseCase(documents);
+    updateDocument = new UpdateShipmentDocumentUseCase(documents, users);
     deleteDocument = new DeleteShipmentDocumentUseCase(documents);
   });
 
   describe('CreateShipmentDocumentUseCase', () => {
+    it('creates multiple documents for an existing responsible user and normalizes the identifier', async () => {
+      for (let index = 0; index < 2; index++) {
+        const document = await createDocument.execute(
+          createShipmentDocumentData({
+            responsibleUserId: responsibleUser.id.toUpperCase(),
+          }),
+        );
+        expect(document.responsibleUserId).toBe(responsibleUser.id);
+        expect(document.responsibleUser).toEqual({
+          id: responsibleUser.id,
+          name: responsibleUser.name,
+        });
+      }
+    });
+
+    it('rejects an unknown responsible user without persisting the document', async () => {
+      const create = jest.spyOn(documents, 'create');
+      await expect(
+        createDocument.execute(
+          createShipmentDocumentData({
+            responsibleUserId: randomUUID(),
+          }),
+        ),
+      ).rejects.toThrow(ResourceNotFoundError);
+      expect(create).not.toHaveBeenCalled();
+    });
     it('persiste a raiz e seus anexos e devolve o registro', async () => {
       const document = await createDocument.execute(
         createShipmentDocumentData(),
@@ -151,6 +191,85 @@ describe('Casos de uso de ShipmentDocument', () => {
   });
 
   describe('UpdateShipmentDocumentUseCase', () => {
+    it('assigns and changes the responsible user without changing attachments', async () => {
+      const original = await createDocument.execute(
+        createShipmentDocumentData(),
+      );
+      const assigned = await updateDocument.execute(original.id, {
+        responsibleUserId: responsibleUser.id.toUpperCase(),
+      });
+      expect(assigned.responsibleUser).toEqual({
+        id: responsibleUser.id,
+        name: responsibleUser.name,
+      });
+      const replacement = await users.create(
+        User.create({
+          name: 'João Santos',
+          email: 'joao@example.com',
+          passwordHash: 'other-hash',
+          role: UserRole.TECHNICAL_MANAGER,
+        }),
+      );
+      const updated = await updateDocument.execute(original.id, {
+        responsibleUserId: replacement.id,
+      });
+      expect(updated.responsibleUserId).toBe(replacement.id);
+      expect(updated.responsibleUser).toEqual({
+        id: replacement.id,
+        name: replacement.name,
+      });
+      expect(updated.attachments).toEqual(original.attachments);
+      expect(updated.revision).toBe(2);
+    });
+
+    it('preserves the responsible user when only attachments change', async () => {
+      const original = await createDocument.execute(
+        createShipmentDocumentData({ responsibleUserId: responsibleUser.id }),
+      );
+      const updated = await updateDocument.execute(original.id, {
+        attachments: [createAttachmentData()],
+      });
+      expect(updated.responsibleUserId).toBe(responsibleUser.id);
+      expect(updated.responsibleUser).toEqual({
+        id: responsibleUser.id,
+        name: responsibleUser.name,
+      });
+      expect((await documents.findById(original.id))?.responsibleUserId).toBe(
+        responsibleUser.id,
+      );
+    });
+
+    it('rejects an unknown replacement and preserves the entire document', async () => {
+      const original = await createDocument.execute(
+        createShipmentDocumentData({ responsibleUserId: responsibleUser.id }),
+      );
+      const update = jest.spyOn(documents, 'update');
+      await expect(
+        updateDocument.execute(original.id, {
+          responsibleUserId: randomUUID(),
+          attachments: [createAttachmentData()],
+        }),
+      ).rejects.toThrow(ResourceNotFoundError);
+      expect(update).not.toHaveBeenCalled();
+      expect((await documents.findById(original.id))?.toObject()).toEqual(
+        original.toObject(),
+      );
+    });
+
+    it('preserves editing restrictions when changing the responsible user', async () => {
+      const original = await documents.create(
+        ShipmentDocument.restore({
+          ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
+          status: ShipmentDocumentStatus.UNDER_REVIEW,
+          submittedAt: new Date(),
+        }),
+      );
+      await expect(
+        updateDocument.execute(original.id, {
+          responsibleUserId: responsibleUser.id,
+        }),
+      ).rejects.toThrow(ConflictError);
+    });
     it('atualiza anexos preservando vínculos, datas e histórico', async () => {
       const original = await documents.create(
         ShipmentDocument.create(createShipmentDocumentData()),

@@ -23,9 +23,8 @@ export class UpdateShipmentDocumentUseCase {
   constructor(
     @Inject(SHIPMENT_DOCUMENT_REPOSITORY)
     private readonly documents: ShipmentDocumentRepository,
-    @Optional()
     @Inject(USER_REPOSITORY)
-    private readonly users?: UserRepository,
+    private readonly users: UserRepository,
     @Optional()
     @Inject(AUDIT_LOG_RECORDER)
     private readonly auditLogs?: AuditLogRecorder,
@@ -40,12 +39,22 @@ export class UpdateShipmentDocumentUseCase {
     if (!document) {
       throw new ResourceNotFoundError('Documentação da carga', id);
     }
+    document.ensureEditable();
+    if (input.responsibleUserId !== undefined) {
+      const responsibleUserId = input.responsibleUserId.toLowerCase();
+      if (!(await this.users.findById(responsibleUserId))) {
+        throw new ResourceNotFoundError(
+          'Responsável técnico',
+          responsibleUserId,
+        );
+      }
+    }
     document.revise(input);
     const updated = await this.documents.update(document);
 
     if (this.auditLogs) {
       let actorName = actor?.name;
-      if (!actorName && actor?.id && this.users) {
+      if (!actorName && actor?.id) {
         const user = await this.users.findById(actor.id);
         actorName = user?.name;
       }

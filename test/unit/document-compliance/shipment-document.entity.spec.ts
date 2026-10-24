@@ -13,6 +13,40 @@ import {
 } from '../../mocks/shipment-document.fixture.js';
 
 describe('ShipmentDocument', () => {
+  it('preserves the responsible user when attachment validation fails', () => {
+    const originalUser = { id: randomUUID(), name: 'Maria Silva' };
+    const document = ShipmentDocument.restore({
+      ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
+      responsibleUserId: originalUser.id,
+      responsibleUser: originalUser,
+    });
+    const before = document.toObject();
+    expect(() =>
+      document.revise({
+        responsibleUserId: randomUUID(),
+        attachments: [createAttachmentData({ name: ' ' })],
+      }),
+    ).toThrow(BusinessRuleError);
+    expect(document.toObject()).toEqual(before);
+  });
+
+  it('protects the responsible user summary and clears it when the identifier changes', () => {
+    const originalUser = { id: randomUUID(), name: 'Maria Silva' };
+    const document = ShipmentDocument.restore({
+      ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
+      responsibleUserId: originalUser.id,
+      responsibleUser: originalUser,
+    });
+    document.responsibleUser!.name = 'Changed externally';
+    expect(document.responsibleUser?.name).toBe(originalUser.name);
+    document.revise({ responsibleUserId: originalUser.id.toUpperCase() });
+    expect(document.responsibleUser).toEqual(originalUser);
+    const replacementId = randomUUID();
+    document.revise({ responsibleUserId: replacementId.toUpperCase() });
+    expect(document.responsibleUserId).toBe(replacementId);
+    expect(document.responsibleUser).toBeNull();
+  });
+
   it('inicia em preparação e permite não possuir anexos antes do envio', () => {
     const document = ShipmentDocument.create(
       createShipmentDocumentData({ attachments: [] }),

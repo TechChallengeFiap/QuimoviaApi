@@ -87,6 +87,10 @@ export class ShipmentDocumentsController {
     status: HttpStatus.CONFLICT,
     description: 'Já existe documentação para esta carga.',
   })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Responsável técnico não encontrado.',
+  })
   async create(
     @Body(validationPipeFor(CreateShipmentDocumentDto))
     dto: CreateShipmentDocumentDto,
@@ -98,6 +102,7 @@ export class ShipmentDocumentsController {
       {
         shipmentId: dto.shipmentId,
         shipperId: dto.shipperId,
+        responsibleUserId: dto.responsibleUserId,
         compositionVersion: dto.compositionVersion,
         attachments: dto.attachments?.map((attachment) =>
           CreateDocumentAttachmentDto.toData(attachment),
@@ -156,9 +161,9 @@ export class ShipmentDocumentsController {
   @Patch(':id')
   @ApiBody({ type: UpdateShipmentDocumentDto })
   @ApiOperation({
-    summary: 'Adiciona, substitui ou remove anexos durante a preparação',
+    summary: 'Atualiza o responsável técnico e os anexos durante a preparação',
     description:
-      'Preserva o histórico. Carga, embarcador, composição, status e data de envio não podem ser alterados por este cadastro.',
+      'Preserva o histórico e mantém o responsável técnico atual quando omitido. Carga, embarcador, composição, status e data de envio não podem ser alterados por este cadastro.',
   })
   @ApiParam({
     name: 'id',
@@ -172,7 +177,7 @@ export class ShipmentDocumentsController {
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
-    description: 'Documentação não encontrada.',
+    description: 'Documentação ou responsável técnico não encontrado.',
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
@@ -190,6 +195,7 @@ export class ShipmentDocumentsController {
       id,
       {
         removeAttachmentIds: dto.removeAttachmentIds,
+        responsibleUserId: dto.responsibleUserId,
         attachments: dto.attachments?.map((attachment) =>
           CreateDocumentAttachmentDto.toData(attachment),
         ),

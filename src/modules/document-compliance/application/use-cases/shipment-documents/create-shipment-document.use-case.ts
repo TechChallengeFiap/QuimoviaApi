@@ -5,7 +5,10 @@ import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/doma
 import type { ShipmentDocumentRepository } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
-import { ConflictError } from '@/shared/domain/errors/domain.error.js';
+import {
+  ConflictError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 import {
   AUDIT_LOG_RECORDER,
   type AuditLogRecorder,
@@ -25,9 +28,8 @@ export class CreateShipmentDocumentUseCase {
   constructor(
     @Inject(SHIPMENT_DOCUMENT_REPOSITORY)
     private readonly documents: ShipmentDocumentRepository,
-    @Optional()
     @Inject(USER_REPOSITORY)
-    private readonly users?: UserRepository,
+    private readonly users: UserRepository,
     @Optional()
     @Inject(AUDIT_LOG_RECORDER)
     private readonly auditLogs?: AuditLogRecorder,
@@ -38,6 +40,15 @@ export class CreateShipmentDocumentUseCase {
     actor?: ShipmentDocumentActionActor | null,
   ): Promise<ShipmentDocument> {
     const document = ShipmentDocument.create(input);
+    if (
+      document.responsibleUserId !== null &&
+      !(await this.users.findById(document.responsibleUserId))
+    ) {
+      throw new ResourceNotFoundError(
+        'Responsável técnico',
+        document.responsibleUserId,
+      );
+    }
     if (await this.documents.findByShipmentId(document.shipmentId)) {
       throw new ConflictError(
         'Já existe documentação cadastrada para esta carga.',
@@ -47,7 +58,7 @@ export class CreateShipmentDocumentUseCase {
 
     if (this.auditLogs) {
       let actorName = actor?.name;
-      if (!actorName && actor?.id && this.users) {
+      if (!actorName && actor?.id) {
         const user = await this.users.findById(actor.id);
         actorName = user?.name;
       }

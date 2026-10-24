@@ -37,6 +37,8 @@ export interface ShipmentDocumentProperties {
   id: string;
   shipmentId: string;
   shipperId: string;
+  responsibleUserId: string | null;
+  responsibleUser: { id: string; name: string } | null;
   compositionVersion: number;
   status: ShipmentDocumentStatus;
   submittedAt: Date | null;
@@ -49,11 +51,13 @@ export interface ShipmentDocumentProperties {
 export interface CreateShipmentDocumentData {
   shipmentId: string;
   shipperId: string;
+  responsibleUserId?: string;
   compositionVersion: number;
   attachments?: CreateDocumentAttachmentData[];
 }
 
 export interface UpdateShipmentDocumentData {
+  responsibleUserId?: string;
   attachments?: CreateDocumentAttachmentData[];
   removeAttachmentIds?: string[];
 }
@@ -90,6 +94,8 @@ export class ShipmentDocument {
       id: randomUUID(),
       shipmentId: data.shipmentId.toLowerCase(),
       shipperId: data.shipperId.toLowerCase(),
+      responsibleUserId: data.responsibleUserId?.toLowerCase() ?? null,
+      responsibleUser: null,
       compositionVersion: data.compositionVersion,
       status: ShipmentDocumentStatus.PENDING,
       submittedAt: null,
@@ -117,6 +123,13 @@ export class ShipmentDocument {
   get shipperId(): string {
     return this.properties.shipperId;
   }
+  get responsibleUserId(): string | null {
+    return this.properties.responsibleUserId;
+  }
+  get responsibleUser(): { id: string; name: string } | null {
+    const user = this.properties.responsibleUser;
+    return user ? { id: user.id, name: user.name } : null;
+  }
   get compositionVersion(): number {
     return this.properties.compositionVersion;
   }
@@ -141,14 +154,18 @@ export class ShipmentDocument {
     return new Date(this.properties.updatedAt);
   }
 
-  /** Confirma inclusões e remoções juntas, após validar toda a alteração. */
+  /** Confirma o responsável e os anexos juntos, após validar toda a alteração. */
   revise(data: UpdateShipmentDocumentData): void {
     this.ensureEditable();
     const additions = data.attachments ?? [];
     const removals = data.removeAttachmentIds ?? [];
-    if (additions.length === 0 && removals.length === 0) {
+    if (
+      additions.length === 0 &&
+      removals.length === 0 &&
+      data.responsibleUserId === undefined
+    ) {
       throw new BusinessRuleError(
-        'Informe ao menos um anexo para adicionar, substituir ou remover.',
+        'Informe o responsável técnico ou ao menos um anexo para adicionar, substituir ou remover.',
       );
     }
 
@@ -181,6 +198,13 @@ export class ShipmentDocument {
     const created = additions.map((attachment) =>
       ShipmentDocument.createAttachment(attachment, now),
     );
+    if (data.responsibleUserId !== undefined) {
+      const responsibleUserId = data.responsibleUserId.toLowerCase();
+      if (responsibleUserId !== this.properties.responsibleUserId) {
+        this.properties.responsibleUser = null;
+      }
+      this.properties.responsibleUserId = responsibleUserId;
+    }
     this.properties.attachments = [
       ...this.properties.attachments.map((attachment) =>
         changed.has(attachment.id)

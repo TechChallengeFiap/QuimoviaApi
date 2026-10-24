@@ -96,6 +96,7 @@ model User {
   sessions          Session[]
   chemicalProducts  ChemicalProduct[]
   inspections       Inspection[]
+  shipmentDocuments ShipmentDocument[]
 }
 
 model Session {
@@ -156,6 +157,8 @@ model ShipmentDocument {
   id                 String                       @id @default(uuid())
   shipmentId         String                       @unique(map: "CargoDocument_cargoId_key") @map("cargoId")
   shipperId          String
+  responsibleUserId  String?
+  responsibleUser    User?                        @relation(fields: [responsibleUserId], references: [id], onDelete: Restrict)
   compositionVersion Int
   status             ShipmentDocumentStatus       @default(PENDING)
   submittedAt        DateTime?
@@ -165,6 +168,7 @@ model ShipmentDocument {
   updatedAt          DateTime                     @updatedAt
 
   @@index([shipperId, status], map: "CargoDocument_shipperId_status_idx")
+  @@index([responsibleUserId])
   @@map("CargoDocument")
 }
 

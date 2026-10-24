@@ -97,6 +97,7 @@ describe('PrismaShipmentDocumentRepository', () => {
         },
         data: {
           revision: { increment: 1 },
+          responsibleUserId: document.responsibleUserId,
           attachments: {
             upsert: document.attachments.map((attachment) => ({
               where: { id: attachment.id },
@@ -209,4 +210,77 @@ describe('PrismaShipmentDocumentRepository', () => {
       }),
     );
   });
+
+  it('persists the responsible user foreign key on create and update', async () => {
+    document = ShipmentDocument.create(
+      createShipmentDocumentData({
+        responsibleUserId: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
+      }),
+    );
+    delegate.create.mockResolvedValue(persistedRecord());
+    delegate.update.mockResolvedValue(persistedRecord());
+    await repository.create(document);
+    await repository.update(document);
+    for (const operation of ['create', 'update'] as const) {
+      expect(delegate[operation]).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            responsibleUserId: document.responsibleUserId,
+          }),
+        }),
+      );
+    }
+  });
+
+  it('loads only the responsible user identifier and name for reads and lists', async () => {
+    const user = {
+      id: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
+      name: 'Maria Silva',
+      passwordHash: 'must-not-leak',
+      email: 'internal@example.com',
+      token: 'must-not-leak',
+    };
+    const record = {
+      ...persistedRecord(),
+      responsibleUserId: user.id,
+      responsibleUser: user,
+    };
+    delegate.findUnique.mockResolvedValue(record);
+    delegate.findMany.mockResolvedValue([record]);
+    delegate.count.mockResolvedValue(1);
+    const found = await repository.findById(document.id);
+    const byShipment = await repository.findByShipmentId(document.shipmentId);
+    const page = await repository.list({ page: 1, pageSize: 20 });
+    for (const item of [found, byShipment, page.items[0]]) {
+      expect(item?.responsibleUser).toEqual({ id: user.id, name: user.name });
+      expect(item?.toObject().responsibleUser).toEqual({
+        id: user.id,
+        name: user.name,
+      });
+    }
+    const include = expect.objectContaining({
+      responsibleUser: { select: { id: true, name: true } },
+    });
+    expect(delegate.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ include }),
+    );
+    expect(delegate.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ include }),
+    );
+  });
+
+  it.each(['create', 'update'] as const)(
+    'handles a responsible user removed concurrently during %s',
+    async (operation) => {
+      document = ShipmentDocument.create(
+        createShipmentDocumentData({
+          responsibleUserId: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
+        }),
+      );
+      delegate[operation].mockRejectedValue(prismaError('P2003'));
+      await expect(repository[operation](document)).rejects.toThrow(
+        ResourceNotFoundError,
+      );
+    },
+  );
 });

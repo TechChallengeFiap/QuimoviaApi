@@ -4,6 +4,18 @@ import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enu
 import { CreateShipmentDocumentDto } from './create-shipment-document.dto.js';
 import { DocumentAttachmentResponseDto } from './document-attachment.dto.js';
 
+class ShipmentDocumentResponsibleUserDto {
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    example: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
+  })
+  id!: string;
+
+  @ApiProperty({ type: String, example: 'Maria Silva' })
+  name!: string;
+}
+
 export class ShipmentDocumentResponseDto extends PickType(
   CreateShipmentDocumentDto,
   ['shipmentId', 'shipperId', 'compositionVersion'] as const,
@@ -14,6 +26,21 @@ export class ShipmentDocumentResponseDto extends PickType(
     description: 'Identificador da documentação.',
   })
   id: string;
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description:
+      'Identificador do responsável técnico; nulo quando não associado.',
+  })
+  responsibleUserId: string | null;
+  @ApiProperty({
+    type: ShipmentDocumentResponsibleUserDto,
+    nullable: true,
+    description:
+      'Identificador e nome do responsável técnico; nulo quando não associado.',
+  })
+  responsibleUser: ShipmentDocumentResponsibleUserDto | null;
   @ApiProperty({
     type: String,
     enum: ShipmentDocumentStatus,
@@ -57,6 +84,8 @@ export class ShipmentDocumentResponseDto extends PickType(
       id: document.id,
       shipmentId: document.shipmentId,
       shipperId: document.shipperId,
+      responsibleUserId: document.responsibleUserId,
+      responsibleUser: document.responsibleUser,
       compositionVersion: document.compositionVersion,
       status: document.status,
       submittedAt: document.submittedAt,

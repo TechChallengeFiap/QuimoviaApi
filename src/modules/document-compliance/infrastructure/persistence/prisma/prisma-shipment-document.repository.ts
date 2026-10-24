@@ -18,12 +18,13 @@ import {
 } from '@/shared/domain/errors/domain.error.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
 
-const includeAttachments = {
+const includeRelations = {
   attachments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+  responsibleUser: { select: { id: true, name: true } },
 } satisfies Prisma.ShipmentDocumentInclude;
 
 type PersistedShipmentDocument = Prisma.ShipmentDocumentGetPayload<{
-  include: typeof includeAttachments;
+  include: typeof includeRelations;
 }>;
 
 @Injectable()
@@ -37,6 +38,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
           id: document.id,
           shipmentId: document.shipmentId,
           shipperId: document.shipperId,
+          responsibleUserId: document.responsibleUserId,
           compositionVersion: document.compositionVersion,
           attachments: {
             create: document.attachments.map((attachment) =>
@@ -44,7 +46,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
             ),
           },
         },
-        include: includeAttachments,
+        include: includeRelations,
       });
       return PrismaShipmentDocumentRepository.toDomain(record);
     } catch (error) {
@@ -56,7 +58,11 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
           'Já existe documentação cadastrada para esta carga.',
         );
       }
-      throw error;
+      return this.rethrowWriteError(
+        error,
+        document.id,
+        document.responsibleUserId,
+      );
     }
   }
 
@@ -72,6 +78,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
         },
         data: {
           revision: { increment: 1 },
+          responsibleUserId: document.responsibleUserId,
           attachments: {
             upsert: document.attachments.map((attachment) => ({
               where: { id: attachment.id },
@@ -84,11 +91,15 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
             })),
           },
         },
-        include: includeAttachments,
+        include: includeRelations,
       });
       return PrismaShipmentDocumentRepository.toDomain(record);
     } catch (error) {
-      return this.rethrowWriteError(error, document.id);
+      return this.rethrowWriteError(
+        error,
+        document.id,
+        document.responsibleUserId,
+      );
     }
   }
 
@@ -110,7 +121,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
   async findById(id: string): Promise<ShipmentDocument | null> {
     const record = await this.prisma.shipmentDocument.findUnique({
       where: { id },
-      include: includeAttachments,
+      include: includeRelations,
     });
     return record ? PrismaShipmentDocumentRepository.toDomain(record) : null;
   }
@@ -118,7 +129,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
   async findByShipmentId(shipmentId: string): Promise<ShipmentDocument | null> {
     const record = await this.prisma.shipmentDocument.findUnique({
       where: { shipmentId },
-      include: includeAttachments,
+      include: includeRelations,
     });
     return record ? PrismaShipmentDocumentRepository.toDomain(record) : null;
   }
@@ -134,7 +145,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
     const [records, total] = await Promise.all([
       this.prisma.shipmentDocument.findMany({
         where,
-        include: includeAttachments,
+        include: includeRelations,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (filters.page - 1) * filters.pageSize,
         take: filters.pageSize,
@@ -151,7 +162,18 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
     };
   }
 
-  private async rethrowWriteError(error: unknown, id: string): Promise<never> {
+  private async rethrowWriteError(
+    error: unknown,
+    id: string,
+    responsibleUserId?: string | null,
+  ): Promise<never> {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2003' &&
+      responsibleUserId
+    ) {
+      throw new ResourceNotFoundError('Responsável técnico', responsibleUserId);
+    }
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2025'
@@ -184,6 +206,9 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
   private static toDomain(record: PersistedShipmentDocument): ShipmentDocument {
     return ShipmentDocument.restore({
       ...record,
+      responsibleUser: record.responsibleUser
+        ? { id: record.responsibleUser.id, name: record.responsibleUser.name }
+        : null,
       status: record.status as ShipmentDocumentStatus,
       attachments: record.attachments.map((attachment) => ({
         id: attachment.id,
