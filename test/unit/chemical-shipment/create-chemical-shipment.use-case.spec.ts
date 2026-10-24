@@ -9,7 +9,7 @@ import { ProductStatus } from '@/modules/chemical-products/domain/enums/product-
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
-import { StatusShipment } from '@/generated/prisma/enums.js';
+import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import {
   BusinessRuleError,
   ResourceNotFoundError,
@@ -63,7 +63,7 @@ describe('CreateChemicalShipmentUseCase', () => {
     );
   });
 
-  it('cria uma carga química com status inicial ANALYZING', async () => {
+  it('cria uma carga química com status inicial REGISTERED', async () => {
     const input = {
       productId: 'prod-001',
       quantityProduct: 100,
@@ -73,7 +73,7 @@ describe('CreateChemicalShipmentUseCase', () => {
 
     const chemicalShipment = await useCase.execute(input);
 
-    expect(chemicalShipment.status).toBe(StatusShipment.ANALYZING);
+    expect(chemicalShipment.status).toBe(StatusShipment.REGISTERED);
     expect(chemicalShipment.quantityProduct).toBe(100);
     expect(
       await chemicalShipments.findById(chemicalShipment.id),

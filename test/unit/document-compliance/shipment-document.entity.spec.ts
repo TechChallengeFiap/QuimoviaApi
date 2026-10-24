@@ -217,4 +217,127 @@ describe('ShipmentDocument — validação dos anexos', () => {
     });
     expect(attachment.scopes[1].shipmentItemId).toBe(itemId);
   });
+
+  describe('isSufficientForRelease', () => {
+    it('retorna true quando possui anexo ativo sem data de validade', () => {
+      const document = ShipmentDocument.create(
+        createShipmentDocumentData({
+          attachments: [createAttachmentData({ expiresAt: null })],
+        }),
+      );
+      expect(document.isSufficientForRelease()).toBe(true);
+    });
+
+    it('retorna true quando possui anexo ativo com validade futura', () => {
+      const future = new Date(Date.now() + 86400000);
+      const document = ShipmentDocument.create(
+        createShipmentDocumentData({
+          attachments: [createAttachmentData({ expiresAt: future })],
+        }),
+      );
+      expect(document.isSufficientForRelease()).toBe(true);
+    });
+
+    it('retorna false quando status é NON_COMPLIANT', () => {
+      const document = ShipmentDocument.restore({
+        id: randomUUID(),
+        shipmentId: randomUUID(),
+        shipperId: randomUUID(),
+        compositionVersion: 1,
+        status: ShipmentDocumentStatus.NON_COMPLIANT,
+        submittedAt: new Date(),
+        revision: 0,
+        attachments: [
+          {
+            id: randomUUID(),
+            type: DocumentType.SAFETY_DATA_SHEET,
+            name: 'FDS',
+            fileReference: 'documents/fds.pdf',
+            scopes: [{ type: 'SHIPMENT' }],
+            issuedAt: new Date(),
+            expiresAt: null,
+            removedAt: null,
+            replacesAttachmentId: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      expect(document.isSufficientForRelease()).toBe(false);
+    });
+
+    it('retorna false quando não há anexos', () => {
+      const document = ShipmentDocument.create(
+        createShipmentDocumentData({
+          attachments: [],
+        }),
+      );
+      expect(document.isSufficientForRelease()).toBe(false);
+    });
+
+    it('retorna false quando o anexo foi removido', () => {
+      const document = ShipmentDocument.create(
+        createShipmentDocumentData({
+          attachments: [createAttachmentData({ expiresAt: null })],
+        }),
+      );
+      const [attachment] = document.attachments;
+      document.revise({
+        attachments: [
+          createAttachmentData({
+            replacesAttachmentId: attachment.id,
+          }),
+        ],
+      });
+      // Remove o substituto também
+      const replacement = document.attachments[1];
+      document.revise({
+        attachments: [
+          createAttachmentData({
+            replacesAttachmentId: replacement.id,
+          }),
+        ],
+      });
+      // Se todos forem marcados como removidos
+      const restored = ShipmentDocument.restore({
+        id: document.id,
+        shipmentId: document.shipmentId,
+        shipperId: document.shipperId,
+        compositionVersion: document.compositionVersion,
+        status: ShipmentDocumentStatus.COMPLIANT,
+        submittedAt: new Date(),
+        revision: 1,
+        attachments: [
+          {
+            id: randomUUID(),
+            type: DocumentType.SAFETY_DATA_SHEET,
+            name: 'Removido',
+            fileReference: 'path/file.pdf',
+            scopes: [{ type: 'SHIPMENT' }],
+            issuedAt: new Date(),
+            expiresAt: null,
+            removedAt: new Date(),
+            replacesAttachmentId: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      expect(restored.isSufficientForRelease()).toBe(false);
+    });
+
+    it('retorna false quando o anexo está vencido', () => {
+      const past = new Date(Date.now() - 86400000);
+      const document = ShipmentDocument.create(
+        createShipmentDocumentData({
+          attachments: [createAttachmentData({ expiresAt: past })],
+        }),
+      );
+      expect(document.isSufficientForRelease()).toBe(false);
+    });
+  });
 });

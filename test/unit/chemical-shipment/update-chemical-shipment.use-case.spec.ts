@@ -113,17 +113,19 @@ describe('UpdateChemicalShipmentUseCase', () => {
   });
 
   async function createSampleShipment(
-    status = StatusShipment.ANALYZING,
+    status: StatusShipment = StatusShipment.REGISTERED,
   ): Promise<ChemicalShipment> {
-    const shipment = ChemicalShipment.create({
+    const shipment = ChemicalShipment.restore({
+      id: 'ship-1',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+      status,
       productId: 'prod-001',
       responsibleUserId: 'user-001',
       documentsIds: 'doc-001',
       quantityProduct: 50,
     });
-    if (status !== StatusShipment.ANALYZING) {
-      shipment.updateStatus(status);
-    }
     return chemicalShipments.create(shipment);
   }
 
@@ -134,14 +136,12 @@ describe('UpdateChemicalShipmentUseCase', () => {
       productId: 'prod-002',
       responsibleUserId: 'user-002',
       documentsIds: 'doc-002',
-      status: StatusShipment.INSPECTION,
       quantityProduct: 300,
     });
 
     expect(updated.productId).toBe('prod-002');
     expect(updated.responsibleUserId).toBe('user-002');
     expect(updated.documentsIds).toBe('doc-002');
-    expect(updated.status).toBe(StatusShipment.INSPECTION);
     expect(updated.quantityProduct).toBe(300);
   });
 
