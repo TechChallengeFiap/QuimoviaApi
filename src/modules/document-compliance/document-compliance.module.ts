@@ -27,5 +27,6 @@ import { CheckShipmentDocumentationUseCase } from './application/use-cases/shipm
       useClass: CheckShipmentDocumentationUseCase,
     },
   ],
+  exports: [SHIPMENT_DOCUMENTATION_CHECKER],
 })
 export class DocumentComplianceModule {}

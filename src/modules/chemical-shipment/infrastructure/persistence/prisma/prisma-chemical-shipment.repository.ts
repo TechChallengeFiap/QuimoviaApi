@@ -13,6 +13,7 @@ import type {
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
 } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import type { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 
 type PersistedChemicalShipmentWithRelations = PersistedChemicalShipment & {
   responsibleUser?: PersistedUser | null;
@@ -34,7 +35,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             id: chemicalShipment.id,
             createdAt: chemicalShipment.createdAt,
             updatedAt: chemicalShipment.updatedAt,
-            status: chemicalShipment.status,
+            status: chemicalShipment.status as any,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
             responsibleUserId: chemicalShipment.responsibleUserId,
@@ -60,7 +61,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
       const pageSize = Number(filters.pageSize);
 
       const where = {
-        status: filters.status,
+        status: filters.status as any,
         productId: filters.productId,
         responsibleUserId: filters.responsibleUserId,
         documentsIds: filters.documentsIds,
@@ -126,7 +127,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             id: chemicalShipment.id,
             createdAt: chemicalShipment.createdAt,
             updatedAt: chemicalShipment.updatedAt,
-            status: chemicalShipment.status,
+            status: chemicalShipment.status as any,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
             responsibleUserId: chemicalShipment.responsibleUserId,
@@ -171,7 +172,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
       id: chemicalShipment.id,
       createdAt: chemicalShipment.createdAt,
       updatedAt: chemicalShipment.updatedAt,
-      status: chemicalShipment.status,
+      status: chemicalShipment.status as unknown as StatusShipment,
       productId: chemicalShipment.productId,
       quantityProduct: chemicalShipment.quantityProduct,
       responsibleUserId: chemicalShipment.responsibleUserId,
