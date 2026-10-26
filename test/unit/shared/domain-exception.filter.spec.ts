@@ -52,7 +52,7 @@ describe('DomainExceptionFilter', () => {
   it.each([
     [
       'BusinessRuleError',
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.UNPROCESSABLE_ENTITY,
       new BusinessRuleError('A quantidade deve ser maior que zero.'),
     ],
     [
@@ -94,13 +94,15 @@ describe('DomainExceptionFilter', () => {
     );
   });
 
-  it('retorna 400 para uma regra de negócio também sem httpAdapterHost', () => {
+  it('retorna 422 para uma regra de negócio também sem httpAdapterHost', () => {
     const error = new BusinessRuleError('Transição de status inválida.');
     new DomainExceptionFilter().catch(error, mockHost);
-    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(mockResponse.status).toHaveBeenCalledWith(
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    );
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        statusCode: HttpStatus.BAD_REQUEST,
+        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
         message: error.message,
       }),
     );

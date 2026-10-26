@@ -1,9 +1,17 @@
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import { BusinessRuleError } from '@/shared/domain/errors/domain.error.js';
 import { randomUUID } from 'crypto';
 
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
+
+import {
+  STATUS_SHIPMENT_LABELS,
+  StatusShipment,
+} from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import {
+  assertTransitionAllowed,
+  isTerminalStatus,
+} from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/shipment-status-transitions.js';
 
 export interface CreateChemicalShipmentData {
   productId: string;
@@ -25,6 +33,14 @@ export interface ChemicalShipmentProperties {
   updatedAt: Date;
   deletedAt: Date | null;
 }
+
+export interface StatusChangeFacts {
+  hasRequiredDocumentation?: boolean;
+}
+const EDITABLE_STATUSES: readonly StatusShipment[] = [
+  StatusShipment.REGISTERED,
+  StatusShipment.ANALYZING,
+];
 
 export class ChemicalShipment {
   readonly id: string;
@@ -72,23 +88,46 @@ export class ChemicalShipment {
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
-      status: StatusShipment.ANALYZING,
+      status: StatusShipment.REGISTERED,
       ...data,
     });
   }
 
-  updateStatus(status: StatusShipment): void {
-    this.validateCanBeUpdated();
-    this.#status = status;
+  changeStatus(target: StatusShipment, facts: StatusChangeFacts = {}): void {
+    assertTransitionAllowed(this.#status, target);
+    if (target === StatusShipment.APPROVED && !facts.hasRequiredDocumentation) {
+      throw new BusinessRuleError(
+        'Uma carga não pode ser liberada sem documentação obrigatória.',
+      );
+    }
+    this.#status = target;
     this.#updatedAt = new Date();
   }
 
-  updateChemicalShipmentStatus(
-    arg1: ChemicalShipment | StatusShipment,
-    arg2?: StatusShipment,
-  ): void {
-    const status = arg2 !== undefined ? arg2 : (arg1 as StatusShipment);
-    this.updateStatus(status);
+  startAnalysis(): void {
+    this.changeStatus(StatusShipment.ANALYZING);
+  }
+  sendToInspection(): void {
+    this.changeStatus(StatusShipment.INSPECTION);
+  }
+  release(hasRequiredDocumentation: boolean): void {
+    this.changeStatus(StatusShipment.APPROVED, { hasRequiredDocumentation });
+  }
+  block(): void {
+    this.changeStatus(StatusShipment.REPROVED);
+  }
+  startTransit(): void {
+    this.changeStatus(StatusShipment.IN_TRANSIT);
+  }
+  complete(): void {
+    this.changeStatus(StatusShipment.COMPLETED);
+  }
+  cancel(): void {
+    this.changeStatus(StatusShipment.CANCELLED);
+  }
+
+  get isTerminal(): boolean {
+    return isTerminalStatus(this.#status);
   }
 
   changeProduct(productId: string): void {
@@ -97,40 +136,16 @@ export class ChemicalShipment {
     this.#updatedAt = new Date();
   }
 
-  changeChemicalShipmentProduct(
-    arg1: ChemicalShipment | string,
-    arg2?: string,
-  ): void {
-    const productId = typeof arg1 === 'string' ? arg1 : arg2!;
-    this.changeProduct(productId);
-  }
-
   changeResponsibleUser(responsibleUserId: string): void {
     this.validateCanBeUpdated();
     this.#responsibleUserId = responsibleUserId;
     this.#updatedAt = new Date();
   }
 
-  changeChemicalShipmentResponsibleUser(
-    arg1: ChemicalShipment | string,
-    arg2?: string,
-  ): void {
-    const responsibleUserId = typeof arg1 === 'string' ? arg1 : arg2!;
-    this.changeResponsibleUser(responsibleUserId);
-  }
-
   changeDocuments(documentsIds: string): void {
     this.validateCanBeUpdated();
     this.#documentsIds = documentsIds;
     this.#updatedAt = new Date();
-  }
-
-  changeChemicalShipmentDocuments(
-    arg1: ChemicalShipment | string,
-    arg2?: string,
-  ): void {
-    const documentsIds = typeof arg1 === 'string' ? arg1 : arg2!;
-    this.changeDocuments(documentsIds);
   }
 
   changeQuantityProduct(quantityProduct: number): void {
@@ -145,15 +160,9 @@ export class ChemicalShipment {
   }
 
   private validateCanBeUpdated(): void {
-    if (this.#status === StatusShipment.REPROVED) {
+    if (!EDITABLE_STATUSES.includes(this.#status)) {
       throw new BusinessRuleError(
-        'Não é possível alterar uma carga química reprovada',
-      );
-    }
-
-    if (this.#status === StatusShipment.APPROVED) {
-      throw new BusinessRuleError(
-        'Não é possível alterar uma carga química aprovada',
+        `Os dados da carga só podem ser alterados enquanto ela está "Registrada" ou "Em análise" (status atual: "${STATUS_SHIPMENT_LABELS[this.#status]}").`,
       );
     }
   }
@@ -208,10 +217,6 @@ export class ChemicalShipment {
 
   set quantityProduct(quantityProduct: number) {
     this.changeQuantityProduct(quantityProduct);
-  }
-
-  set status(status: StatusShipment) {
-    this.#status = status;
   }
 
   set responsibleUserId(responsibleUserId: string) {

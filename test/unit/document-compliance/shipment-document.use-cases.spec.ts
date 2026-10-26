@@ -228,7 +228,8 @@ describe('Casos de uso de ShipmentDocument', () => {
       const original = await createDocument.execute(
         createShipmentDocumentData({ responsibleUserId: responsibleUser.id }),
       );
-      await users.remove(responsibleUser.id);
+      responsibleUser.delete();
+      await users.update(responsibleUser);
       const found = await findDocument.execute(original.id);
       expect(found.responsibleUserId).toBe(responsibleUser.id);
       expect(found.responsibleUser).toBeNull();

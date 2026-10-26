@@ -39,7 +39,7 @@ describe('InspectionsController (e2e)', () => {
   };
 
   beforeEach(async () => {
-    // Os casos de uso registram os erros esperados (404, 400) no log.
+    // Os casos de uso registram os erros esperados (404, 422) no log.
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
     chemicalShipments = new ChemicalShipmentMock();
@@ -204,11 +204,11 @@ describe('InspectionsController (e2e)', () => {
       .expect(400);
   });
 
-  it('retorna 400 quando o escopo de item não informa o item da carga', async () => {
+  it('retorna 422 quando o escopo de item não informa o item da carga', async () => {
     await request(app.getHttpServer())
       .post('/inspections')
       .send({ ...payload, scope: 'CARGO_ITEM' })
-      .expect(400);
+      .expect(422);
   });
 
   it('busca uma inspeção pelo id e retorna 404 para id inexistente', async () => {
@@ -312,7 +312,7 @@ describe('InspectionsController (e2e)', () => {
     await request(app.getHttpServer())
       .patch(`/inspections/${id}`)
       .send({ inspectorId: INSPECTOR_ID })
-      .expect(400);
+      .expect(422);
   });
 
   it('aplica as regras de negócio na atualização', async () => {
@@ -326,7 +326,7 @@ describe('InspectionsController (e2e)', () => {
       .send({
         results: [{ requirement: 'NO_LEAKAGE', result: 'COMPLIANT' }],
       })
-      .expect(400);
+      .expect(422);
 
     await request(app.getHttpServer())
       .patch(`/inspections/${id}`)
@@ -334,12 +334,12 @@ describe('InspectionsController (e2e)', () => {
         status: 'IN_PROGRESS',
         results: [{ requirement: 'NO_LEAKAGE', result: 'NON_COMPLIANT' }],
       })
-      .expect(400);
+      .expect(422);
 
     await request(app.getHttpServer())
       .patch(`/inspections/${id}`)
       .send({ status: 'COMPLETED' })
-      .expect(400);
+      .expect(422);
   });
 
   it('rejeita payload inválido na atualização', async () => {
@@ -391,7 +391,7 @@ describe('InspectionsController (e2e)', () => {
       .send({ status: 'IN_PROGRESS' })
       .expect(200);
 
-    await request(app.getHttpServer()).delete(`/inspections/${id}`).expect(400);
+    await request(app.getHttpServer()).delete(`/inspections/${id}`).expect(422);
     await request(app.getHttpServer()).get(`/inspections/${id}`).expect(200);
   });
 

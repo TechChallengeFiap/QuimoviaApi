@@ -6,9 +6,16 @@ import type {
 import type { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 
-/** Implementação em memória de UserRepository, para uso nos testes. */
+/**
+ * Implementação em memória de UserRepository, para uso nos testes. Guarda
+ * também os usuários excluídos, que as buscas ignoram como no banco.
+ */
 export class UserRepositoryMock implements UserRepository {
   private readonly users = new Map<string, User>();
+
+  private activeUsers(): User[] {
+    return [...this.users.values()].filter((user) => !user.isDeleted);
+  }
 
   async create(user: User): Promise<User> {
     this.users.set(user.id, user);
@@ -20,31 +27,33 @@ export class UserRepositoryMock implements UserRepository {
     return user;
   }
 
-  async remove(id: string): Promise<void> {
-    this.users.delete(id);
-  }
-
   async findById(id: string): Promise<User | null> {
-    return this.users.get(id) ?? null;
+    return this.activeUsers().find((user) => user.id === id) ?? null;
   }
 
   async findByIds(ids: readonly string[]): Promise<User[]> {
     const identifiers = new Set(ids);
-    return [...this.users.values()].filter((user) => identifiers.has(user.id));
+    return this.activeUsers().filter((user) => identifiers.has(user.id));
   }
 
   async findByEmail(email: string): Promise<User | null> {
+    return this.activeUsers().find((user) => user.email === email) ?? null;
+  }
+
+  async findByEmailIncludingDeleted(email: string): Promise<User | null> {
     return (
       [...this.users.values()].find((user) => user.email === email) ?? null
     );
   }
 
   async registerLogin(user: User): Promise<boolean> {
-    return this.users.get(user.id)?.status === UserStatus.ACTIVE;
+    const stored = this.users.get(user.id);
+
+    return stored?.status === UserStatus.ACTIVE && !stored.isDeleted;
   }
 
   async list(filters: UserSearchFilters): Promise<UserPage> {
-    let items = [...this.users.values()];
+    let items = this.activeUsers();
 
     if (filters.role) {
       items = items.filter((user) => user.role === filters.role);

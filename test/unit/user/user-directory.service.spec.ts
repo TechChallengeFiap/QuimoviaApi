@@ -50,4 +50,11 @@ describe('UserDirectoryService', () => {
     expect(await directory.findByIds([])).toEqual([]);
     expect(find).not.toHaveBeenCalled();
   });
+
+  it('oculta usuários excluídos nas consultas individuais e em lote', async () => {
+    user.delete();
+    await users.update(user);
+    expect(await directory.findById(user.id)).toBeNull();
+    expect(await directory.findByIds([user.id])).toEqual([]);
+  });
 });

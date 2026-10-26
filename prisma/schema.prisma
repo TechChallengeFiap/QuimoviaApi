@@ -92,6 +92,8 @@ model User {
   lastLoginAt       DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  isDeleted         Boolean            @default(false)
+  deletedAt         DateTime?
   chemicalShipments ChemicalShipment[]
   sessions          Session[]
   chemicalProducts  ChemicalProduct[]
@@ -110,12 +112,14 @@ model Session {
 }
 
 enum StatusShipment {
+  REGISTERED
   ANALYZING
   INSPECTION
   APPROVED
   REPROVED
-  BLOCKED
-  RELEASED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
 }
 
 model ChemicalShipment {
@@ -123,7 +127,7 @@ model ChemicalShipment {
   productId         String
   product           ChemicalProduct @relation(fields: [productId], references: [id])
   quantityProduct   Float           @db.Float
-  status            StatusShipment  @default(ANALYZING)
+  status            StatusShipment  @default(REGISTERED)
   responsibleUserId String
   responsibleUser   User            @relation(fields: [responsibleUserId], references: [id])
   documentsIds      String
@@ -133,6 +137,7 @@ model ChemicalShipment {
   inspections       Inspection[]
 
   @@index([responsibleUserId])
+  @@index([status])
 }
 
 enum ShipmentDocumentStatus {

@@ -449,4 +449,238 @@ describe('UsersController (e2e)', () => {
         .expect(401);
     });
   });
+
+  describe('exclusão lógica', () => {
+    const payload = {
+      name: 'Maria Silva',
+      email: 'maria.excluida@quimovia.com',
+      password: 'S3nhaForte!',
+      role: 'PORT_OPERATOR',
+    };
+
+    async function createUser(): Promise<string> {
+      const response = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(payload)
+        .expect(201);
+
+      return response.body.id as string;
+    }
+
+    it('tira o usuário das buscas, da listagem e do login, e encerra a sessão dele', async () => {
+      const id = await createUser();
+      const login = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: payload.email, password: payload.password })
+        .expect(200);
+      const token = login.body.accessToken as string;
+
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+
+      await request(app.getHttpServer()).get(`/users/${id}`).expect(404);
+      await request(app.getHttpServer())
+        .get('/users')
+        .expect(200)
+        .expect(({ body }) => {
+          expect(
+            body.items.map((user: { id: string }) => user.id),
+          ).not.toContain(id);
+        });
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Maria Souza' })
+        .expect(404);
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: payload.email, password: payload.password })
+        .expect(401);
+      await request(app.getHttpServer())
+        .patch(`/users/${id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Maria Souza' })
+        .expect(401);
+    });
+
+    it('reativa o mesmo registro ao cadastrar de novo o e-mail excluído', async () => {
+      const id = await createUser();
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          ...payload,
+          name: 'Maria Souza',
+          password: 'N0vaS3nhaForte!',
+          role: 'TECHNICAL_MANAGER',
+        })
+        .expect(201)
+        .expect(({ body }) => {
+          expect(body).toMatchObject({
+            id,
+            name: 'Maria Souza',
+            email: payload.email,
+            role: 'TECHNICAL_MANAGER',
+            status: 'ACTIVE',
+          });
+        });
+
+      await request(app.getHttpServer()).get(`/users/${id}`).expect(200);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: payload.email, password: 'N0vaS3nhaForte!' })
+        .expect(200);
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(payload)
+        .expect(409);
+    });
+
+    it('não permite trocar o e-mail para o de um usuário excluído', async () => {
+      const id = await createUser();
+      await request(app.getHttpServer())
+        .delete(`/users/${id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+      const other = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ...payload, email: 'joao.ativo@quimovia.com' })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/users/${other.body.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ email: payload.email })
+        .expect(409);
+    });
+  });
+
+  describe('cadastro público do embarcador', () => {
+    const shipper = {
+      name: 'Carlos Pereira',
+      email: 'carlos.pereira@transportadora.com',
+      password: 'S3nhaForte!',
+    };
+
+    it('cadastra o embarcador sem token, com o perfil SHIPPER_DRIVER e ativo', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send(shipper)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        name: 'Carlos Pereira',
+        email: 'carlos.pereira@transportadora.com',
+        role: 'SHIPPER_DRIVER',
+        status: 'ACTIVE',
+      });
+      expect(response.body.passwordHash).toBeUndefined();
+      expect(response.body.password).toBeUndefined();
+    });
+
+    it('permite ao embarcador cadastrado fazer login', async () => {
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send(shipper)
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: shipper.email, password: shipper.password })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.user.role).toBe('SHIPPER_DRIVER');
+        });
+    });
+
+    it.each([
+      ['o perfil', { role: 'SYSTEM_ADMIN' }],
+      ['o status', { status: 'INACTIVE' }],
+    ])('rejeita o cadastro que informa %s', async (_campo, extra) => {
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send({ ...shipper, ...extra })
+        .expect(400);
+    });
+
+    it('rejeita e-mail já cadastrado, inclusive por um usuário interno', async () => {
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ...shipper, role: 'PORT_OPERATOR' })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send(shipper)
+        .expect(409);
+    });
+
+    it('não reativa pelo cadastro público a conta de um usuário excluído', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ...shipper, role: 'PORT_OPERATOR' })
+        .expect(201);
+      await request(app.getHttpServer())
+        .delete(`/users/${created.body.id as string}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send({ ...shipper, password: 'OutraS3nha!' })
+        .expect(409);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: shipper.email, password: 'OutraS3nha!' })
+        .expect(401);
+      await request(app.getHttpServer())
+        .get(`/users/${created.body.id as string}`)
+        .expect(404);
+    });
+
+    it('rejeita payload inválido', async () => {
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send({ name: 'Ok', email: 'invalido', password: '123' })
+        .expect(400);
+    });
+
+    it('não dá ao embarcador acesso às rotas de gestão de usuários', async () => {
+      await request(app.getHttpServer())
+        .post('/users/shippers')
+        .send(shipper)
+        .expect(201);
+      const login = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: shipper.email, password: shipper.password })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post('/users')
+        .set('Authorization', `Bearer ${login.body.accessToken as string}`)
+        .send({
+          name: 'Maria Silva',
+          email: 'maria.shipper@quimovia.com',
+          password: 'S3nhaForte!',
+          role: 'SYSTEM_ADMIN',
+        })
+        .expect(403);
+    });
+  });
 });

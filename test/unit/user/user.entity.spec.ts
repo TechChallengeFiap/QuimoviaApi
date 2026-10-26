@@ -65,4 +65,78 @@ describe('User', () => {
 
     expect(user.lastLoginAt).toEqual(at);
   });
+
+  describe('exclusão lógica', () => {
+    it('marca o usuário como excluído, sem apagar os dados, e tira o acesso', () => {
+      const user = createValidUser();
+      const at = new Date('2026-10-19T12:00:00.000Z');
+
+      user.delete(at);
+
+      expect(user.isDeleted).toBe(true);
+      expect(user.deletedAt).toEqual(at);
+      expect(user.email).toBe('maria.silva@quimovia.com');
+      expect(user.canAuthenticate()).toBe(false);
+    });
+
+    it('não exclui duas vezes', () => {
+      const user = createValidUser();
+      user.delete();
+
+      expect(() => user.delete()).toThrow(BusinessRuleError);
+    });
+
+    it('reativa o cadastro excluído com os novos dados, mantendo id e e-mail', () => {
+      const user = createValidUser();
+      user.block();
+      user.delete();
+
+      user.reregister({
+        name: 'Maria Souza',
+        passwordHash: 'hash-novo',
+        role: UserRole.TECHNICAL_MANAGER,
+      });
+
+      expect(user).toMatchObject({
+        name: 'Maria Souza',
+        email: 'maria.silva@quimovia.com',
+        passwordHash: 'hash-novo',
+        role: UserRole.TECHNICAL_MANAGER,
+        status: UserStatus.ACTIVE,
+        isDeleted: false,
+        deletedAt: null,
+      });
+      expect(user.canAuthenticate()).toBe(true);
+    });
+
+    it('valida os novos dados ao reativar o cadastro', () => {
+      const user = createValidUser();
+      user.delete();
+
+      expect(() =>
+        user.reregister({
+          name: 'Al',
+          passwordHash: 'hash-novo',
+          role: UserRole.PORT_OPERATOR,
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(user.isDeleted).toBe(true);
+    });
+
+    it('só reativa o cadastro de um usuário excluído', () => {
+      expect(() =>
+        createValidUser().reregister({
+          name: 'Maria Souza',
+          passwordHash: 'hash-novo',
+          role: UserRole.PORT_OPERATOR,
+        }),
+      ).toThrow(BusinessRuleError);
+    });
+
+    it('trata como não excluído o usuário restaurado sem a data de exclusão', () => {
+      const { deletedAt: _, ...properties } = createValidUser().toObject();
+
+      expect(User.restore(properties).isDeleted).toBe(false);
+    });
+  });
 });

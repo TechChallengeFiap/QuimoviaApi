@@ -8,7 +8,7 @@ import {
   NotFoundException,
   Optional,
   UnauthorizedException,
-  BadRequestException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import {
@@ -66,9 +66,9 @@ export class DomainExceptionFilter implements ExceptionFilter {
     }
 
     if (error instanceof BusinessRuleError) {
-      return new BadRequestException(error.message);
+      return new UnprocessableEntityException(error.message);
     }
 
-    return new BadRequestException(error.message);
+    return new UnprocessableEntityException(error.message);
   }
 }

@@ -6,6 +6,12 @@ import { Test } from '@nestjs/testing';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import request from 'supertest';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
+import {
+  createAttachmentData,
+  createShipmentDocumentData,
+} from '../mocks/shipment-document.fixture.js';
+import type { ShipmentDocumentRepository } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
 
 describe.each([false, true])(
@@ -13,6 +19,7 @@ describe.each([false, true])(
   (withMetadata) => {
     let app: INestApplication;
     let document: OpenAPIObject;
+    let documents: ShipmentDocumentRepository;
     let productId: string;
     let responsibleUserId: string;
 
@@ -101,6 +108,7 @@ describe.each([false, true])(
         SwaggerModule.createDocument(app, config),
       );
       await app.init();
+      documents = app.get(SHIPMENT_DOCUMENT_REPOSITORY);
 
       const adminToken = await loginAsAdmin(app, app.get(USER_REPOSITORY));
       const user = await request(app.getHttpServer())
@@ -158,11 +166,17 @@ describe.each([false, true])(
         ]),
       );
       expect(
-        document.components?.schemas?.UpdateChemicalShipmentDto,
+        document.components?.schemas?.ChangeChemicalShipmentStatusDto,
       ).toMatchObject({
         properties: {
-          status: { type: 'string', enum: Object.values(StatusShipment) },
+          status: {
+            allOf: [{ $ref: '#/components/schemas/StatusShipment' }],
+          },
         },
+      });
+      expect(document.components?.schemas?.StatusShipment).toMatchObject({
+        type: 'string',
+        enum: Object.values(StatusShipment),
       });
     });
 
@@ -197,11 +211,11 @@ describe.each([false, true])(
         .expect(200)
         .expect(({ body }) => expect(body.quantityProduct).toBe(150));
       await request(app.getHttpServer())
-        .patch(path)
-        .send({ status: StatusShipment.INSPECTION })
+        .patch(`${path}/status`)
+        .send({ status: StatusShipment.ANALYZING })
         .expect(200)
         .expect(({ body }) =>
-          expect(body.status).toBe(StatusShipment.INSPECTION),
+          expect(body.status).toBe(StatusShipment.ANALYZING),
         );
       await request(app.getHttpServer()).delete(path).expect(200);
       await request(app.getHttpServer()).get(path).expect(404);
@@ -228,10 +242,81 @@ describe.each([false, true])(
           .expect(({ body }) =>
             expect(body).toMatchObject({
               quantityProduct: 100,
-              status: StatusShipment.ANALYZING,
+              status: StatusShipment.REGISTERED,
             }),
           );
       },
     );
+
+    it('controla o ciclo de vida pelos endpoints de status e consulta transições (diferencial)', async () => {
+      const path = await createShipment();
+      const id = path.split('/').pop()!;
+      const patch = (suffix: string, body?: object) =>
+        request(app.getHttpServer())
+          .patch(`${path}/${suffix}`)
+          .send(body ?? {});
+
+      // Diferencial: consulta transições no status inicial REGISTERED
+      await request(app.getHttpServer())
+        .get(`${path}/transitions`)
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.currentStatus).toBe(StatusShipment.REGISTERED);
+          expect(body.currentStatusLabel).toBe('Registrada');
+          expect(body.isTerminal).toBe(false);
+          expect(body.allowedTransitions).toEqual([
+            { status: StatusShipment.ANALYZING, label: 'Em análise' },
+            { status: StatusShipment.CANCELLED, label: 'Cancelada' },
+          ]);
+        });
+
+      await patch('status', { status: StatusShipment.ANALYZING }).expect(200);
+      await patch('status', { status: StatusShipment.INSPECTION }).expect(200);
+
+      // Bloqueia liberação sem documentação obrigatória
+      await patch('release')
+        .expect(422)
+        .expect(({ body }) =>
+          expect(body.message).toContain('documentação obrigatória'),
+        );
+
+      // Anexa documentação válida
+      await documents.create(
+        ShipmentDocument.create(
+          createShipmentDocumentData({
+            shipmentId: id,
+            attachments: [createAttachmentData({ expiresAt: null })],
+          }),
+        ),
+      );
+
+      // Libera após documentação estar disponível
+      await patch('release')
+        .expect(200)
+        .expect(({ body }) => expect(body.status).toBe(StatusShipment.APPROVED));
+
+      // Movimenta e finaliza
+      await patch('status', { status: StatusShipment.IN_TRANSIT }).expect(200);
+      await patch('status', { status: StatusShipment.COMPLETED }).expect(200);
+
+      // Estado terminal não permite mais transições
+      await patch('cancel').expect(422);
+    });
+
+    it('impede movimentar carga bloqueada (422) e rejeita status inválido (400)', async () => {
+      const path = await createShipment();
+      const patch = (suffix: string, body?: object) =>
+        request(app.getHttpServer())
+          .patch(`${path}/${suffix}`)
+          .send(body ?? {});
+
+      await patch('status', { status: StatusShipment.ANALYZING }).expect(200);
+      await patch('status', { status: StatusShipment.INSPECTION }).expect(200);
+      await patch('block').expect(200);
+      await patch('status', { status: StatusShipment.IN_TRANSIT })
+        .expect(422)
+        .expect(({ body }) => expect(body.message).toContain('bloqueada'));
+      await patch('status', { status: 'INVALID' }).expect(400);
+    });
   },
 );

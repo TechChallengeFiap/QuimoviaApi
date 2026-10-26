@@ -27,6 +27,14 @@ export interface UserActionActor {
   name?: string;
 }
 
+/**
+ * Ator do auto cadastro: quem cadastra é o próprio usuário criado, e não um
+ * usuário autenticado.
+ */
+export const SELF_REGISTRATION = 'SELF_REGISTRATION';
+
+export type CreateUserActor = UserActionActor | typeof SELF_REGISTRATION | null;
+
 @Injectable()
 export class CreateUserUseCase {
   private readonly logger = new Logger(CreateUserUseCase.name);
@@ -39,43 +47,55 @@ export class CreateUserUseCase {
     private readonly auditLogs?: AuditLogRecorder,
   ) {}
 
-  async execute(input: CreateUserInput, actor?: UserActionActor | null): Promise<User> {
+  /**
+   * Um e-mail de usuário excluído não gera um novo registro: o cadastro
+   * excluído é reativado com os novos dados, mantendo o id e o histórico.
+   * Só o cadastro interno reativa; no auto cadastro, o e-mail excluído é
+   * recusado como os demais, senão quem soubesse o e-mail assumiria o id e o
+   * histórico do usuário excluído.
+   */
+  async execute(
+    input: CreateUserInput,
+    actor?: CreateUserActor,
+  ): Promise<User> {
     try {
       const email = input.email.trim().toLowerCase();
-      const existing = await this.users.findByEmail(email);
+      const existing = await this.users.findByEmailIncludingDeleted(email);
 
-      if (existing) {
+      if (existing && (!existing.isDeleted || actor === SELF_REGISTRATION)) {
         throw new ConflictError(
           `Já existe um usuário cadastrado com o e-mail "${email}".`,
         );
       }
 
-      const user = User.create({
+      const data = {
         name: input.name,
-        email,
         passwordHash: await this.passwordHasher.hash(input.password),
         role: input.role,
         status: input.status,
-      });
+      };
 
-      const createdUser = await this.users.create(user);
+      if (existing) {
+        existing.reregister(data);
+      }
+
+      const createdUser = existing
+        ? await this.users.update(existing)
+        : await this.users.create(User.create({ ...data, email }));
 
       if (this.auditLogs) {
-        let actorName = actor?.name;
-        if (!actorName && actor?.id) {
-          const actorUser = await this.users.findById(actor.id);
-          actorName = actorUser?.name;
-        }
-        const resolvedActorName = actorName ?? 'Administrador do Sistema';
-        const actorId = actor?.id ?? createdUser.id;
+        const auditActor = await this.resolveAuditActor(actor, createdUser);
 
         await this.auditLogs.record({
           entityType: AuditedEntity.USER,
           entityId: createdUser.id,
-          actorId,
-          actorName: resolvedActorName,
+          actorId: auditActor.id,
+          actorName: auditActor.name,
           action: AuditAction.CREATED,
-          description: `Usuário "${resolvedActorName}" cadastrou o usuário "${createdUser.name}" (${createdUser.email})`,
+          description:
+            actor === SELF_REGISTRATION
+              ? `Usuário "${createdUser.name}" (${createdUser.email}) realizou o próprio cadastro`
+              : `Usuário "${auditActor.name}" cadastrou o usuário "${createdUser.name}" (${createdUser.email})`,
           details: { role: createdUser.role, status: createdUser.status },
         });
       }
@@ -88,5 +108,25 @@ export class CreateUserUseCase {
       );
       throw error;
     }
+  }
+
+  private async resolveAuditActor(
+    actor: CreateUserActor | undefined,
+    createdUser: User,
+  ): Promise<{ id: string; name: string }> {
+    if (actor === SELF_REGISTRATION) {
+      return { id: createdUser.id, name: createdUser.name };
+    }
+
+    let actorName = actor?.name;
+    if (!actorName && actor?.id) {
+      const actorUser = await this.users.findById(actor.id);
+      actorName = actorUser?.name;
+    }
+
+    return {
+      id: actor?.id ?? createdUser.id,
+      name: actorName ?? 'Administrador do Sistema',
+    };
   }
 }

@@ -232,7 +232,8 @@ describe('ShipmentDocumentsController (e2e)', () => {
       .post('/shipment-documents')
       .send({ ...documentPayload(), responsibleUserId: responsibleUser.id })
       .expect(201);
-    await users.remove(responsibleUser.id);
+    responsibleUser.delete();
+    await users.update(responsibleUser);
     const path = `/shipment-documents/${created.body.id}`;
     const found = await request(app.getHttpServer()).get(path).expect(200);
     const page = await request(app.getHttpServer())

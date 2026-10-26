@@ -13,6 +13,12 @@ import type {
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
 } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import type { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import {
+  ConflictError,
+  DomainError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 
 type PersistedChemicalShipmentWithRelations = PersistedChemicalShipment & {
   responsibleUser?: PersistedUser | null;
@@ -117,8 +123,57 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
     }
   }
 
-  async update(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
+  async update(
+    chemicalShipment: ChemicalShipment,
+    expectedPreviousStatus?: StatusShipment | StatusShipment[],
+  ): Promise<ChemicalShipment> {
     try {
+      if (expectedPreviousStatus !== undefined) {
+        const allowedStatuses = Array.isArray(expectedPreviousStatus)
+          ? expectedPreviousStatus
+          : [expectedPreviousStatus];
+
+        const result = await this.prismaService.chemicalShipment.updateMany({
+          where: {
+            id: chemicalShipment.id,
+            status: { in: allowedStatuses },
+            deletedAt: null,
+          },
+          data: {
+            updatedAt: chemicalShipment.updatedAt,
+            status: chemicalShipment.status,
+            productId: chemicalShipment.productId,
+            quantityProduct: chemicalShipment.quantityProduct,
+            responsibleUserId: chemicalShipment.responsibleUserId,
+            documentsIds: chemicalShipment.documentsIds,
+          },
+        });
+
+        if (result.count === 0) {
+          const current = await this.prismaService.chemicalShipment.findUnique({
+            where: { id: chemicalShipment.id },
+          });
+
+          if (!current || current.deletedAt) {
+            throw new ResourceNotFoundError('Carga Química', chemicalShipment.id);
+          }
+
+          throw new ConflictError(
+            `Conflito de concorrência ao atualizar a carga química "${chemicalShipment.id}": status esperado era "${allowedStatuses.join(', ')}", mas o status atual no banco é "${current.status}". A transição foi rejeitada.`,
+          );
+        }
+
+        const reloaded =
+          await this.prismaService.chemicalShipment.findUniqueOrThrow({
+            where: { id: chemicalShipment.id },
+            include: {
+              responsibleUser: true,
+            },
+          });
+
+        return PrismaChemicalShipmentRepository.toDomain(reloaded);
+      }
+
       const updatedChemicalShipment =
         await this.prismaService.chemicalShipment.update({
           where: { id: chemicalShipment.id },
@@ -139,6 +194,9 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
 
       return PrismaChemicalShipmentRepository.toDomain(updatedChemicalShipment);
     } catch (error) {
+      if (error instanceof DomainError) {
+        throw error;
+      }
       this.logger.error(
         `Erro ao persistir carga química no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
@@ -171,7 +229,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
       id: chemicalShipment.id,
       createdAt: chemicalShipment.createdAt,
       updatedAt: chemicalShipment.updatedAt,
-      status: chemicalShipment.status,
+      status: chemicalShipment.status as unknown as StatusShipment,
       productId: chemicalShipment.productId,
       quantityProduct: chemicalShipment.quantityProduct,
       responsibleUserId: chemicalShipment.responsibleUserId,

@@ -140,7 +140,7 @@ describe('Document CRUD without design metadata', () => {
   it.each([
     [{ number: null }, 400],
     [{ number: '' }, 400],
-    [{ number: ' ' }, 400],
+    [{ number: ' ' }, 422],
     [{ number: 'x'.repeat(81) }, 400],
     [{ filePath: '' }, 400],
     [{ filePath: 123 }, 400],
@@ -311,6 +311,7 @@ describe('Document CRUD without design metadata', () => {
       200: expect.any(Object),
       400: expect.any(Object),
       404: expect.any(Object),
+      422: expect.any(Object),
     });
     expect(
       specification.components?.schemas?.UpdateProductDocumentDto,

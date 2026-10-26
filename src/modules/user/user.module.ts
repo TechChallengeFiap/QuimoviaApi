@@ -5,6 +5,7 @@ import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/
 import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/list-users.use-case.js';
 import { UpdateUserUseCase } from '@/modules/user/application/use-cases/users/update-user.use-case.js';
 import { ChangeUserRoleUseCase } from '@/modules/user/application/use-cases/users/change-user-role.use-case.js';
+import { RegisterShipperUseCase } from '@/modules/user/application/use-cases/users/register-shipper.use-case.js';
 import { PASSWORD_HASHER } from '@/modules/user/application/contracts/password-hasher.contract.js';
 import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
@@ -27,6 +28,7 @@ import { UserDirectoryService } from '@/modules/user/application/services/user-d
   controllers: [UsersController],
   providers: [
     CreateUserUseCase,
+    RegisterShipperUseCase,
     ListUsersUseCase,
     FindUserByIdUseCase,
     UpdateUserUseCase,

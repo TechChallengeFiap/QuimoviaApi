@@ -26,12 +26,14 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
+  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { ChangeUserRoleUseCase } from '@/modules/user/application/use-cases/users/change-user-role.use-case.js';
 import { CreateUserUseCase } from '@/modules/user/application/use-cases/users/create-user.use-case.js';
 import { DeleteUserUseCase } from '@/modules/user/application/use-cases/users/delete-user.use-case.js';
 import { FindUserByIdUseCase } from '@/modules/user/application/use-cases/users/find-user-by-id.use-case.js';
 import { ListUsersUseCase } from '@/modules/user/application/use-cases/users/list-users.use-case.js';
+import { RegisterShipperUseCase } from '@/modules/user/application/use-cases/users/register-shipper.use-case.js';
 import {
   BLOCK_USER_DENIED_MESSAGE,
   UPDATE_OTHER_USER_DENIED_MESSAGE,
@@ -53,6 +55,7 @@ import { validationPipeFor } from '@/shared/presentation/pipes/validation.pipe.j
 import { ChangeUserRoleDto } from '@/modules/user/presentation/dtos/change-user-role.dto.js';
 import { CreateUserDto } from '@/modules/user/presentation/dtos/create-user.dto.js';
 import { ListUsersQueryDto } from '@/modules/user/presentation/dtos/list-users-query.dto.js';
+import { RegisterShipperDto } from '@/modules/user/presentation/dtos/register-shipper.dto.js';
 import { UpdateUserDto } from '@/modules/user/presentation/dtos/update-user.dto.js';
 import { UserPageResponseDto } from '@/modules/user/presentation/dtos/user-page-response.dto.js';
 import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.dto.js';
@@ -90,6 +93,12 @@ const BLOCK_USER_DENIED_EXAMPLE = {
   statusCode: HttpStatus.FORBIDDEN,
 };
 
+const BUSINESS_RULE_EXAMPLE = {
+  message: 'O nome do usuário deve ter ao menos 3 caracteres.',
+  error: 'Unprocessable Entity',
+  statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+};
+
 @ApiTags('Operações dos usuários')
 @Controller('users')
 @UseFilters(DomainExceptionFilter)
@@ -97,6 +106,8 @@ export class UsersController {
   constructor(
     @Inject(CreateUserUseCase)
     private readonly createUserUseCase: CreateUserUseCase,
+    @Inject(RegisterShipperUseCase)
+    private readonly registerShipperUseCase: RegisterShipperUseCase,
     @Inject(ListUsersUseCase)
     private readonly listUsersUseCase: ListUsersUseCase,
     @Inject(FindUserByIdUseCase)
@@ -115,7 +126,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Cadastra um novo usuário',
     description:
-      'Cria um usuário com a senha armazenada em hash. Quando o status não é informado, o usuário é criado como ACTIVE.',
+      'Cria um usuário com a senha armazenada em hash. Quando o status não é informado, o usuário é criado como ACTIVE. Se o e-mail for de um usuário excluído, não é criado um novo registro: o cadastro excluído é reativado com os dados enviados, mantendo o mesmo id.',
   })
   @ApiBody({
     type: CreateUserDto,
@@ -149,38 +160,27 @@ export class UsersController {
     description: 'Usuário cadastrado com sucesso.',
     type: UserResponseDto,
   })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos no corpo da requisição.',
+    schema: {
+      example: {
+        message: [
+          'name must be longer than or equal to 3 characters',
+          'email must be an email',
+          'password must be longer than or equal to 8 characters',
+        ],
+        error: 'Bad Request',
+        statusCode: HttpStatus.BAD_REQUEST,
+      },
+    },
+  })
   @ApiConflictResponse({
     description: 'Já existe um usuário cadastrado com o e-mail informado.',
     schema: { example: EMAIL_CONFLICT_EXAMPLE },
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos ou regra de negócio violada.',
-    content: {
-      'application/json': {
-        examples: {
-          dadosInvalidos: {
-            summary: 'Dados inválidos',
-            value: {
-              message: [
-                'name must be longer than or equal to 3 characters',
-                'email must be an email',
-                'password must be longer than or equal to 8 characters',
-              ],
-              error: 'Bad Request',
-              statusCode: HttpStatus.BAD_REQUEST,
-            },
-          },
-          regraNegocio: {
-            summary: 'Regra de negócio violada',
-            value: {
-              message: 'O nome do usuário deve ter ao menos 3 caracteres.',
-              error: 'Bad Request',
-              statusCode: HttpStatus.BAD_REQUEST,
-            },
-          },
-        },
-      },
-    },
+  @ApiUnprocessableEntityResponse({
+    description: 'Os dados violam uma regra de negócio do usuário.',
+    schema: { example: BUSINESS_RULE_EXAMPLE },
   })
   @ApiRequiresAuthentication()
   @ApiForbiddenResponse({
@@ -195,6 +195,62 @@ export class UsersController {
     const user = await this.createUserUseCase.execute(createUserDto, {
       id: session.userId,
     });
+    return UserResponseDto.fromEntity(user);
+  }
+
+  @Post('shippers')
+  @ApiOperation({
+    summary: 'Cadastro público do embarcador',
+    description:
+      'Rota pública, sem autenticação, para o embarcador criar a própria conta. O perfil é sempre SHIPPER_DRIVER e a conta é criada ativa; perfil e status não podem ser informados. O e-mail de um usuário excluído também retorna 409: só o Administrador do Sistema reativa uma conta excluída. Os usuários internos são cadastrados pelo Administrador do Sistema em POST /users.',
+  })
+  @ApiBody({
+    type: RegisterShipperDto,
+    description: 'Dados necessários para o cadastro do embarcador.',
+    examples: {
+      padrao: {
+        summary: 'Cadastro do embarcador',
+        description:
+          'O usuário é criado com o perfil SHIPPER_DRIVER e o status ACTIVE.',
+        value: {
+          name: 'Carlos Pereira',
+          email: 'carlos.pereira@transportadora.com',
+          password: 'S3nhaForte!',
+        },
+      },
+    },
+  })
+  @ApiCreatedResponse({
+    description: 'Embarcador cadastrado com sucesso.',
+    type: UserResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Dados inválidos no corpo da requisição, inclusive o envio de perfil ou status.',
+    schema: {
+      example: {
+        message: [
+          'property role should not exist',
+          'password must be longer than or equal to 8 characters',
+        ],
+        error: 'Bad Request',
+        statusCode: HttpStatus.BAD_REQUEST,
+      },
+    },
+  })
+  @ApiConflictResponse({
+    description: 'Já existe um usuário cadastrado com o e-mail informado.',
+    schema: { example: EMAIL_CONFLICT_EXAMPLE },
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'Os dados violam uma regra de negócio do usuário.',
+    schema: { example: BUSINESS_RULE_EXAMPLE },
+  })
+  async registerShipper(
+    @Body(validationPipeFor(RegisterShipperDto))
+    registerShipperDto: RegisterShipperDto,
+  ): Promise<UserResponseDto> {
+    const user = await this.registerShipperUseCase.execute(registerShipperDto);
     return UserResponseDto.fromEntity(user);
   }
 
@@ -333,6 +389,18 @@ export class UsersController {
     description: 'Usuário atualizado com sucesso.',
     type: UserResponseDto,
   })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos no corpo da requisição.',
+    schema: {
+      example: {
+        message: [
+          'status must be one of the following values: ACTIVE, INACTIVE, BLOCKED',
+        ],
+        error: 'Bad Request',
+        statusCode: HttpStatus.BAD_REQUEST,
+      },
+    },
+  })
   @ApiNotFoundResponse({
     description: 'Usuário não encontrado.',
     schema: { example: USER_NOT_FOUND_EXAMPLE },
@@ -341,32 +409,9 @@ export class UsersController {
     description: 'O novo e-mail já pertence a outro usuário.',
     schema: { example: EMAIL_CONFLICT_EXAMPLE },
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos ou regra de negócio violada.',
-    content: {
-      'application/json': {
-        examples: {
-          dadosInvalidos: {
-            summary: 'Dados inválidos',
-            value: {
-              message: [
-                'status must be one of the following values: ACTIVE, INACTIVE, BLOCKED',
-              ],
-              error: 'Bad Request',
-              statusCode: HttpStatus.BAD_REQUEST,
-            },
-          },
-          regraNegocio: {
-            summary: 'Regra de negócio violada',
-            value: {
-              message: 'O nome do usuário deve ter ao menos 3 caracteres.',
-              error: 'Bad Request',
-              statusCode: HttpStatus.BAD_REQUEST,
-            },
-          },
-        },
-      },
-    },
+  @ApiUnprocessableEntityResponse({
+    description: 'A alteração viola uma regra de negócio do usuário.',
+    schema: { example: BUSINESS_RULE_EXAMPLE },
   })
   @ApiRequiresAuthentication()
   @ApiForbiddenResponse({
@@ -470,8 +515,9 @@ export class UsersController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.SYSTEM_ADMIN)
   @ApiOperation({
-    summary: 'Remove um usuário',
-    description: 'Remove definitivamente o usuário informado.',
+    summary: 'Exclui um usuário',
+    description:
+      'Exclusão lógica: o usuário deixa de aparecer nas buscas e na listagem e perde o acesso, com as sessões encerradas, mas o registro é mantido para o histórico. Um novo cadastro interno (POST /users) com o mesmo e-mail reativa esse registro; o cadastro público do embarcador não reativa.',
   })
   @ApiParam({
     name: 'id',
@@ -479,7 +525,7 @@ export class UsersController {
     description: 'Identificador do usuário',
     example: USER_ID_EXAMPLE,
   })
-  @ApiNoContentResponse({ description: 'Usuário removido com sucesso.' })
+  @ApiNoContentResponse({ description: 'Usuário excluído com sucesso.' })
   @ApiNotFoundResponse({
     description: 'Usuário não encontrado.',
     schema: { example: USER_NOT_FOUND_EXAMPLE },

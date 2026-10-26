@@ -14,12 +14,46 @@ function createValidShipment(
   });
 }
 
+function shipmentIn(status: StatusShipment) {
+  return ChemicalShipment.restore({
+    ...createValidShipment().toObject(),
+    status,
+  });
+}
+
+const S = StatusShipment;
+const ALL_STATUSES = Object.values(S);
+
+const ALLOWED_TRANSITIONS: Array<[StatusShipment, StatusShipment]> = [
+  [S.REGISTERED, S.ANALYZING],
+  [S.ANALYZING, S.INSPECTION],
+  [S.INSPECTION, S.APPROVED],
+  [S.INSPECTION, S.REPROVED],
+  [S.APPROVED, S.IN_TRANSIT],
+  [S.IN_TRANSIT, S.COMPLETED],
+  [S.REGISTERED, S.CANCELLED],
+  [S.ANALYZING, S.CANCELLED],
+  [S.INSPECTION, S.CANCELLED],
+  [S.APPROVED, S.CANCELLED],
+  [S.REPROVED, S.CANCELLED],
+];
+
+const isAllowed = (from: StatusShipment, to: StatusShipment) =>
+  ALLOWED_TRANSITIONS.some(([f, t]) => f === from && t === to);
+
+const FORBIDDEN_TRANSITIONS: Array<[StatusShipment, StatusShipment]> =
+  ALL_STATUSES.flatMap((from) =>
+    ALL_STATUSES.filter((to) => !isAllowed(from, to)).map(
+      (to) => [from, to] as [StatusShipment, StatusShipment],
+    ),
+  );
+
 describe('ChemicalShipment Entity', () => {
-  it('cria uma carga química com status ANALYZING por padrão', () => {
+  it('cria uma carga química com status REGISTERED por padrão', () => {
     const shipment = createValidShipment();
 
     expect(shipment.id).toBeDefined();
-    expect(shipment.status).toBe(StatusShipment.ANALYZING);
+    expect(shipment.status).toBe(StatusShipment.REGISTERED);
     expect(shipment.productId).toBe('prod-001');
     expect(shipment.responsibleUserId).toBe('user-001');
     expect(shipment.documentsIds).toBe('doc-001');
@@ -39,45 +73,6 @@ describe('ChemicalShipment Entity', () => {
     expect(() =>
       createValidShipment({ quantityProduct: undefined as any }),
     ).toThrow(BusinessRuleError);
-  });
-
-  it('permite atualizar status de uma carga em análise', () => {
-    const shipment = createValidShipment();
-    const originalUpdatedAt = shipment.updatedAt;
-
-    shipment.updateStatus(StatusShipment.INSPECTION);
-
-    expect(shipment.status).toBe(StatusShipment.INSPECTION);
-    expect(shipment.updatedAt.getTime()).toBeGreaterThanOrEqual(
-      originalUpdatedAt.getTime(),
-    );
-  });
-
-  it('suporta updateChemicalShipmentStatus com sobrecarga', () => {
-    const shipment = createValidShipment();
-    shipment.updateChemicalShipmentStatus(StatusShipment.INSPECTION);
-    expect(shipment.status).toBe(StatusShipment.INSPECTION);
-
-    shipment.updateChemicalShipmentStatus(shipment, StatusShipment.ANALYZING);
-    expect(shipment.status).toBe(StatusShipment.ANALYZING);
-  });
-
-  it('não permite alterar status de carga reprovada', () => {
-    const shipment = createValidShipment();
-    shipment.updateStatus(StatusShipment.REPROVED);
-
-    expect(() => shipment.updateStatus(StatusShipment.APPROVED)).toThrow(
-      BusinessRuleError,
-    );
-  });
-
-  it('não permite alterar status de carga aprovada', () => {
-    const shipment = createValidShipment();
-    shipment.updateStatus(StatusShipment.APPROVED);
-
-    expect(() => shipment.updateStatus(StatusShipment.INSPECTION)).toThrow(
-      BusinessRuleError,
-    );
   });
 
   it('permite alterar o produto químico', () => {
@@ -116,37 +111,6 @@ describe('ChemicalShipment Entity', () => {
     }).toThrow(BusinessRuleError);
   });
 
-  it('bloqueia alterações de atributos quando a carga já foi aprovada ou reprovada', () => {
-    const approvedShipment = createValidShipment();
-    approvedShipment.updateStatus(StatusShipment.APPROVED);
-
-    expect(() => approvedShipment.changeProduct('prod-999')).toThrow(
-      BusinessRuleError,
-    );
-    expect(() => approvedShipment.changeResponsibleUser('user-999')).toThrow(
-      BusinessRuleError,
-    );
-    expect(() => approvedShipment.changeDocuments('doc-999')).toThrow(
-      BusinessRuleError,
-    );
-    expect(() => approvedShipment.changeQuantityProduct(500)).toThrow(
-      BusinessRuleError,
-    );
-    expect(() => {
-      approvedShipment.quantityProduct = 500;
-    }).toThrow(BusinessRuleError);
-
-    const reprovedShipment = createValidShipment();
-    reprovedShipment.updateStatus(StatusShipment.REPROVED);
-
-    expect(() => reprovedShipment.changeProduct('prod-999')).toThrow(
-      BusinessRuleError,
-    );
-    expect(() => {
-      reprovedShipment.quantityProduct = 500;
-    }).toThrow(BusinessRuleError);
-  });
-
   it('converte corretamente para objeto com toObject()', () => {
     const shipment = createValidShipment();
     const obj = shipment.toObject();
@@ -156,6 +120,102 @@ describe('ChemicalShipment Entity', () => {
     expect(obj.quantityProduct).toBe(100);
     expect(obj.responsibleUserId).toBe('user-001');
     expect(obj.documentsIds).toBe('doc-001');
-    expect(obj.status).toBe(StatusShipment.ANALYZING);
+    expect(obj.status).toBe(StatusShipment.REGISTERED);
+  });
+
+  describe('Máquina de Estados e Ciclo de Vida da Carga', () => {
+    it.each(ALLOWED_TRANSITIONS)(
+      'permite transição válida: %s → %s',
+      (from, to) => {
+        const shipment = shipmentIn(from);
+        shipment.changeStatus(to, { hasRequiredDocumentation: true });
+        expect(shipment.status).toBe(to);
+      },
+    );
+
+    it.each(FORBIDDEN_TRANSITIONS)(
+      'bloqueia transição proibida: %s → %s',
+      (from, to) => {
+        const shipment = shipmentIn(from);
+        expect(() =>
+          shipment.changeStatus(to, { hasRequiredDocumentation: true }),
+        ).toThrow(BusinessRuleError);
+        expect(shipment.status).toBe(from);
+      },
+    );
+
+    it.each([
+      [S.CANCELLED, S.APPROVED, 'cancelada não pode ser liberada'],
+      [S.COMPLETED, S.IN_TRANSIT, 'finalizada não pode sofrer'],
+      [S.REPROVED, S.IN_TRANSIT, 'bloqueada não pode entrar em movimentação'],
+      [S.REGISTERED, S.COMPLETED, 'Transição de status inválida'],
+      [S.INSPECTION, S.COMPLETED, 'sem antes ser liberada'],
+      [S.APPROVED, S.REGISTERED, 'Transição de status inválida'],
+    ])('valida mensagem do edital para transição: %s → %s', (from, to, expectedMessage) => {
+      expect(() =>
+        shipmentIn(from).changeStatus(to, { hasRequiredDocumentation: true }),
+      ).toThrow(expectedMessage);
+    });
+
+    it('bloqueia liberação de carga em inspeção sem documentação obrigatória', () => {
+      const shipment = shipmentIn(S.INSPECTION);
+      expect(() => shipment.release(false)).toThrow(
+        'Uma carga não pode ser liberada sem documentação obrigatória.',
+      );
+      expect(shipment.status).toBe(S.INSPECTION);
+    });
+
+    it('permite liberação de carga em inspeção com documentação obrigatória', () => {
+      const shipment = shipmentIn(S.INSPECTION);
+      shipment.release(true);
+      expect(shipment.status).toBe(S.APPROVED);
+    });
+
+    it.each([S.REGISTERED, S.ANALYZING, S.INSPECTION, S.APPROVED, S.REPROVED])(
+      'permite cancelamento a partir do status %s',
+      (from) => {
+        const shipment = shipmentIn(from);
+        shipment.cancel();
+        expect(shipment.status).toBe(S.CANCELLED);
+        expect(shipment.isTerminal).toBe(true);
+      },
+    );
+
+    it('método block() move a carga de inspeção para reprovada/bloqueada', () => {
+      const shipment = shipmentIn(S.INSPECTION);
+      shipment.block();
+      expect(shipment.status).toBe(S.REPROVED);
+    });
+
+    it('impede movimentação de carga bloqueada', () => {
+      const shipment = shipmentIn(S.REPROVED);
+      expect(() => shipment.startTransit()).toThrow(
+        'Uma carga bloqueada não pode entrar em movimentação.',
+      );
+    });
+
+    it.each([
+      S.INSPECTION,
+      S.APPROVED,
+      S.REPROVED,
+      S.IN_TRANSIT,
+      S.COMPLETED,
+      S.CANCELLED,
+    ])('bloqueia edição de dados da carga no status %s', (status) => {
+      const shipment = shipmentIn(status);
+
+      expect(() => shipment.changeProduct('prod-999')).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => shipment.changeResponsibleUser('user-999')).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => shipment.changeDocuments('doc-999')).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => shipment.changeQuantityProduct(500)).toThrow(
+        BusinessRuleError,
+      );
+    });
   });
 });

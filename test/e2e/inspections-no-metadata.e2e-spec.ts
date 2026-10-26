@@ -28,7 +28,7 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
 
   beforeAll(async () => {
     disableDesignMetadata();
-    // Os casos de uso registram os erros esperados (404, 400) no log.
+    // Os casos de uso registram os erros esperados (404, 422) no log.
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
     const { PrismaModule } =
@@ -159,14 +159,14 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
     await request(app.getHttpServer()).get(`/inspections/${id}`).expect(200);
   });
 
-  it('traduz os erros de domínio para 404 e 400', async () => {
+  it('traduz os erros de domínio para 404 e 422', async () => {
     await request(app.getHttpServer())
       .get('/inspections/id-inexistente')
       .expect(404);
     await request(app.getHttpServer())
       .post('/inspections')
       .send({ ...payload, scope: 'CARGO_ITEM' })
-      .expect(400);
+      .expect(422);
 
     const created = await request(app.getHttpServer())
       .post('/inspections')
@@ -176,7 +176,7 @@ describe('InspectionsController sem a metadata de decorators (e2e)', () => {
     await request(app.getHttpServer())
       .patch(`/inspections/${created.body.id}`)
       .send({ status: 'COMPLETED' })
-      .expect(400);
+      .expect(422);
   });
 
   it('valida o corpo do cadastro e os resultados aninhados da atualização', async () => {

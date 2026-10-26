@@ -313,7 +313,7 @@ sequenceDiagram
   alt regra violada
     E-->>UC: BusinessRuleError
     UC-->>C: erro propagado
-    Note over C: o filtro global responde 400
+    Note over C: o filtro global responde 422
   else regra cumprida
     UC->>R: update(inspection)
     R->>DB: UPDATE
@@ -344,7 +344,7 @@ A separação em camadas também distingue dois tipos de validação, que podem 
 | Pergunta | "É um texto? Um inteiro? Está presente?" | "Esta transição é permitida? Todas as verificações têm resultado?" |
 | Onde fica | Presentation, nos DTOs HTTP | Domínio, nas entidades e value objects |
 | Protege | A borda contra dados malformados | As invariantes, venha a chamada de onde vier |
-| Resultado | Resposta 400 | Erro de domínio, traduzido para 400, 404 ou 409 |
+| Resultado | Resposta 400 | Erro de domínio, traduzido para 422, 404 ou 409 |
 
 O DTO garante que `compositionVersion` é um número inteiro; o domínio garante que ela é maior ou igual a 1, mesmo que o caso de uso seja chamado por outro meio que não o HTTP.
 

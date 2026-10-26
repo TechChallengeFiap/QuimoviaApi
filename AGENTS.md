@@ -11,14 +11,14 @@ Este é o documento mestre de instruções para qualquer Agente de IA trabalhand
 
 ## 📚 Fontes Canônicas de Verdade (Leitura Obrigatória)
 Toda e qualquer decisão, criação de arquivos ou alteração de código deve levar em consideração:
-1. **Arquitetura e Organização**: [Fundamentos e decisões](docs/arquitetura/01-fundamentos-e-decisoes.md) e [Organização e aplicação](docs/arquitetura/02-organizacao-e-aplicacao.md) — Manual único de estrutura, pastas, responsabilidades e convenções de nomenclatura.
+1. **Arquitetura e Organização**: [docs/arquitetura/02-organizacao-e-aplicacao.md](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/docs/arquitetura/02-organizacao-e-aplicacao.md) — Manual de estrutura, pastas, responsabilidades e convenções de nomenclatura.
 2. **Edital do Tech Challenge Fase 2**: `POSTECH - FSDT - Tech Challenge - Fase 2.pdf` e [.agents/rules/tech-challenge-fase-2.md](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/.agents/rules/tech-challenge-fase-2.md) — Regras de negócio, atributos obrigatórios, máquina de estados e matriz de avaliação.
 3. **Diretrizes de Clean Code**: [.agents/rules/clean-code.md](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/.agents/rules/clean-code.md) — Separação estrita de camadas e higiene de código.
 
 ---
 
 ## 🏗️ 1. Arquitetura do Projeto (Clean Architecture + DDD)
-Conforme documentado em [Fundamentos e decisões](docs/arquitetura/01-fundamentos-e-decisoes.md) e [Organização e aplicação](docs/arquitetura/02-organizacao-e-aplicacao.md), a aplicação é um **Monólito Modular** dividido em Bounded Contexts em `src/modules/<modulo>/`:
+Conforme documentado em [docs/arquitetura/02-organizacao-e-aplicacao.md](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/docs/arquitetura/02-organizacao-e-aplicacao.md), a aplicação é um **Monólito Modular** dividido em Bounded Contexts em `src/modules/<modulo>/`:
 
 ### Estrutura de Camadas em Cada Módulo:
 1. **`domain/` (Núcleo do Negócio - Puro)**:
@@ -126,7 +126,7 @@ Toda alteração deve preservar e garantir testes automatizados cobrindo:
    - **SEMPRE usar extensão `.js`** nos imports relativos e com alias `@/` (ex.: `import { User } from '@/modules/user/domain/entities/user.entity.js';`).
    - **NUNCA usar extensão `.ts`** em imports.
 2. **Tratamento de Exceções**:
-   - Domínio lança [BusinessRuleError](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/src/shared/domain/errors/domain.error.ts#L6-L10) (status 400).
+   - Domínio lança [BusinessRuleError](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/src/shared/domain/errors/domain.error.ts#L6-L10) (status 422 - Unprocessable Entity).
    - Aplicação lança [ResourceNotFoundError](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/src/shared/domain/errors/domain.error.ts#L29-L38) (status 404) ou [ConflictError](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/src/shared/domain/errors/domain.error.ts#L20-L24) (status 409).
    - O [DomainExceptionFilter](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/src/shared/presentation/filters/domain-exception.filter.ts) converte automaticamente para as respostas HTTP correspondentes.
 3. **Build e Verificação Contínua**:

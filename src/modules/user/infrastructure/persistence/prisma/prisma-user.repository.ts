@@ -24,6 +24,8 @@ export class PrismaUserRepository implements UserRepository {
         role: user.role,
         status: user.status,
         lastLoginAt: user.lastLoginAt,
+        isDeleted: user.isDeleted,
+        deletedAt: user.deletedAt,
       },
     });
 
@@ -40,23 +42,31 @@ export class PrismaUserRepository implements UserRepository {
         role: user.role,
         status: user.status,
         lastLoginAt: user.lastLoginAt,
+        isDeleted: user.isDeleted,
+        deletedAt: user.deletedAt,
       },
     });
 
     return PrismaUserRepository.toDomain(record);
   }
 
-  async remove(id: string): Promise<void> {
-    await this.prisma.user.delete({ where: { id } });
-  }
-
   async findById(id: string): Promise<User | null> {
-    const record = await this.prisma.user.findUnique({ where: { id } });
+    const record = await this.prisma.user.findUnique({
+      where: { id, isDeleted: false },
+    });
 
     return record ? PrismaUserRepository.toDomain(record) : null;
   }
 
   async findByEmail(email: string): Promise<User | null> {
+    const record = await this.prisma.user.findUnique({
+      where: { email, isDeleted: false },
+    });
+
+    return record ? PrismaUserRepository.toDomain(record) : null;
+  }
+
+  async findByEmailIncludingDeleted(email: string): Promise<User | null> {
     const record = await this.prisma.user.findUnique({ where: { email } });
 
     return record ? PrismaUserRepository.toDomain(record) : null;
@@ -64,14 +74,14 @@ export class PrismaUserRepository implements UserRepository {
 
   async findByIds(ids: readonly string[]): Promise<User[]> {
     const records = await this.prisma.user.findMany({
-      where: { id: { in: [...ids] } },
+      where: { id: { in: [...ids] }, isDeleted: false },
     });
     return records.map((record) => PrismaUserRepository.toDomain(record));
   }
 
   async registerLogin(user: User): Promise<boolean> {
     const { count } = await this.prisma.user.updateMany({
-      where: { id: user.id, status: UserStatus.ACTIVE },
+      where: { id: user.id, status: UserStatus.ACTIVE, isDeleted: false },
       data: { lastLoginAt: user.lastLoginAt },
     });
 
@@ -80,6 +90,7 @@ export class PrismaUserRepository implements UserRepository {
 
   async list(filters: UserSearchFilters): Promise<UserPage> {
     const where = {
+      isDeleted: false,
       ...(filters.role ? { role: filters.role } : {}),
       ...(filters.status ? { status: filters.status } : {}),
     };
@@ -113,6 +124,11 @@ export class PrismaUserRepository implements UserRepository {
       lastLoginAt: record.lastLoginAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      // isDeleted é o que filtra as buscas; sem a data, vale a da última
+      // alteração.
+      deletedAt: record.isDeleted
+        ? (record.deletedAt ?? record.updatedAt)
+        : null,
     });
   }
 }

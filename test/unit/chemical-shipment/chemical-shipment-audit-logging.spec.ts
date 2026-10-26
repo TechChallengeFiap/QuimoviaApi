@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from '@jest/globals';
 import { CreateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/create-chemical-shipment.use-case.js';
 import { UpdateChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/update-chemical-shipment.use-case.js';
 import { DeleteChemicalShipmentUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/delete-chemical-shipment.use-case.js';
+import { StartShipmentAnalysisUseCase } from '@/modules/chemical-shipment/application/use-cases/chemical-shipment/status/start-shipment-analysis.use-case.js';
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
 import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/product-risk-class.enum.js';
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
@@ -123,18 +123,16 @@ describe('Chemical Shipment Audit Logging (unit)', () => {
       }),
     );
 
-    const useCase = new UpdateChemicalShipmentUseCase(
+    const useCase = new StartShipmentAnalysisUseCase(
       shipmentsRepo,
       usersRepo,
-      productsRepo,
       auditLogs,
     );
 
-    await useCase.execute(
-      shipment.id,
-      { status: StatusShipment.INSPECTION },
-      { id: 'op-1', name: 'Operador Santos' },
-    );
+    await useCase.execute(shipment.id, {
+      id: 'op-1',
+      name: 'Operador Santos',
+    });
 
     expect(auditLogs.logs).toHaveLength(1);
     expect(auditLogs.logs[0]).toMatchObject({
@@ -142,7 +140,7 @@ describe('Chemical Shipment Audit Logging (unit)', () => {
       entityId: shipment.id,
       action: AuditAction.STATUS_CHANGED,
     });
-    expect(auditLogs.logs[0].description).toContain('INSPECTION');
+    expect(auditLogs.logs[0].description).toContain('Em análise');
     expect(auditLogs.logs[0].description).toContain('Operador Santos');
   });
 
