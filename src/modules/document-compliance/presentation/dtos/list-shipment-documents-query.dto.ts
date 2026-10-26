@@ -1,7 +1,30 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+  Validate,
+  ValidatorConstraint,
+  type ValidationArguments,
+  type ValidatorConstraintInterface,
+} from 'class-validator';
 import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
+
+@ValidatorConstraint({ name: 'safePaginationOffset', async: false })
+class SafePaginationOffset implements ValidatorConstraintInterface {
+  validate(page: number, args: ValidationArguments): boolean {
+    const query = args.object as ListShipmentDocumentsQueryDto;
+    return Number.isSafeInteger((page - 1) * (query.pageSize ?? 20));
+  }
+
+  defaultMessage(): string {
+    return 'A página e o tamanho informados excedem o limite permitido de paginação.';
+  }
+}
 
 export class ListShipmentDocumentsQueryDto {
   @ApiPropertyOptional({
@@ -51,6 +74,7 @@ export class ListShipmentDocumentsQueryDto {
   @Max(Number.MAX_SAFE_INTEGER, {
     message: 'A página excede o limite permitido.',
   })
+  @Validate(SafePaginationOffset)
   page?: number;
 
   @ApiPropertyOptional({

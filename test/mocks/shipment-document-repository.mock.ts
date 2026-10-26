@@ -1,6 +1,5 @@
 import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
 import type { ShipmentDocumentProperties } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
-import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
 import type {
   ShipmentDocumentPage,
   ShipmentDocumentRepository,
@@ -15,8 +14,6 @@ import {
 export class ShipmentDocumentRepositoryMock implements ShipmentDocumentRepository {
   private readonly documents = new Map<string, ShipmentDocumentProperties>();
 
-  constructor(private readonly users?: UserRepository) {}
-
   async create(document: ShipmentDocument): Promise<ShipmentDocument> {
     if (await this.findByShipmentId(document.shipmentId)) {
       throw new ConflictError(
@@ -24,7 +21,7 @@ export class ShipmentDocumentRepositoryMock implements ShipmentDocumentRepositor
       );
     }
     this.documents.set(document.id, document.toObject());
-    return this.restore(document.toObject());
+    return ShipmentDocument.restore(document.toObject());
   }
 
   async update(document: ShipmentDocument): Promise<ShipmentDocument> {
@@ -34,7 +31,7 @@ export class ShipmentDocumentRepositoryMock implements ShipmentDocumentRepositor
       revision: document.revision + 1,
     };
     this.documents.set(document.id, properties);
-    return this.restore(properties);
+    return ShipmentDocument.restore(properties);
   }
 
   async remove(id: string, revision: number): Promise<void> {
@@ -44,14 +41,14 @@ export class ShipmentDocumentRepositoryMock implements ShipmentDocumentRepositor
 
   async findById(id: string): Promise<ShipmentDocument | null> {
     const document = this.documents.get(id);
-    return document ? this.restore(document) : null;
+    return document ? ShipmentDocument.restore(document) : null;
   }
 
   async findByShipmentId(shipmentId: string): Promise<ShipmentDocument | null> {
     const document = [...this.documents.values()].find(
       (item) => item.shipmentId === shipmentId,
     );
-    return document ? this.restore(document) : null;
+    return document ? ShipmentDocument.restore(document) : null;
   }
 
   async list(
@@ -71,28 +68,13 @@ export class ShipmentDocumentRepositoryMock implements ShipmentDocumentRepositor
       );
     const start = (filters.page - 1) * filters.pageSize;
     return {
-      items: await Promise.all(
-        items
-          .slice(start, start + filters.pageSize)
-          .map((document) => this.restore(document)),
-      ),
+      items: items
+        .slice(start, start + filters.pageSize)
+        .map((document) => ShipmentDocument.restore(document)),
       total: items.length,
       page: filters.page,
       pageSize: filters.pageSize,
     };
-  }
-
-  private async restore(
-    properties: ShipmentDocumentProperties,
-  ): Promise<ShipmentDocument> {
-    const user =
-      properties.responsibleUserId && this.users
-        ? await this.users.findById(properties.responsibleUserId)
-        : null;
-    return ShipmentDocument.restore({
-      ...properties,
-      responsibleUser: user ? { id: user.id, name: user.name } : null,
-    });
   }
 
   private ensureWritable(id: string, revision: number): void {

@@ -92,7 +92,7 @@ O Quimovia adota o padrão **Monólito Modular** fundamentado nos princípios de
 >
 > Todas as decisões arquiteturais, estruturação detalhada de pastas, mapeamento de camadas (`domain`, `application`, `infrastructure`, `presentation`), regras de dependência, padrões de nomenclatura e boas práticas estão centralizadas na pasta [`docs/`](./docs/):
 >
-> 🔗 **Consulte a documentação completa em:** [**`docs/arquitetura-e-organizacao.md`**](./docs/arquitetura-e-organizacao.md)
+> 🔗 **Consulte a documentação completa em:** [Fundamentos e decisões](./docs/arquitetura/01-fundamentos-e-decisoes.md) e [Organização e aplicação](./docs/arquitetura/02-organizacao-e-aplicacao.md)
 
 ---
 
@@ -288,6 +288,20 @@ A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de 
 - `PATCH /inspections/:id` — Atualiza o status (`IN_PROGRESS`, `COMPLETED`) e resultado dos itens (`COMPLIANT`, `NON_COMPLIANT`).
 - `DELETE /inspections/:id` — Remove registro de inspeção.
 
+#### Documentação das Cargas (`/shipment-documents`)
+
+- `POST /shipment-documents` — Cadastra a documentação em preparação, com anexos e responsável técnico opcionais.
+- `GET /shipment-documents` — Lista documentos com paginação e filtros por carga, embarcador e status.
+- `GET /shipment-documents/:id` — Consulta o documento e o histórico dos anexos.
+- `PATCH /shipment-documents/:id` — Altera o responsável e adiciona, substitui ou remove anexos enquanto o documento está em preparação.
+- `DELETE /shipment-documents/:id` — Exclui a documentação em preparação.
+
+Ao informar `responsibleUserId`, o usuário deve existir; caso contrário, a API retorna `404`. Omitir o campo na atualização preserva o vínculo. As respostas incluem `responsibleUserId` e `responsibleUser` (`id` e `name`), sem credenciais. Os nomes são obtidos pelo contrato público de Identidade e Acesso, em lote nas listagens. Se o usuário for removido, o identificador histórico permanece e o resumo passa a ser `null`.
+
+A migração `20261026000000_isolate_document_responsible_user` remove apenas a chave estrangeira entre os contextos, preservando identificadores e índice. A existência do responsável passa a ser validada pela aplicação; não há garantia transacional entre a consulta ao usuário e a gravação documental. Aplique as migrações com `npm run migrate:deploy` antes de executar esta versão e gere o cliente com `npm run migrate:generate`.
+
+Erros de validação e violações de regras de negócio retornam `400`; recursos ausentes retornam `404`, e conflitos retornam `409`.
+
 #### Usuários e Acessos (`/users`)
 
 Cadastrar, remover e trocar o perfil de usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis). Na edição, o administrador altera qualquer usuário, e os demais perfis só os próprios dados, sem poder se bloquear.
@@ -308,6 +322,9 @@ A suíte de testes cobre regras de domínio, casos de uso, filtros de erro e flu
 ```bash
 # Executa os testes unitários
 npm test
+
+# Verifica os tipos da aplicação e dos testes
+npm run typecheck
 
 # Executa os testes em modo watch (desenvolvimento contínuo)
 npm run test:watch

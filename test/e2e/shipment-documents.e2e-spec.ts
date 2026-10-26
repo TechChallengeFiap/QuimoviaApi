@@ -11,7 +11,8 @@ import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enu
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { ShipmentDocumentRepositoryMock } from '../mocks/shipment-document-repository.mock.js';
 import { UserModule } from '@/modules/user/user.module.js';
-import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { USER_DIRECTORY } from '@/modules/user/public/index.js';
+import { UserDirectoryMock } from '../mocks/user-directory.mock.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
@@ -51,15 +52,17 @@ describe('ShipmentDocumentsController (e2e)', () => {
         role: UserRole.TECHNICAL_MANAGER,
       }),
     );
-    documents = new ShipmentDocumentRepositoryMock(users);
+    documents = new ShipmentDocumentRepositoryMock();
     const moduleFixture = await Test.createTestingModule({
       imports: [DocumentComplianceModule],
     })
       .overrideModule(UserModule)
       .useModule({
         module: class TestUserModule {},
-        providers: [{ provide: USER_REPOSITORY, useValue: users }],
-        exports: [USER_REPOSITORY],
+        providers: [
+          { provide: USER_DIRECTORY, useValue: new UserDirectoryMock(users) },
+        ],
+        exports: [USER_DIRECTORY],
       })
       .overrideProvider(SHIPMENT_DOCUMENT_REPOSITORY)
       .useValue(documents)
@@ -222,6 +225,27 @@ describe('ShipmentDocumentsController (e2e)', () => {
           item.responsibleUserId === responsibleUser.id,
       ),
     ).toBe(true);
+  });
+
+  it('preserva o documento e o identificador histórico quando o responsável deixa de existir', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/shipment-documents')
+      .send({ ...documentPayload(), responsibleUserId: responsibleUser.id })
+      .expect(201);
+    await users.remove(responsibleUser.id);
+    const path = `/shipment-documents/${created.body.id}`;
+    const found = await request(app.getHttpServer()).get(path).expect(200);
+    const page = await request(app.getHttpServer())
+      .get('/shipment-documents')
+      .expect(200);
+    const updated = await request(app.getHttpServer())
+      .patch(path)
+      .send({ attachments: [attachmentPayload()] })
+      .expect(200);
+    for (const document of [found.body, page.body.items[0], updated.body]) {
+      expect(document.responsibleUserId).toBe(responsibleUser.id);
+      expect(document.responsibleUser).toBeNull();
+    }
   });
 
   it('rejects unknown users on create and update without changing persisted data', async () => {

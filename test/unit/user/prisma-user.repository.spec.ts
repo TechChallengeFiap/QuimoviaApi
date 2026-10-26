@@ -12,6 +12,7 @@ function createPrismaFake() {
   return {
     user: {
       updateMany: jest.fn<PrismaMethod>(),
+      findMany: jest.fn<PrismaMethod>(),
     },
   };
 }
@@ -52,5 +53,15 @@ describe('PrismaUserRepository', () => {
     prisma.user.updateMany.mockResolvedValueOnce({ count: 0 });
 
     await expect(repository.registerLogin(loggedInUser())).resolves.toBe(false);
+  });
+
+  it('busca usuários em lote sem consultas individuais', async () => {
+    const user = loggedInUser();
+    prisma.user.findMany.mockResolvedValue([user.toObject()]);
+    const found = await repository.findByIds([user.id]);
+    expect(found.map((item) => item.toObject())).toEqual([user.toObject()]);
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { id: { in: [user.id] } },
+    });
   });
 });

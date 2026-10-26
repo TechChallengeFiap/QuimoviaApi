@@ -211,7 +211,7 @@ describe('PrismaShipmentDocumentRepository', () => {
     );
   });
 
-  it('persists the responsible user foreign key on create and update', async () => {
+  it('persiste apenas o identificador do responsável na criação e atualização', async () => {
     document = ShipmentDocument.create(
       createShipmentDocumentData({
         responsibleUserId: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
@@ -232,35 +232,16 @@ describe('PrismaShipmentDocumentRepository', () => {
     }
   });
 
-  it('loads only the responsible user identifier and name for reads and lists', async () => {
-    const user = {
-      id: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
-      name: 'Maria Silva',
-      passwordHash: 'must-not-leak',
-      email: 'internal@example.com',
-      token: 'must-not-leak',
-    };
-    const record = {
-      ...persistedRecord(),
-      responsibleUserId: user.id,
-      responsibleUser: user,
-    };
-    delegate.findUnique.mockResolvedValue(record);
-    delegate.findMany.mockResolvedValue([record]);
+  it('consulta documentos sem acessar tabelas de outros contextos', async () => {
+    delegate.findUnique.mockResolvedValue(persistedRecord());
+    delegate.findMany.mockResolvedValue([persistedRecord()]);
     delegate.count.mockResolvedValue(1);
-    const found = await repository.findById(document.id);
-    const byShipment = await repository.findByShipmentId(document.shipmentId);
-    const page = await repository.list({ page: 1, pageSize: 20 });
-    for (const item of [found, byShipment, page.items[0]]) {
-      expect(item?.responsibleUser).toEqual({ id: user.id, name: user.name });
-      expect(item?.toObject().responsibleUser).toEqual({
-        id: user.id,
-        name: user.name,
-      });
-    }
-    const include = expect.objectContaining({
-      responsibleUser: { select: { id: true, name: true } },
-    });
+    await repository.findById(document.id);
+    await repository.findByShipmentId(document.shipmentId);
+    await repository.list({ page: 1, pageSize: 20 });
+    const include = {
+      attachments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+    };
     expect(delegate.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ include }),
     );
@@ -268,19 +249,4 @@ describe('PrismaShipmentDocumentRepository', () => {
       expect.objectContaining({ include }),
     );
   });
-
-  it.each(['create', 'update'] as const)(
-    'handles a responsible user removed concurrently during %s',
-    async (operation) => {
-      document = ShipmentDocument.create(
-        createShipmentDocumentData({
-          responsibleUserId: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
-        }),
-      );
-      delegate[operation].mockRejectedValue(prismaError('P2003'));
-      await expect(repository[operation](document)).rejects.toThrow(
-        ResourceNotFoundError,
-      );
-    },
-  );
 });

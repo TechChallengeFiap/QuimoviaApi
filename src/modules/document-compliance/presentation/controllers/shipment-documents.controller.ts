@@ -16,7 +16,7 @@ import {
   Res,
   UseFilters,
 } from '@nestjs/common';
-import type { AuthenticatedRequest } from '@/modules/user/infrastructure/auth/authenticated-request.js';
+import type { AuthenticatedRequest } from '@/modules/user/public/index.js';
 import {
   ApiBody,
   ApiOperation,
@@ -111,7 +111,7 @@ export class ShipmentDocumentsController {
       actor,
     );
     response.location(`/shipment-documents/${document.id}`);
-    return ShipmentDocumentResponseDto.fromEntity(document);
+    return ShipmentDocumentResponseDto.fromDetails(document);
   }
 
   @Get()
@@ -153,7 +153,7 @@ export class ShipmentDocumentsController {
   async findById(
     @Param('id', documentIdPipe) id: string,
   ): Promise<ShipmentDocumentResponseDto> {
-    return ShipmentDocumentResponseDto.fromEntity(
+    return ShipmentDocumentResponseDto.fromDetails(
       await this.findDocumentById.execute(id),
     );
   }
@@ -202,7 +202,7 @@ export class ShipmentDocumentsController {
       },
       actor,
     );
-    return ShipmentDocumentResponseDto.fromEntity(document);
+    return ShipmentDocumentResponseDto.fromDetails(document);
   }
 
   @Delete(':id')

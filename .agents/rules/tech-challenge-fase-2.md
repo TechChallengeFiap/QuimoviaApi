@@ -7,7 +7,7 @@ Este documento sintetiza os requisitos obrigatórios, regras de negócio e crit�
 ## 1. Visão Geral e Proposta
 - **Contexto**: Primeira versão da API backend do QuimiPort (Quimovia), sistema de gerenciamento logístico de cargas químicas e produtos perigosos no Porto de Santos.
 - **Stack Tecnológica Obrigatória**: Node.js, NestJS, TypeScript, Prisma ORM, PostgreSQL (ou MongoDB), Docker, GitHub Actions, Jest / Supertest.
-- **Arquitetura**: Monólito Modular baseado em Domain-Driven Design (DDD) e Clean Architecture, conforme definido em [docs/arquitetura-e-organizacao.md](file:///c:/Users/Takashi/Documents/P%C3%B3sTech/TechChallenge/QuimoviaApi/docs/arquitetura-e-organizacao.md).
+- **Arquitetura**: Monólito Modular baseado em Domain-Driven Design (DDD) e Clean Architecture, conforme definido em [Fundamentos e decisões](../../docs/arquitetura/01-fundamentos-e-decisoes.md) e [Organização e aplicação](../../docs/arquitetura/02-organizacao-e-aplicacao.md).
 
 ---
 

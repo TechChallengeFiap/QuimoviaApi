@@ -12,7 +12,8 @@ import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/doma
 import { ChemicalProductRepositoryMock } from '../mocks/chemical-product-repository.mock.js';
 import { ShipmentDocumentRepositoryMock } from '../mocks/shipment-document-repository.mock.js';
 import { UserModule } from '@/modules/user/user.module.js';
-import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
+import { USER_DIRECTORY } from '@/modules/user/public/index.js';
+import { UserDirectoryMock } from '../mocks/user-directory.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
 
@@ -74,8 +75,13 @@ describe('Document CRUD without design metadata', () => {
       .overrideModule(UserModule)
       .useModule({
         module: class TestUserModule {},
-        providers: [{ provide: USER_REPOSITORY, useClass: UserRepositoryMock }],
-        exports: [USER_REPOSITORY],
+        providers: [
+          {
+            provide: USER_DIRECTORY,
+            useValue: new UserDirectoryMock(new UserRepositoryMock()),
+          },
+        ],
+        exports: [USER_DIRECTORY],
       })
       .overrideProvider(SHIPMENT_DOCUMENT_REPOSITORY)
       .useValue(new ShipmentDocumentRepositoryMock())

@@ -1,5 +1,5 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
+import type { ShipmentDocumentDetails } from '@/modules/document-compliance/application/dto/shipment-document-details.js';
 import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
 import { CreateShipmentDocumentDto } from './create-shipment-document.dto.js';
 import { DocumentAttachmentResponseDto } from './document-attachment.dto.js';
@@ -38,7 +38,7 @@ export class ShipmentDocumentResponseDto extends PickType(
     type: ShipmentDocumentResponsibleUserDto,
     nullable: true,
     description:
-      'Identificador e nome do responsável técnico; nulo quando não associado.',
+      'Identificador e nome do responsável técnico; nulo quando não associado ou indisponível.',
   })
   responsibleUser: ShipmentDocumentResponsibleUserDto | null;
   @ApiProperty({
@@ -79,7 +79,9 @@ export class ShipmentDocumentResponseDto extends PickType(
     Object.assign(this, data);
   }
 
-  static fromEntity(document: ShipmentDocument): ShipmentDocumentResponseDto {
+  static fromDetails(
+    document: ShipmentDocumentDetails,
+  ): ShipmentDocumentResponseDto {
     return new ShipmentDocumentResponseDto({
       id: document.id,
       shipmentId: document.shipmentId,

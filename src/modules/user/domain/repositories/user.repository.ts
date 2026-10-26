@@ -27,6 +27,7 @@ export interface UserRepository {
   update(user: User): Promise<User>;
   remove(id: string): Promise<void>;
   findById(id: string): Promise<User | null>;
+  findByIds(ids: readonly string[]): Promise<User[]>;
   findByEmail(email: string): Promise<User | null>;
   /**
    * Registra o horário do último login sem regravar os demais dados, e só se o

@@ -18,7 +18,6 @@ describe('ShipmentDocument', () => {
     const document = ShipmentDocument.restore({
       ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
       responsibleUserId: originalUser.id,
-      responsibleUser: originalUser,
     });
     const before = document.toObject();
     expect(() =>
@@ -30,21 +29,17 @@ describe('ShipmentDocument', () => {
     expect(document.toObject()).toEqual(before);
   });
 
-  it('protects the responsible user summary and clears it when the identifier changes', () => {
-    const originalUser = { id: randomUUID(), name: 'Maria Silva' };
-    const document = ShipmentDocument.restore({
-      ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
-      responsibleUserId: originalUser.id,
-      responsibleUser: originalUser,
-    });
-    document.responsibleUser!.name = 'Changed externally';
-    expect(document.responsibleUser?.name).toBe(originalUser.name);
-    document.revise({ responsibleUserId: originalUser.id.toUpperCase() });
-    expect(document.responsibleUser).toEqual(originalUser);
+  it('normaliza o identificador do responsável na criação e na revisão', () => {
+    const responsibleUserId = randomUUID();
+    const document = ShipmentDocument.create(
+      createShipmentDocumentData({
+        responsibleUserId: responsibleUserId.toUpperCase(),
+      }),
+    );
+    expect(document.responsibleUserId).toBe(responsibleUserId);
     const replacementId = randomUUID();
     document.revise({ responsibleUserId: replacementId.toUpperCase() });
     expect(document.responsibleUserId).toBe(replacementId);
-    expect(document.responsibleUser).toBeNull();
   });
 
   it('inicia em preparação e permite não possuir anexos antes do envio', () => {

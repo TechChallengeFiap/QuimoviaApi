@@ -38,7 +38,6 @@ export interface ShipmentDocumentProperties {
   shipmentId: string;
   shipperId: string;
   responsibleUserId: string | null;
-  responsibleUser: { id: string; name: string } | null;
   compositionVersion: number;
   status: ShipmentDocumentStatus;
   submittedAt: Date | null;
@@ -95,7 +94,6 @@ export class ShipmentDocument {
       shipmentId: data.shipmentId.toLowerCase(),
       shipperId: data.shipperId.toLowerCase(),
       responsibleUserId: data.responsibleUserId?.toLowerCase() ?? null,
-      responsibleUser: null,
       compositionVersion: data.compositionVersion,
       status: ShipmentDocumentStatus.PENDING,
       submittedAt: null,
@@ -125,10 +123,6 @@ export class ShipmentDocument {
   }
   get responsibleUserId(): string | null {
     return this.properties.responsibleUserId;
-  }
-  get responsibleUser(): { id: string; name: string } | null {
-    const user = this.properties.responsibleUser;
-    return user ? { id: user.id, name: user.name } : null;
   }
   get compositionVersion(): number {
     return this.properties.compositionVersion;
@@ -200,9 +194,6 @@ export class ShipmentDocument {
     );
     if (data.responsibleUserId !== undefined) {
       const responsibleUserId = data.responsibleUserId.toLowerCase();
-      if (responsibleUserId !== this.properties.responsibleUserId) {
-        this.properties.responsibleUser = null;
-      }
       this.properties.responsibleUserId = responsibleUserId;
     }
     this.properties.attachments = [

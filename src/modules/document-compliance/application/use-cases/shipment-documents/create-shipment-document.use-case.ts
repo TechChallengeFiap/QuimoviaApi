@@ -3,18 +3,24 @@ import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/
 import type { CreateShipmentDocumentData } from '@/modules/document-compliance/domain/entities/shipment-document.entity.js';
 import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import type { ShipmentDocumentRepository } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
-import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
-import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
+import {
+  USER_DIRECTORY,
+  type UserDirectory,
+} from '@/modules/user/public/index.js';
 import {
   ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import {
   AUDIT_LOG_RECORDER,
+  AuditAction,
+  AuditedEntity,
   type AuditLogRecorder,
-} from '@/modules/audit-log/application/contracts/audit-log-recorder.contract.js';
-import { AuditAction } from '@/modules/audit-log/domain/enums/audit-action.enum.js';
-import { AuditedEntity } from '@/modules/audit-log/domain/enums/audited-entity.enum.js';
+} from '@/modules/audit-log/public/index.js';
+import {
+  toShipmentDocumentDetails,
+  type ShipmentDocumentDetails,
+} from '../../dto/shipment-document-details.js';
 
 export type CreateShipmentDocumentInput = CreateShipmentDocumentData;
 
@@ -28,8 +34,8 @@ export class CreateShipmentDocumentUseCase {
   constructor(
     @Inject(SHIPMENT_DOCUMENT_REPOSITORY)
     private readonly documents: ShipmentDocumentRepository,
-    @Inject(USER_REPOSITORY)
-    private readonly users: UserRepository,
+    @Inject(USER_DIRECTORY)
+    private readonly users: UserDirectory,
     @Optional()
     @Inject(AUDIT_LOG_RECORDER)
     private readonly auditLogs?: AuditLogRecorder,
@@ -38,12 +44,12 @@ export class CreateShipmentDocumentUseCase {
   async execute(
     input: CreateShipmentDocumentInput,
     actor?: ShipmentDocumentActionActor | null,
-  ): Promise<ShipmentDocument> {
+  ): Promise<ShipmentDocumentDetails> {
     const document = ShipmentDocument.create(input);
-    if (
-      document.responsibleUserId !== null &&
-      !(await this.users.findById(document.responsibleUserId))
-    ) {
+    const responsibleUser = document.responsibleUserId
+      ? await this.users.findById(document.responsibleUserId)
+      : null;
+    if (document.responsibleUserId !== null && !responsibleUser) {
       throw new ResourceNotFoundError(
         'Responsável técnico',
         document.responsibleUserId,
@@ -80,6 +86,6 @@ export class CreateShipmentDocumentUseCase {
       });
     }
 
-    return created;
+    return toShipmentDocumentDetails(created, responsibleUser);
   }
 }

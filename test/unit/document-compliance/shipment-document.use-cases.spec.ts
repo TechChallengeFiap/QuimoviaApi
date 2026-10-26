@@ -14,6 +14,7 @@ import {
 } from '@/shared/domain/errors/domain.error.js';
 import { ShipmentDocumentRepositoryMock } from '../../mocks/shipment-document-repository.mock.js';
 import { UserRepositoryMock } from '../../mocks/user-repository.mock.js';
+import { UserDirectoryMock } from '../../mocks/user-directory.mock.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import {
@@ -25,6 +26,7 @@ import {
 describe('Casos de uso de ShipmentDocument', () => {
   let documents: ShipmentDocumentRepositoryMock;
   let users: UserRepositoryMock;
+  let directory: UserDirectoryMock;
   let responsibleUser: User;
   let createDocument: CreateShipmentDocumentUseCase;
   let findDocument: FindShipmentDocumentByIdUseCase;
@@ -42,11 +44,12 @@ describe('Casos de uso de ShipmentDocument', () => {
         role: UserRole.TECHNICAL_MANAGER,
       }),
     );
-    documents = new ShipmentDocumentRepositoryMock(users);
-    createDocument = new CreateShipmentDocumentUseCase(documents, users);
-    findDocument = new FindShipmentDocumentByIdUseCase(documents);
-    listDocuments = new ListShipmentDocumentsUseCase(documents);
-    updateDocument = new UpdateShipmentDocumentUseCase(documents, users);
+    documents = new ShipmentDocumentRepositoryMock();
+    directory = new UserDirectoryMock(users);
+    createDocument = new CreateShipmentDocumentUseCase(documents, directory);
+    findDocument = new FindShipmentDocumentByIdUseCase(documents, directory);
+    listDocuments = new ListShipmentDocumentsUseCase(documents, directory);
+    updateDocument = new UpdateShipmentDocumentUseCase(documents, directory);
     deleteDocument = new DeleteShipmentDocumentUseCase(documents);
   });
 
@@ -81,8 +84,8 @@ describe('Casos de uso de ShipmentDocument', () => {
       const document = await createDocument.execute(
         createShipmentDocumentData(),
       );
-      expect((await documents.findById(document.id))?.toObject()).toEqual(
-        document.toObject(),
+      expect(document).toMatchObject(
+        (await documents.findById(document.id))!.toObject(),
       );
       expect(document.attachments).toHaveLength(1);
     });
@@ -126,6 +129,29 @@ describe('Casos de uso de ShipmentDocument', () => {
   });
 
   describe('ListShipmentDocumentsUseCase', () => {
+    it('obtém os responsáveis da página em lote, sem consultas por documento', async () => {
+      for (let index = 0; index < 2; index++) {
+        await createDocument.execute(
+          createShipmentDocumentData({ responsibleUserId: responsibleUser.id }),
+        );
+      }
+      const batch = jest.spyOn(directory, 'findByIds');
+      const page = await listDocuments.execute();
+      expect(batch).toHaveBeenCalledTimes(1);
+      expect(batch).toHaveBeenCalledWith([responsibleUser.id]);
+      expect(page.items.map((item) => item.responsibleUser)).toEqual([
+        { id: responsibleUser.id, name: responsibleUser.name },
+        { id: responsibleUser.id, name: responsibleUser.name },
+      ]);
+    });
+
+    it('não consulta usuários quando a página não possui responsáveis', async () => {
+      await createDocument.execute(createShipmentDocumentData());
+      const batch = jest.spyOn(directory, 'findByIds');
+      await listDocuments.execute();
+      expect(batch).not.toHaveBeenCalled();
+    });
+
     it('aplica a paginação padrão, inclusive para resultado vazio', async () => {
       expect(await listDocuments.execute()).toEqual({
         items: [],
@@ -176,21 +202,51 @@ describe('Casos de uso de ShipmentDocument', () => {
         ).total,
       ).toBe(0);
     });
-
-    it.each([
-      { page: 0 },
-      { page: 1.5 },
-      { pageSize: 0 },
-      { pageSize: 101 },
-      { page: Number.MAX_SAFE_INTEGER, pageSize: 100 },
-    ])('rejeita paginação inválida: %j', async (input) => {
-      await expect(listDocuments.execute(input)).rejects.toThrow(
-        BusinessRuleError,
-      );
-    });
   });
 
   describe('UpdateShipmentDocumentUseCase', () => {
+    it('preserva a instância carregada quando o novo responsável não existe', async () => {
+      const document = ShipmentDocument.create(
+        createShipmentDocumentData({ responsibleUserId: responsibleUser.id }),
+      );
+      const before = document.toObject();
+      jest.spyOn(documents, 'findById').mockResolvedValue(document);
+      const update = jest.spyOn(documents, 'update');
+
+      await expect(
+        updateDocument.execute(document.id, {
+          responsibleUserId: randomUUID(),
+          attachments: [createAttachmentData()],
+        }),
+      ).rejects.toThrow(ResourceNotFoundError);
+
+      expect(document.toObject()).toEqual(before);
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it('mantém o identificador histórico se o usuário foi removido e permite revisar anexos', async () => {
+      const original = await createDocument.execute(
+        createShipmentDocumentData({ responsibleUserId: responsibleUser.id }),
+      );
+      await users.remove(responsibleUser.id);
+      const found = await findDocument.execute(original.id);
+      expect(found.responsibleUserId).toBe(responsibleUser.id);
+      expect(found.responsibleUser).toBeNull();
+      expect(
+        (await listDocuments.execute()).items[0].responsibleUser,
+      ).toBeNull();
+      const updated = await updateDocument.execute(original.id, {
+        attachments: [createAttachmentData()],
+      });
+      expect(updated.responsibleUserId).toBe(responsibleUser.id);
+      expect(updated.responsibleUser).toBeNull();
+      await expect(
+        updateDocument.execute(original.id, {
+          responsibleUserId: responsibleUser.id,
+        }),
+      ).rejects.toThrow(ResourceNotFoundError);
+    });
+
     it('assigns and changes the responsible user without changing attachments', async () => {
       const original = await createDocument.execute(
         createShipmentDocumentData(),
@@ -243,6 +299,7 @@ describe('Casos de uso de ShipmentDocument', () => {
       const original = await createDocument.execute(
         createShipmentDocumentData({ responsibleUserId: responsibleUser.id }),
       );
+      const before = (await documents.findById(original.id))!.toObject();
       const update = jest.spyOn(documents, 'update');
       await expect(
         updateDocument.execute(original.id, {
@@ -252,7 +309,7 @@ describe('Casos de uso de ShipmentDocument', () => {
       ).rejects.toThrow(ResourceNotFoundError);
       expect(update).not.toHaveBeenCalled();
       expect((await documents.findById(original.id))?.toObject()).toEqual(
-        original.toObject(),
+        before,
       );
     });
 
@@ -281,7 +338,7 @@ describe('Casos de uso de ShipmentDocument', () => {
           }),
         ],
       });
-      expect(updated.toObject()).toMatchObject({
+      expect(updated).toMatchObject({
         id: original.id,
         shipmentId: original.shipmentId,
         shipperId: original.shipperId,
