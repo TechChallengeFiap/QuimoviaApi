@@ -38,6 +38,7 @@
 - [3. Tecnologias Utilizadas](#3-tecnologias-utilizadas)
 - [4. Modelagem e Persistência de Dados](#4-modelagem-e-persistência-de-dados)
   - [4.1. Escolha do Banco de Dados](#41-escolha-do-banco-de-dados)
+  - [4.2. Ciclo de Vida da Carga, Máquina de Estados e Auditoria](#42-ciclo-de-vida-da-carga-máquina-de-estados-e-auditoria)
 - [5. Configuração e Execução](#5-configuração-e-execução)
   - [5.1. Pré-requisitos](#51-pré-requisitos)
   - [5.2. Variáveis de Ambiente](#52-variáveis-de-ambiente)
@@ -45,7 +46,8 @@
   - [5.4. Scripts Disponíveis](#54-scripts-disponíveis)
 - [6. Documentação da API e Endpoints](#6-documentação-da-api-e-endpoints)
   - [6.1. Swagger / OpenAPI](#61-swagger--openapi)
-  - [6.2. Principais Endpoints](#62-principais-endpoints)
+  - [6.2. Controle de Status da Carga Química (Ciclo de Vida)](#62-controle-de-status-da-carga-química-ciclo-de-vida)
+  - [6.3. Principais Endpoints](#63-principais-endpoints)
 - [7. Qualidade de Software e Testes](#7-qualidade-de-software-e-testes)
 - [8. Integração Contínua (CI/CD)](#8-integração-contínua-cicd)
 - [9. Integrantes do Grupo](#9-integrantes-do-grupo)
@@ -86,13 +88,13 @@ O Tech Challenge é a atividade integradora obrigatória da Pós-Graduação em 
 
 ## 2. Arquitetura e Design de Software
 
-O Quimovia adota o padrão **Monólito Modular** fundamentado nos princípios de **Domain-Driven Design (DDD)** e **Clean Architecture**. A aplicação é estruturada em _bounded contexts_ independentes (`chemical-shipment`, `inspection`, `user`), protegendo as regras de negócio centrais contra dependências diretas de frameworks externos ou bibliotecas de infraestrutura.
+O Quimovia adota o padrão **Monólito Modular** fundamentado nos princípios de **Domain-Driven Design (DDD)** e **Clean Architecture**. A aplicação é estruturada em _bounded contexts_ independentes (`chemical-shipment`, `inspection`, `user`, `document-compliance`, `audit-log`), protegendo as regras de negócio centrais contra dependências diretas de frameworks externos ou bibliotecas de infraestrutura.
 
 > ### 📖 Documentação Detalhada da Arquitetura
 >
 > Todas as decisões arquiteturais, estruturação detalhada de pastas, mapeamento de camadas (`domain`, `application`, `infrastructure`, `presentation`), regras de dependência, padrões de nomenclatura e boas práticas estão centralizadas na pasta [`docs/`](./docs/):
 >
-> 🔗 **Consulte a documentação completa em:** [**`docs/arquitetura-e-organizacao.md`**](./docs/arquitetura-e-organizacao.md)
+> 🔗 **Consulte a documentação completa em:** [**`docs/arquitetura/02-organizacao-e-aplicacao.md`**](./docs/arquitetura/02-organizacao-e-aplicacao.md)
 
 ---
 
@@ -119,7 +121,14 @@ A persistência do Quimovia foi estruturada sobre o banco relacional **MySQL 8.4
 
 - **Garantias ACID:** Operações de liberação, inspeção e bloqueio de cargas químicas demandam consistência transacional absoluta.
 - **Integridade Referencial Forte:** Cargas obrigatoriamente referenciam usuários responsáveis existentes e itens de inspeção vinculam-se unicamente às suas respectivas vistorias (`Foreign Keys` e `Cascades`).
-- **Consultas Relacionais com Índices:** Utilização de índices compostos em campos de consulta frequente (como `[cargoId]`, `[inspectorId, status]` e `[responsibleUserId]`).
+- **Consultas Relacionais com Índices:** Utilização de índices em campos de consulta frequente (como `[responsibleUserId]`, `[status]` e índices compostos de inspeção).
+
+### 4.2. Ciclo de Vida da Carga, Máquina de Estados e Auditoria
+
+- **Status Canônico em Banco (`ENUM`):** O status da carga é armazenado como um tipo `ENUM` nativo do MySQL (`REGISTERED`, `ANALYZING`, `INSPECTION`, `APPROVED`, `REPROVED`, `IN_TRANSIT`, `COMPLETED`, `CANCELLED`). Toda nova carga nasce estritamente com o status `REGISTERED`.
+- **Regras de Negócio no Domínio:** A máquina de estados não é delegada a constraints de banco nem espalhada em controllers; ela é encapsulada na camada de domínio puro ([`shipment-status-transitions.ts`](./src/modules/chemical-shipment/domain/value-objects/chemical-shipment/shipment-status-transitions.ts)), sendo validada pela entidade [`ChemicalShipment`](./src/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts) antes de qualquer persistência.
+- **Rastreabilidade e Auditoria Imutável:** Todas as transições de status geram registros imutáveis na tabela `ChemicalShipmentLog` com a ação `STATUS_CHANGED`, persistindo o usuário operador (`actorId`, `actorName`), timestamp e os metadados `{ "from": "<STATUS_ANTERIOR>", "to": "<NOVO_STATUS>" }`.
+- **Performance:** A coluna `status` da tabela `ChemicalShipment` conta com um índice dedicado (`ChemicalShipment_status_idx`), garantindo consultas eficientes de cargas por situação operacional no pátio.
 
 ## 5. Configuração e Execução
 
@@ -177,56 +186,74 @@ copy .env.example .env
 
 > **Autenticação:** só o `JWT_SECRET` vem em branco no exemplo e precisa ser preenchido; sem ele, a API não sobe. Para gerá-lo, use por exemplo `openssl rand -base64 48`. O exemplo já traz o administrador inicial (`admin@quimovia.com` / `Quimovia@2026`) e o token com prazo de 1 ano, para facilitar o uso local e a avaliação.
 
-#### 3. Subir o container do banco de dados (MySQL)
+### 5.3. Executando com Docker e Localmente
 
-Utilize o Docker Compose para iniciar o banco em segundo plano (a porta exposta é `3333` para evitar conflitos locais):
+Você pode executar o Quimovia de duas formas: **100% via Docker** (API + Banco de Dados em containers) ou **modo híbrido** (banco no Docker e API rodando localmente para desenvolvimento).
 
-```bash
-docker compose up -d
-```
+---
 
-> **Verificação:** Para conferir o status do container, execute `docker compose ps`. O container `quimovia-mysql` deve estar com status _healthy/running_.
+#### Opção A: Execução Completa via Docker (Recomendada / Avaliação)
 
-#### 4. Gerar o Prisma Client
+Com apenas um comando, o Docker Compose inicializa o banco MySQL, aguarda o _healthcheck_ de prontidão, compila a imagem da API via multi-stage build, aplica as migrações do Prisma, executa o seed do administrador inicial e sobe a aplicação:
 
-Gera os clientes tipados com base em `prisma/schema.prisma` dentro de `src/generated/prisma`:
+1. **Configurar as variáveis de ambiente:**
+   ```bash
+   # Linux / macOS
+   cp .env.example .env
 
-```bash
-npm run migrate:generate
-```
+   # Windows (PowerShell / CMD)
+   copy .env.example .env
+   ```
+   > Certifique-se de preencher `JWT_SECRET` (mínimo 32 caracteres) e `ADMIN_PASSWORD` (mínimo 8 caracteres) no `.env`.
 
-#### 5. Executar as Migrações do Banco
+2. **Subir todos os serviços (API + MySQL):**
+   ```bash
+   docker compose up -d --build
+   ```
 
-Aplica as tabelas, enums e índices no banco de dados recém-iniciado:
+3. **Verificar os serviços:**
+   ```bash
+   docker compose ps
+   ```
+   Ambos os containers (`quimovia-mysql` e `quimovia-api`) devem estar com status _running_ e _healthy_.
 
-```bash
-# Ambiente de desenvolvimento (cria e aplica)
-npm run migrate:dev
+4. **Acessar a API:**
+   - **API REST:** [http://localhost:3000](http://localhost:3000)
+   - **Documentação Interativa Swagger:** [http://localhost:3000/api](http://localhost:3000/api)
 
-# Ou para deploy / ambiente já versionado
-npm run migrate:deploy
-```
+5. **Para parar os containers:**
+   ```bash
+   docker compose down
+   ```
 
-#### 6. Criar o administrador inicial
+---
 
-Só o Administrador do Sistema pode cadastrar usuários. Por isso, um banco novo precisa de um primeiro administrador, criado com os dados de `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME`:
+#### Opção B: Desenvolvimento Local (Banco no Docker + API na Máquina)
 
-```bash
-npm run migrate:seed
-```
+Se você estiver desenvolvendo e quiser aproveitar o hot-reload (`tsx watch`):
 
-> O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado. Com o `.env.example`, o login do administrador é `admin@quimovia.com` com a senha `Quimovia@2026`.
+1. **Subir apenas o container do MySQL:**
+   ```bash
+   docker compose up -d mysql
+   ```
 
-#### 7. Iniciar a API em Desenvolvimento
+2. **Gerar o Prisma Client e aplicar migrações:**
+   ```bash
+   npm run migrate:generate
+   npm run migrate:dev
+   ```
 
-```bash
-npm run start:dev
-```
+3. **Criar o administrador inicial (Seed):**
+   ```bash
+   npm run migrate:seed
+   ```
+   > O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado. Com o `.env.example`, o login do administrador é `admin@quimovia.com` com a senha `Quimovia@2026`.
 
-A aplicação estará acessível em: `http://localhost:3000`  
-A documentação Swagger estará disponível em: `http://localhost:3000/api`
-
-> A API não sobe sem um `JWT_SECRET` válido no `.env`.
+4. **Iniciar a API em modo desenvolvimento:**
+   ```bash
+   npm run start:dev
+   ```
+   A aplicação estará acessível em `http://localhost:3000` (Swagger: `http://localhost:3000/api`).
 
 ---
 
@@ -268,7 +295,132 @@ Para testar as rotas que exigem login pelo Swagger, faça login em `POST /auth/l
 5. No Swagger ([http://localhost:3000/api](http://localhost:3000/api)), faça login em `POST /auth/login` com `admin@quimovia.com` / `Quimovia@2026`.
 6. Copie o `accessToken`, clique em **Authorize** e cole o token. Ele vale por 1 ano e continua salvo no Swagger, então o login é feito uma vez só.
 
-### 6.2. Principais Endpoints
+### 6.2. Controle de Status da Carga Química (Ciclo de Vida)
+
+Conforme as diretrizes do **Edital do Tech Challenge (Fase 2)**, a carga química segue uma máquina de estados finitos com regras inegociáveis de transição, garantindo conformidade operacional, segurança no pátio e impossibilidade de bypass.
+
+#### Diagrama da Máquina de Estados
+
+```mermaid
+stateDiagram-v2
+  [*] --> REGISTERED : Cadastro da carga
+  REGISTERED --> ANALYZING : Iniciar análise
+  ANALYZING --> INSPECTION : Enviar para inspeção
+  INSPECTION --> APPROVED : Liberar (exige doc. ativa)
+  INSPECTION --> REPROVED : Bloquear vistoria
+  APPROVED --> IN_TRANSIT : Iniciar movimentação
+  IN_TRANSIT --> COMPLETED : Finalizar carga
+  REGISTERED --> CANCELLED : Cancelar
+  ANALYZING --> CANCELLED : Cancelar
+  INSPECTION --> CANCELLED : Cancelar
+  APPROVED --> CANCELLED : Cancelar
+  REPROVED --> CANCELLED : Cancelar
+  COMPLETED --> [*] : Estado Terminal
+  CANCELLED --> [*] : Estado Terminal
+```
+
+#### Matriz de Transições Canônicas do Edital
+
+| Status Atual | Nome Legível | Transições Permitidas | Condições / Regras de Negócio |
+| :--- | :--- | :--- | :--- |
+| `REGISTERED` | Registrada | `ANALYZING`, `CANCELLED` | Status inicial de toda carga recém-criada no sistema. |
+| `ANALYZING` | Em análise | `INSPECTION`, `CANCELLED` | Triagem inicial de conformidade preliminar da carga. |
+| `INSPECTION` | Em inspeção | `APPROVED`, `REPROVED`, `CANCELLED` | Vistoria técnica. A liberação para `APPROVED` **exige documentação obrigatória ativa e vigente**. |
+| `APPROVED` | Liberada | `IN_TRANSIT`, `CANCELLED` | Carga apta para trânsito logístico no terminal portuário. |
+| `REPROVED` | Bloqueada | `CANCELLED` | Carga reprovada na vistoria. **Proibida de entrar em movimentação**. |
+| `IN_TRANSIT` | Em movimentação | `COMPLETED` | Transporte em andamento no terminal. |
+| `COMPLETED` | Finalizada | *(nenhuma)* | **Estado Terminal:** imutável, não permite novas alterações de status. |
+| `CANCELLED` | Cancelada | *(nenhuma)* | **Estado Terminal:** cancelada não pode ser liberada nem reativada. |
+
+#### Regras Inegociáveis de Proteção de Domínio
+
+1. **Compliance Documental Mandatório:** Uma carga **não pode ser liberada (`APPROVED`) sem documentação técnica obrigatória ativa e vigente** verificada via módulo `document-compliance` (retorna erro `422 Unprocessable Entity`).
+2. **Carga Bloqueada:** Uma carga bloqueada/reprovada (`REPROVED`) **jamais pode entrar em movimentação** (`IN_TRANSIT`).
+3. **Imutabilidade Terminal:** Cargas finalizadas (`COMPLETED`) ou canceladas (`CANCELLED`) não podem sofrer nenhuma transição posterior.
+4. **Fechamento de Backdoor na Edição:** Alterações cadastrais na carga (`quantityProduct`, etc.) via `PATCH /chemical-shipment/:id` são permitidas **estritamente nos status `REGISTERED` e `ANALYZING`**. Uma vez enviada para inspeção ou liberada, a composição física está lacrada para edição.
+5. **Auditoria Contínua:** Toda e qualquer mudança de status grava automaticamente um registro em `ChemicalShipmentLog` com ação `STATUS_CHANGED`, registrando autor, data e metadados com status de origem e destino (`{ from, to }`).
+
+#### Endpoints do Ciclo de Vida da Carga
+
+A API disponibiliza tanto a rota de transição exigida pelo edital quanto endpoints semânticos (*task-based*), além de um endpoint diferencial para consulta das transições abertas:
+
+| Método | Rota | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/chemical-shipment/:id/transitions` | **[Diferencial]** Consulta as transições válidas abertas para o status atual da carga, seus rótulos legíveis e se está em estado terminal. |
+| `PATCH` | `/chemical-shipment/:id/status` | **[Edital]** Altera o status da carga conforme a máquina de estados validando regras de transição (`{ "status": "ANALYZING" }`). |
+| `PATCH` | `/chemical-shipment/:id/release` | **[Edital / Liberar]** Libera a carga química (`APPROVED`), conferindo automaticamente a suficiência documental. |
+| `PATCH` | `/chemical-shipment/:id/block` | **[Edital / Bloquear]** Bloqueia a carga química (`REPROVED`) a partir do status de inspeção. |
+| `PATCH` | `/chemical-shipment/:id/cancel` | **[Edital / Cancelar]** Cancela a carga química a partir dos status permitidos, tornando-a terminal. |
+
+#### Exemplos de Requisição e Resposta
+
+##### 1. Consulta de Transições Permitidas (Diferencial)
+```http
+GET /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/transitions
+```
+**Resposta (200 OK):**
+```json
+{
+  "shipmentId": "326d18f1-f7a5-40ae-9e3d-b32f085bfca7",
+  "currentStatus": "REGISTERED",
+  "currentStatusLabel": "Registrada",
+  "isTerminal": false,
+  "allowedTransitions": [
+    { "status": "ANALYZING", "label": "Em análise" },
+    { "status": "CANCELLED", "label": "Cancelada" }
+  ]
+}
+```
+
+##### 2. Alteração de Status pelo Endpoint Geral do Edital
+```http
+PATCH /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/status
+Content-Type: application/json
+
+{
+  "status": "ANALYZING"
+}
+```
+**Resposta (200 OK):**
+```json
+{
+  "id": "326d18f1-f7a5-40ae-9e3d-b32f085bfca7",
+  "productId": "88733221-39fe-4ef9-8cc5-4e7cb803ba91",
+  "quantityProduct": 100,
+  "status": "ANALYZING",
+  "responsibleUserId": "f12ca16e-5fa7-4a0f-ba10-8b29df939ac1",
+  "documentsIds": "doc-fispq-2026",
+  "createdAt": "2026-10-24T12:00:00.000Z",
+  "updatedAt": "2026-10-24T12:05:00.000Z"
+}
+```
+
+##### 3. Tentativa de Liberação sem Documentação Técnica Obrigatória
+```http
+PATCH /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/release
+```
+**Resposta de Erro de Negócio (422 Unprocessable Entity):**
+```json
+{
+  "statusCode": 422,
+  "timestamp": "2026-10-24T12:06:00.000Z",
+  "path": "/chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/release",
+  "error": "BusinessRuleError",
+  "message": "Uma carga não pode ser liberada sem documentação obrigatória."
+}
+```
+
+#### Mapeamento Semântico de Códigos de Erro HTTP
+
+| Código | Significado | Quando Ocorre |
+| :--- | :--- | :--- |
+| `400 Bad Request` | Erro Sintático / Validação | Payload malformatado, campos obrigatórios ausentes, tipos incorretos ou enum inválido no DTO. |
+| `401 Unauthorized` | Não Autenticado | Ausência do cabeçalho `Authorization: Bearer <token>` ou token JWT expirado/inválido. |
+| `403 Forbidden` | Não Autorizado | Usuário autenticado não possui papel operacional permitido para executar a ação. |
+| `404 Not Found` | Recurso Não Encontrado | Identificador de carga química, usuário responsável ou produto químico não localizado. |
+| `422 Unprocessable Entity` | Erro de Regra de Negócio | Transição proibida na máquina de estados, liberação sem documentação ou movimentação de carga bloqueada (`BusinessRuleError`). |
+
+### 6.3. Principais Endpoints
 
 As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa; sem ele, a API responde `401`. Hoje, o guard protege o logout e a gestão de usuários; cada módulo pode exigir login nas próprias rotas importando o `AuthModule` e usando `@UseGuards(AuthGuard)`. Para restringir a rota a alguns perfis, use `@UseGuards(AuthGuard, RolesGuard)` com `@Roles()`: com outro perfil, a API responde `403`. O perfil conferido é o atual do usuário, então uma troca de perfil vale já na próxima requisição.
 
@@ -283,11 +435,16 @@ A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de 
 
 #### Cargas Químicas (`/chemical-shipment`)
 
-- `POST /chemical-shipment` — Registra uma nova carga química (status inicial `ANALYZING`).
+- `POST /chemical-shipment` — Registra uma nova carga química (status inicial `REGISTERED`).
 - `GET /chemical-shipment` — Lista cargas químicas com paginação e filtros (`status`, `productId`, `responsibleUserId`, `documentsIds`).
 - `GET /chemical-shipment/:id` — Retorna os detalhes de uma carga química pelo ID.
-- `PATCH /chemical-shipment/:id` — Atualiza dados da carga ou avança seu status segundo as regras de transição.
-- `DELETE /chemical-shipment/:id` — Realiza a inativação/remoção da carga química.
+- `GET /chemical-shipment/:id/transitions` — Consulta as opções de transição válidas para o status atual da carga (**diferencial**).
+- `PATCH /chemical-shipment/:id` — Atualiza dados cadastrais da carga (`quantityProduct`). Permitido exclusivamente nos status `REGISTERED` e `ANALYZING`.
+- `PATCH /chemical-shipment/:id/status` — Altera o status da carga conforme a máquina de estados do edital.
+- `PATCH /chemical-shipment/:id/release` — Libera a carga química (`APPROVED`), conferindo automaticamente a documentação técnica obrigatória.
+- `PATCH /chemical-shipment/:id/block` — Bloqueia a carga química (`REPROVED`) a partir do status de inspeção.
+- `PATCH /chemical-shipment/:id/cancel` — Cancela a carga química a partir dos status permitidos.
+- `DELETE /chemical-shipment/:id` — Realiza a inativação/remoção lógica da carga química.
 
 #### Inspeções Portuárias (`/inspections`)
 

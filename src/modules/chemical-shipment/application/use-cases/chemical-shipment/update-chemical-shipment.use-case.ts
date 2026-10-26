@@ -1,6 +1,5 @@
 import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.js';
 import { CHEMICAL_SHIPMENT_REPOSITORY } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
-import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import {
   USER_REPOSITORY,
   type UserRepository,
@@ -24,7 +23,6 @@ import { AuditedEntity } from '@/modules/audit-log/domain/enums/audited-entity.e
 import type { ChemicalShipmentActionActor } from './create-chemical-shipment.use-case.js';
 
 export interface UpdateChemicalShipmentInput {
-  status?: StatusShipment;
   productId?: string;
   responsibleUserId?: string;
   documentsIds?: string;
@@ -54,10 +52,6 @@ export class UpdateChemicalShipmentUseCase {
 
     if (!existingChemicalShipment) {
       throw new ResourceNotFoundError('Carga Química', id);
-    }
-
-    if (input.status) {
-      existingChemicalShipment.updateStatus(input.status);
     }
 
     if (input.productId) {
@@ -103,10 +97,8 @@ export class UpdateChemicalShipmentUseCase {
       const actorId = actor?.id ?? updated.responsibleUserId;
       const resolvedActorName = actorName ?? 'Operador';
 
-      const action = input.status ? AuditAction.STATUS_CHANGED : AuditAction.UPDATED;
-      const description = input.status
-        ? `Usuário "${resolvedActorName}" alterou o status da carga química "${updated.id}" para "${input.status}"`
-        : `Usuário "${resolvedActorName}" atualizou a carga química "${updated.id}"`;
+      const action = AuditAction.UPDATED;
+      const description = `Usuário "${resolvedActorName}" atualizou a carga química "${updated.id}"`;
 
       await this.auditLogs.record({
         entityType: AuditedEntity.CHEMICAL_SHIPMENT,

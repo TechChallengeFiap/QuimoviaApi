@@ -12,6 +12,7 @@ import {
 } from '@/modules/user/infrastructure/auth/auth.config.js';
 import type { AuthConfig } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { AuthGuard } from '@/modules/user/infrastructure/auth/auth.guard.js';
+import { OptionalAuthGuard } from '@/modules/user/infrastructure/auth/optional-auth.guard.js';
 import { RolesGuard } from '@/modules/user/infrastructure/auth/roles.guard.js';
 import { JwtAccessTokenService } from '@/modules/user/infrastructure/services/jwt-access-token.service.js';
 import { AuthController } from '@/modules/user/presentation/controllers/auth.controller.js';
@@ -50,7 +51,8 @@ import { UserModule } from '@/modules/user/user.module.js';
     { provide: ACCESS_TOKEN_SERVICE, useClass: JwtAccessTokenService },
     AuthGuard,
     RolesGuard,
+    OptionalAuthGuard,
   ],
-  exports: [AuthGuard, RolesGuard, ValidateSessionUseCase],
+  exports: [AuthGuard, RolesGuard, OptionalAuthGuard, ValidateSessionUseCase],
 })
 export class AuthModule {}

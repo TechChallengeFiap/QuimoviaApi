@@ -4,12 +4,19 @@ import type {
   ChemicalShipmentRepository,
   ChemicalShipmentSearchFilters,
 } from '@/modules/chemical-shipment/domain/repositories/chemical-shipment.repository.js';
+import type { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
+import {
+  ConflictError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 
 export class ChemicalShipmentMock implements ChemicalShipmentRepository {
   private readonly chemicalShipments = new Map<string, ChemicalShipment>();
+  private readonly persistedStatuses = new Map<string, StatusShipment>();
 
   async create(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
     this.chemicalShipments.set(chemicalShipment.id, chemicalShipment);
+    this.persistedStatuses.set(chemicalShipment.id, chemicalShipment.status);
     return chemicalShipment;
   }
 
@@ -55,12 +62,33 @@ export class ChemicalShipmentMock implements ChemicalShipmentRepository {
     };
   }
 
-  async update(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment> {
+  async update(
+    chemicalShipment: ChemicalShipment,
+    expectedPreviousStatus?: StatusShipment | StatusShipment[],
+  ): Promise<ChemicalShipment> {
+    const existing = this.chemicalShipments.get(chemicalShipment.id);
+    if (!existing || existing.deletedAt) {
+      throw new ResourceNotFoundError('Carga Química', chemicalShipment.id);
+    }
+    if (expectedPreviousStatus !== undefined) {
+      const persisted =
+        this.persistedStatuses.get(chemicalShipment.id) ?? existing.status;
+      const allowed = Array.isArray(expectedPreviousStatus)
+        ? expectedPreviousStatus
+        : [expectedPreviousStatus];
+      if (!allowed.includes(persisted)) {
+        throw new ConflictError(
+          `Conflito de concorrência ao atualizar a carga química "${chemicalShipment.id}": status esperado era "${allowed.join(', ')}", mas o status atual é "${persisted}".`,
+        );
+      }
+    }
     this.chemicalShipments.set(chemicalShipment.id, chemicalShipment);
+    this.persistedStatuses.set(chemicalShipment.id, chemicalShipment.status);
     return chemicalShipment;
   }
 
   async delete(id: string): Promise<void> {
     this.chemicalShipments.delete(id);
+    this.persistedStatuses.delete(id);
   }
 }

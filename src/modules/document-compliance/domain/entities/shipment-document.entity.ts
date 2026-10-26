@@ -108,6 +108,15 @@ export class ShipmentDocument {
     return new ShipmentDocument(structuredClone(properties));
   }
 
+  isSufficientForRelease(now: Date = new Date()): boolean {
+    if (this.status === ShipmentDocumentStatus.NON_COMPLIANT) return false;
+    return this.properties.attachments.some(
+      (attachment) =>
+        attachment.removedAt === null &&
+        (attachment.expiresAt === null || new Date(attachment.expiresAt) > now),
+    );
+  }
+
   get id(): string {
     return this.properties.id;
   }
