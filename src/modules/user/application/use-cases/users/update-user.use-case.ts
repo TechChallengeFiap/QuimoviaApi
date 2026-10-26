@@ -155,7 +155,9 @@ export class UpdateUserUseCase {
       return;
     }
 
-    const existing = await this.users.findByEmail(normalizedEmail);
+    // Inclui os excluídos: o e-mail deles continua reservado.
+    const existing =
+      await this.users.findByEmailIncludingDeleted(normalizedEmail);
 
     if (existing) {
       throw new ConflictError(

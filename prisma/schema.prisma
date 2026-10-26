@@ -92,6 +92,8 @@ model User {
   lastLoginAt       DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  isDeleted         Boolean            @default(false)
+  deletedAt         DateTime?
   chemicalShipments ChemicalShipment[]
   sessions          Session[]
   chemicalProducts  ChemicalProduct[]

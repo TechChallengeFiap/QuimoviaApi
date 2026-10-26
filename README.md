@@ -153,10 +153,10 @@ O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e cone
 | `DATABASE_URL`           | URL de conexão utilizada pelo Prisma ORM                                                                 | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
 | `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
 | `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48`                                                                       |
-| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `3600`                                                                                                     |
+| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `31536000` (1 ano) no ambiente local; `3600` em produção                                                   |
 | `ADMIN_NAME`             | Nome do administrador inicial criado pelo seed (opcional)                                                | `Administrador do Sistema`                                                                                 |
 | `ADMIN_EMAIL`            | E-mail do administrador inicial criado pelo seed                                                         | `admin@quimovia.com`                                                                                       |
-| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | definida por você                                                                                          |
+| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | `Quimovia@2026` (padrão do `.env.example`; troque fora do ambiente local)                                  |
 
 ### 5.3. Executando com Docker e Localmente
 
@@ -184,7 +184,7 @@ copy .env.example .env
 
 > **Importante:** O `docker-compose.yml` utiliza essas variáveis para inicializar o MySQL. Verifique se as credenciais de `MYSQL_*` e a string de conexão em `DATABASE_URL` estão configuradas corretamente.
 
-> **Autenticação:** o `JWT_SECRET` e o `ADMIN_PASSWORD` vêm em branco no exemplo e precisam ser preenchidos. Sem um `JWT_SECRET` válido a API não sobe, e sem o `ADMIN_PASSWORD` o seed não cria o administrador. Para gerar o segredo, use por exemplo `openssl rand -base64 48`.
+> **Autenticação:** só o `JWT_SECRET` vem em branco no exemplo e precisa ser preenchido; sem ele, a API não sobe. Para gerá-lo, use por exemplo `openssl rand -base64 48`. O exemplo já traz o administrador inicial (`admin@quimovia.com` / `Quimovia@2026`) e o token com prazo de 1 ano, para facilitar o uso local e a avaliação.
 
 ### 5.3. Executando com Docker e Localmente
 
@@ -247,6 +247,7 @@ Se você estiver desenvolvendo e quiser aproveitar o hot-reload (`tsx watch`):
    ```bash
    npm run migrate:seed
    ```
+   > O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado. Com o `.env.example`, o login do administrador é `admin@quimovia.com` com a senha `Quimovia@2026`.
 
 4. **Iniciar a API em modo desenvolvimento:**
    ```bash
@@ -283,7 +284,16 @@ A API possui documentação interativa completa via Swagger. Com a aplicação e
 
 A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `401`, `403`, `404`, `422`).
 
-Para testar as rotas que exigem login pelo Swagger, como o logout, faça login em `POST /auth/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**.
+Para testar as rotas que exigem login pelo Swagger, faça login em `POST /auth/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**. O Swagger guarda o token mesmo depois de recarregar a página.
+
+#### Roteiro rápido para avaliar a API
+
+1. Copie o `.env.example` para `.env` e preencha o `JWT_SECRET` (`openssl rand -base64 48`).
+2. Suba o banco: `docker compose up -d`.
+3. Crie as tabelas e o administrador: `npm run migrate:dev` e `npm run migrate:seed`.
+4. Suba a API: `npm run start:dev`.
+5. No Swagger ([http://localhost:3000/api](http://localhost:3000/api)), faça login em `POST /auth/login` com `admin@quimovia.com` / `Quimovia@2026`.
+6. Copie o `accessToken`, clique em **Authorize** e cole o token. Ele vale por 1 ano e continua salvo no Swagger, então o login é feito uma vez só.
 
 ### 6.2. Controle de Status da Carga Química (Ciclo de Vida)
 
@@ -419,7 +429,7 @@ As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer 
 - `POST /auth/login` — Confere e-mail e senha, inicia uma sessão e devolve o token de acesso (`401` para credenciais inválidas e `403` para conta inativa ou bloqueada).
 - `POST /auth/logout` — Encerra a sessão do token enviado, que deixa de valer na hora.
 
-Bloquear ou inativar um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
+Bloquear, inativar ou excluir um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
 
 A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de usuários.
 
@@ -446,14 +456,15 @@ A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de 
 
 #### Usuários e Acessos (`/users`)
 
-Cadastrar, remover e trocar o perfil de usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis). Na edição, o administrador altera qualquer usuário, e os demais perfis só os próprios dados, sem poder se bloquear.
+Cadastrar usuários internos, remover e trocar o perfil de usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis). Na edição, o administrador altera qualquer usuário, e os demais perfis só os próprios dados, sem poder se bloquear. Os embarcadores (usuários externos) se cadastram sozinhos pela rota pública `POST /users/shippers`.
 
 - `POST /users` — Cadastra operador, fiscal ou responsável técnico com hash seguro de senha.
+- `POST /users/shippers` — Cadastro público do embarcador, sem token: o perfil é sempre `SHIPPER_DRIVER` e a conta já nasce ativa; enviar `role` ou `status` retorna `400`, e o e-mail de um usuário excluído retorna `409` (só o administrador reativa a conta).
 - `GET /users` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
 - `GET /users/:id` — Busca informações cadastrais do usuário.
 - `PATCH /users/:id` — Atualiza nome, e-mail, senha ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
 - `PATCH /users/:id/role` — Troca o perfil de acesso do usuário (só o administrador).
-- `DELETE /users/:id` — Remove usuário do sistema.
+- `DELETE /users/:id` — Exclui o usuário logicamente (`isDeleted` e `deletedAt`): ele some das buscas e da listagem e perde o acesso, mas o registro é mantido. Cadastrar de novo o mesmo e-mail em `POST /users` reativa esse registro, com o mesmo id.
 
 ---
 

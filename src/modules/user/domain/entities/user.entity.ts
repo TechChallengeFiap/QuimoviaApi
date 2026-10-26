@@ -16,6 +16,8 @@ export interface UserProperties {
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  /** Data da exclusão lógica; ausente ou null para um usuário não excluído. */
+  deletedAt?: Date | null;
 }
 
 export interface CreateUserData {
@@ -26,6 +28,9 @@ export interface CreateUserData {
   status?: UserStatus;
 }
 
+/** Dados com que um usuário excluído volta a ser cadastrado. */
+export type ReregisterUserData = Omit<CreateUserData, 'email'>;
+
 /**
  * Raiz do agregado Usuário.
  *
@@ -33,6 +38,10 @@ export interface CreateUserData {
  * é alterado sem passar por um de seus métodos. A unicidade do e-mail é a única
  * regra que a entidade não consegue garantir sozinha — ela depende do
  * repositório, que consulta o conjunto completo de usuários.
+ *
+ * A exclusão é lógica: o usuário excluído some das buscas e perde o acesso,
+ * mas o registro continua no banco para o histórico das operações em que ele
+ * aparece, e o e-mail continua reservado para ele.
  */
 export class User {
   readonly id: string;
@@ -45,6 +54,7 @@ export class User {
   #status: UserStatus;
   #lastLoginAt: Date | null;
   #updatedAt: Date;
+  #deletedAt: Date | null;
 
   private constructor(properties: UserProperties) {
     this.id = properties.id;
@@ -56,6 +66,7 @@ export class User {
     this.#status = properties.status;
     this.#lastLoginAt = properties.lastLoginAt;
     this.#updatedAt = properties.updatedAt;
+    this.#deletedAt = properties.deletedAt ?? null;
   }
 
   /** Cria um novo usuário, validando os dados informados. */
@@ -72,6 +83,7 @@ export class User {
       lastLoginAt: null,
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
     });
   }
 
@@ -106,6 +118,14 @@ export class User {
 
   get updatedAt(): Date {
     return this.#updatedAt;
+  }
+
+  get deletedAt(): Date | null {
+    return this.#deletedAt;
+  }
+
+  get isDeleted(): boolean {
+    return this.#deletedAt !== null;
   }
 
   rename(name: string): void {
@@ -160,9 +180,41 @@ export class User {
     this.changeStatus(UserStatus.ACTIVE);
   }
 
-  /** Somente um usuário ativo pode autenticar-se e abrir novas sessões. */
+  /** Exclui o usuário logicamente, mantendo o registro. */
+  delete(at: Date = new Date()): void {
+    if (this.isDeleted) {
+      throw new BusinessRuleError('O usuário já foi excluído.');
+    }
+
+    this.#deletedAt = at;
+    this.markAsUpdated();
+  }
+
+  /**
+   * Reativa o cadastro de um usuário excluído com os dados do novo cadastro,
+   * mantendo o id, o e-mail e o histórico dele.
+   */
+  reregister(data: ReregisterUserData): void {
+    if (!this.isDeleted) {
+      throw new BusinessRuleError(
+        'Apenas um usuário excluído pode ser cadastrado novamente.',
+      );
+    }
+
+    this.#name = User.validateName(data.name);
+    this.#passwordHash = User.validatePasswordHash(data.passwordHash);
+    this.#role = data.role;
+    this.#status = data.status ?? UserStatus.ACTIVE;
+    this.#deletedAt = null;
+    this.markAsUpdated();
+  }
+
+  /**
+   * Somente um usuário ativo e não excluído pode autenticar-se e abrir novas
+   * sessões.
+   */
   canAuthenticate(): boolean {
-    return this.#status === UserStatus.ACTIVE;
+    return this.#status === UserStatus.ACTIVE && !this.isDeleted;
   }
 
   registerLogin(at: Date = new Date()): void {
@@ -187,6 +239,7 @@ export class User {
       lastLoginAt: this.#lastLoginAt,
       createdAt: this.createdAt,
       updatedAt: this.#updatedAt,
+      deletedAt: this.#deletedAt,
     };
   }
 

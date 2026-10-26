@@ -129,7 +129,7 @@ describe('User & Auth Audit Logging (unit)', () => {
     });
     await userRepo.create(user);
 
-    const useCase = new DeleteUserUseCase(userRepo, auditLogs);
+    const useCase = new DeleteUserUseCase(userRepo, sessionRepo, auditLogs);
 
     await useCase.execute('user-1', { id: 'admin-id', name: 'Admin Root' });
 

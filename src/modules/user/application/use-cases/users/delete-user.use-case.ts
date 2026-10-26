@@ -1,5 +1,7 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import { SESSION_REPOSITORY } from '@/modules/user/domain/repositories/session.repository.js';
+import type { SessionRepository } from '@/modules/user/domain/repositories/session.repository.js';
 import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.repository.js';
 import type { UserRepository } from '@/modules/user/domain/repositories/user.repository.js';
 import {
@@ -10,12 +12,17 @@ import {
 } from '@/modules/audit-log/public/index.js';
 import type { UserActionActor } from './create-user.use-case.js';
 
+/**
+ * Exclui o usuário logicamente: o registro continua no banco, mas some das
+ * buscas e da listagem e perde o acesso ao sistema.
+ */
 @Injectable()
 export class DeleteUserUseCase {
   private readonly logger = new Logger(DeleteUserUseCase.name);
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+    @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
     @Optional()
     @Inject(AUDIT_LOG_RECORDER)
     private readonly auditLogs?: AuditLogRecorder,
@@ -29,7 +36,13 @@ export class DeleteUserUseCase {
         throw new ResourceNotFoundError('Usuário', id);
       }
 
-      await this.users.remove(id);
+      const now = new Date();
+      user.delete(now);
+
+      // Como no bloqueio, as sessões são encerradas antes de gravar a
+      // exclusão: se o encerramento falhar, nada muda.
+      await this.sessions.endAllByUserId(user.id, now);
+      await this.users.update(user);
 
       if (this.auditLogs) {
         let actorName = actor?.name;
@@ -46,7 +59,7 @@ export class DeleteUserUseCase {
           actorId,
           actorName: resolvedActorName,
           action: AuditAction.DELETED,
-          description: `Usuário "${resolvedActorName}" removeu o usuário "${user.name}" (${user.email})`,
+          description: `Usuário "${resolvedActorName}" excluiu o usuário "${user.name}" (${user.email})`,
         });
       }
     } catch (error) {
