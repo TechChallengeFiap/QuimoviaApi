@@ -124,9 +124,14 @@ enum StatusShipment {
 
 model ChemicalShipment {
   id                String          @id @default(uuid())
+  code              String          @default("") @db.VarChar(60)
   productId         String
   product           ChemicalProduct @relation(fields: [productId], references: [id])
   quantityProduct   Float           @db.Float
+  unit              String          @default("kg") @db.VarChar(20)
+  origin            String          @default("Porto de Santos") @db.VarChar(120)
+  destination       String          @default("Terminal Portuário") @db.VarChar(120)
+  entryDate         DateTime        @default(now())
   status            StatusShipment  @default(REGISTERED)
   responsibleUserId String
   responsibleUser   User            @relation(fields: [responsibleUserId], references: [id])
@@ -138,6 +143,7 @@ model ChemicalShipment {
 
   @@index([responsibleUserId])
   @@index([status])
+  @@index([code])
 }
 
 enum ShipmentDocumentStatus {

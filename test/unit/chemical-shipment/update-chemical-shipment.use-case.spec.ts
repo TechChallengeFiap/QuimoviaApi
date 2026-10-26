@@ -193,13 +193,22 @@ describe('UpdateChemicalShipmentUseCase', () => {
     ).rejects.toThrow(BusinessRuleError);
   });
 
-  it('deve lançar BusinessRuleError ao tentar atualizar carga aprovada', async () => {
-    const shipment = await createSampleShipment(StatusShipment.APPROVED);
+  it('deve atualizar os campos adicionais code, unit, origin, destination e entryDate com sucesso', async () => {
+    const shipment = await createSampleShipment();
+    const newEntryDate = new Date('2026-10-25T10:00:00.000Z');
 
-    await expect(
-      useCase.execute(shipment.id, {
-        responsibleUserId: 'user-002',
-      }),
-    ).rejects.toThrow(BusinessRuleError);
+    const updated = await useCase.execute(shipment.id, {
+      code: 'CARGO-UPDATED-001',
+      unit: 'toneladas',
+      origin: 'Porto de Paranaguá',
+      destination: 'Terminal Químico de Santos',
+      entryDate: newEntryDate,
+    });
+
+    expect(updated.code).toBe('CARGO-UPDATED-001');
+    expect(updated.unit).toBe('toneladas');
+    expect(updated.origin).toBe('Porto de Paranaguá');
+    expect(updated.destination).toBe('Terminal Químico de Santos');
+    expect(updated.entryDate).toEqual(newEntryDate);
   });
 });

@@ -5,6 +5,15 @@ import { Type } from 'class-transformer';
 
 export class ListChemicalShipmentsQueryDto {
   @ApiPropertyOptional({
+    description: 'Filtra as cargas químicas pelo código identificador da carga',
+    type: String,
+    example: 'CARGO-2026-001',
+  })
+  @IsOptional()
+  @IsString()
+  code?: string;
+
+  @ApiPropertyOptional({
     description: 'Filtra as cargas químicas pelo status atual',
     enum: StatusShipment,
     enumName: 'StatusShipment',

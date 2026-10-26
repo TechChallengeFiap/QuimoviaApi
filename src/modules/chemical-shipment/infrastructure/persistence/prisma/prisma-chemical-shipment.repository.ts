@@ -38,11 +38,16 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
         await this.prismaService.chemicalShipment.create({
           data: {
             id: chemicalShipment.id,
+            code: chemicalShipment.code,
             createdAt: chemicalShipment.createdAt,
             updatedAt: chemicalShipment.updatedAt,
             status: chemicalShipment.status,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
+            unit: chemicalShipment.unit,
+            origin: chemicalShipment.origin,
+            destination: chemicalShipment.destination,
+            entryDate: chemicalShipment.entryDate,
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
           },
@@ -66,6 +71,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
       const pageSize = Number(filters.pageSize);
 
       const where = {
+        code: filters.code,
         status: filters.status,
         productId: filters.productId,
         responsibleUserId: filters.responsibleUserId,
@@ -140,10 +146,15 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             deletedAt: null,
           },
           data: {
+            code: chemicalShipment.code,
             updatedAt: chemicalShipment.updatedAt,
             status: chemicalShipment.status,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
+            unit: chemicalShipment.unit,
+            origin: chemicalShipment.origin,
+            destination: chemicalShipment.destination,
+            entryDate: chemicalShipment.entryDate,
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
           },
@@ -179,11 +190,16 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
           where: { id: chemicalShipment.id },
           data: {
             id: chemicalShipment.id,
+            code: chemicalShipment.code,
             createdAt: chemicalShipment.createdAt,
             updatedAt: chemicalShipment.updatedAt,
             status: chemicalShipment.status,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
+            unit: chemicalShipment.unit,
+            origin: chemicalShipment.origin,
+            destination: chemicalShipment.destination,
+            entryDate: chemicalShipment.entryDate,
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
           },
@@ -227,11 +243,16 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
   ): ChemicalShipment {
     return ChemicalShipment.restore({
       id: chemicalShipment.id,
+      code: chemicalShipment.code,
       createdAt: chemicalShipment.createdAt,
       updatedAt: chemicalShipment.updatedAt,
       status: chemicalShipment.status as unknown as StatusShipment,
       productId: chemicalShipment.productId,
       quantityProduct: chemicalShipment.quantityProduct,
+      unit: chemicalShipment.unit,
+      origin: chemicalShipment.origin,
+      destination: chemicalShipment.destination,
+      entryDate: chemicalShipment.entryDate,
       responsibleUserId: chemicalShipment.responsibleUserId,
       responsibleUser: chemicalShipment.responsibleUser
         ? User.restore({

@@ -72,9 +72,13 @@ export class CreateChemicalShipmentUseCase {
           action: AuditAction.CREATED,
           description: `Usuário "${resolvedActorName}" registrou a carga química "${created.id}" (${chemicalProduct.technicalName})`,
           details: {
+            code: created.code,
             productId: created.productId,
             productName: chemicalProduct.technicalName,
             quantity: created.quantityProduct,
+            unit: created.unit,
+            origin: created.origin,
+            destination: created.destination,
             status: created.status,
           },
         });

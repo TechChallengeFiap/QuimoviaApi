@@ -252,6 +252,38 @@ describe('ChemicalShipmentController (e2e)', () => {
         })
         .expect(404);
     });
+
+    it('cadastra uma nova carga química informando todos os campos adicionais do edital (code, unit, origin, destination, entryDate)', async () => {
+      const entryDate = '2026-10-24T12:00:00.000Z';
+      const payload = {
+        productId: activeProduct.id,
+        responsibleUserId: responsibleUser.id,
+        quantityProduct: 1200,
+        documentsIds: `DOC-${randomUUID()}`,
+        code: 'CARGO-E2E-2026',
+        unit: 'toneladas',
+        origin: 'Porto de Santos - Terminal Químico',
+        destination: 'Terminal Industrial Mauá',
+        entryDate,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        code: 'CARGO-E2E-2026',
+        productId: activeProduct.id,
+        responsibleUserId: responsibleUser.id,
+        quantityProduct: 1200,
+        unit: 'toneladas',
+        origin: 'Porto de Santos - Terminal Químico',
+        destination: 'Terminal Industrial Mauá',
+        status: StatusShipment.REGISTERED,
+      });
+      expect(new Date(response.body.entryDate).toISOString()).toBe(entryDate);
+    });
   });
 
   describe('GET /chemical-shipment — Consulta e Listagem', () => {
@@ -522,6 +554,35 @@ describe('ChemicalShipmentController (e2e)', () => {
       expect(recorded?.actorId).not.toBe(responsibleUser.id);
       expect(recorded?.actorName).toBe('Operador Portuário Santos');
       expect(recorded?.description).toContain('Operador Portuário Santos');
+    });
+  });
+
+  describe('PATCH /chemical-shipment/:id — Atualização Cadastral', () => {
+    it('permite atualizar os campos adicionais (code, unit, origin, destination, entryDate) nos status permitidos', async () => {
+      const created = await createValidShipment();
+      const newEntryDate = '2026-10-25T15:00:00.000Z';
+
+      const updateRes = await request(app.getHttpServer())
+        .patch(`/chemical-shipment/${created.id}`)
+        .send({
+          code: 'CARGO-E2E-UPDATED',
+          unit: 'litros',
+          origin: 'Porto de Paranaguá',
+          destination: 'Terminal Químico de Santos',
+          entryDate: newEntryDate,
+          quantityProduct: 300,
+        })
+        .expect(200);
+
+      expect(updateRes.body).toMatchObject({
+        id: created.id,
+        code: 'CARGO-E2E-UPDATED',
+        unit: 'litros',
+        origin: 'Porto de Paranaguá',
+        destination: 'Terminal Químico de Santos',
+        quantityProduct: 300,
+      });
+      expect(new Date(updateRes.body.entryDate).toISOString()).toBe(newEntryDate);
     });
   });
 

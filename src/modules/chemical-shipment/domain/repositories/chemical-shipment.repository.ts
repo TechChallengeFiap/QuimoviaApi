@@ -9,6 +9,7 @@ export interface ChemicalShipmentPage {
 }
 
 export interface ChemicalShipmentSearchFilters {
+  code?: string;
   status?: StatusShipment;
   productId?: string;
   responsibleUserId?: string;

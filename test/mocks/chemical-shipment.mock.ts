@@ -29,6 +29,10 @@ export class ChemicalShipmentMock implements ChemicalShipmentRepository {
   ): Promise<ChemicalShipmentPage> {
     let items = Array.from(this.chemicalShipments.values());
 
+    if (filters.code) {
+      items = items.filter((shipment) => shipment.code === filters.code);
+    }
+
     if (filters.status) {
       items = items.filter((shipment) => shipment.status === filters.status);
     }

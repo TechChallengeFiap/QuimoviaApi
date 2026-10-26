@@ -35,10 +35,11 @@
   - [1.2. A Solução Quimovia](#12-a-solução-quimovia)
   - [1.3. Objetivos do Tech Challenge (Fase 2)](#13-objetivos-do-tech-challenge-fase-2)
 - [2. Arquitetura e Design de Software](#2-arquitetura-e-design-de-software)
-- [3. Tecnologias Utilizadas](#3-tecnologias-utilizadas)
+- [3. Tecnologias Utilizadas e Justificativa de Escolha](#3-tecnologias-utilizadas-e-justificativa-de-escolha)
 - [4. Modelagem e Persistência de Dados](#4-modelagem-e-persistência-de-dados)
   - [4.1. Escolha do Banco de Dados](#41-escolha-do-banco-de-dados)
-  - [4.2. Ciclo de Vida da Carga, Máquina de Estados e Auditoria](#42-ciclo-de-vida-da-carga-máquina-de-estados-e-auditoria)
+  - [4.2. Estrutura da Modelagem de Dados (Edital Fase 2 - Item 7)](#42-estrutura-da-modelagem-de-dados-edital-fase-2---item-7)
+  - [4.3. Ciclo de Vida da Carga, Máquina de Estados e Auditoria](#43-ciclo-de-vida-da-carga-máquina-de-estados-e-auditoria)
 - [5. Configuração e Execução](#5-configuração-e-execução)
   - [5.1. Pré-requisitos](#51-pré-requisitos)
   - [5.2. Variáveis de Ambiente](#52-variáveis-de-ambiente)
@@ -49,8 +50,10 @@
   - [6.2. Controle de Status da Carga Química (Ciclo de Vida)](#62-controle-de-status-da-carga-química-ciclo-de-vida)
   - [6.3. Principais Endpoints](#63-principais-endpoints)
 - [7. Qualidade de Software e Testes](#7-qualidade-de-software-e-testes)
-- [8. Integração Contínua (CI/CD)](#8-integração-contínua-cicd)
-- [9. Integrantes do Grupo](#9-integrantes-do-grupo)
+- [8. Logs e Observabilidade Inicial (Edital Item 10)](#8-logs-e-observabilidade-inicial-edital-item-10)
+- [9. Integração Contínua (CI/CD)](#9-integração-contínua-cicd)
+- [10. Diferenciais e APIs Além de REST (Edital Item 14)](#10-diferenciais-e-apis-além-de-rest-edital-item-14)
+- [11. Integrantes do Grupo](#11-integrantes-do-grupo)
 
 ---
 
@@ -98,7 +101,7 @@ O Quimovia adota o padrão **Monólito Modular** fundamentado nos princípios de
 
 ---
 
-## 3. Tecnologias Utilizadas
+## 3. Tecnologias Utilizadas e Justificativa de Escolha
 
 - **Runtime:** [Node.js](https://nodejs.org/) (versão 24.x LTS)
 - **Framework Web:** [NestJS](https://nestjs.com/) v12
@@ -111,19 +114,51 @@ O Quimovia adota o padrão **Monólito Modular** fundamentado nos princípios de
 - **Containerização:** [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
 - **Integração Contínua (CI):** [GitHub Actions](https://github.com/features/actions)
 
+### 3.1. Justificativa da Escolha do Framework (NestJS)
+
+Conforme estabelecido no Edital do Tech Challenge (Fase 2, item 1), o grupo optou pelo **NestJS** pelos seguintes fatores técnicos e arquiteturais:
+1. **Aderência Natural a Clean Architecture e DDD:** O NestJS fornece um sistema nativo de injeção de dependências e inversão de controle (`IoC`), permitindo isolar a camada de domínio puro contra acoplamentos de infraestrutura e HTTP.
+2. **Modularidade e Escalabilidade (Monólito Modular):** A separação em módulos (`ChemicalProductsModule`, `ChemicalShipmentModule`, `InspectionModule`, `UserModule`, `DocumentComplianceModule`) reflete os *bounded contexts* do negócio portuário.
+3. **Pipeline Robusto de Validação e Documentação:** Integração declarativa com `class-validator` e `class-transformer` via `ValidationPipe`, além de geração automática de contratos OpenAPI via `@nestjs/swagger`.
+4. **Tratamento Centralizado de Exceções:** Uso de `ExceptionFilters` (`DomainExceptionFilter`) para capturar erros agnósticos de domínio (`BusinessRuleError`, `ResourceNotFoundError`, `ConflictError`) e traduzi-los de forma consistente para os status HTTP correspondentes (`422`, `404`, `409`).
+
 ---
 
 ## 4. Modelagem e Persistência de Dados
 
 ### 4.1. Escolha do Banco de Dados
 
-A persistência do Quimovia foi estruturada sobre o banco relacional **MySQL 8.4**:
+A persistência do Quimovia foi estruturada sobre o banco relacional **MySQL 8.4** (conforme permitido pelo edital, que prevê bancos relacionais ou NoSQL):
 
 - **Garantias ACID:** Operações de liberação, inspeção e bloqueio de cargas químicas demandam consistência transacional absoluta.
-- **Integridade Referencial Forte:** Cargas obrigatoriamente referenciam usuários responsáveis existentes e itens de inspeção vinculam-se unicamente às suas respectivas vistorias (`Foreign Keys` e `Cascades`).
-- **Consultas Relacionais com Índices:** Utilização de índices em campos de consulta frequente (como `[responsibleUserId]`, `[status]` e índices compostos de inspeção).
+- **Integridade Referencial Forte:** Cargas obrigatoriamente referenciam produtos químicos existentes e usuários responsáveis (`Foreign Keys`), impedindo órfãos em operações críticas.
+- **Consultas Relacionais com Índices:** Utilização de índices em campos de consulta frequente (`[responsibleUserId]`, `[status]`, `[productId]` e índices compostos de auditoria e inspeção).
 
-### 4.2. Ciclo de Vida da Carga, Máquina de Estados e Auditoria
+### 4.2. Estrutura da Modelagem de Dados (Edital Fase 2 - Item 7)
+
+Conforme exigido pelo edital, a modelagem de dados responde às seguintes diretrizes:
+
+1. **Como os produtos químicos são armazenados:**
+   - Armazenados na tabela `ChemicalProduct`.
+   - Contém chave primária UUID, código identificador único (`code`), nome técnico (`technicalName`), descrição/nome comercial (`tradeName`), número ONU (`unNumber` com 4 dígitos numéricos), enums para classe de risco (`riskClass`) e estado físico (`physicalState`), status operacional (`ProductStatus`) e carimbos de auditoria (`createdAt`, `updatedAt`).
+   - Possui relação 1:N com a tabela `ProductDocument` com deleção em cascata para armazenamento de dossiês fiscais e ambientais vinculados ao produto.
+2. **Como as cargas químicas são armazenadas:**
+   - Armazenadas na tabela `ChemicalShipment`.
+   - Contém identificador UUID, código identificador da carga (`code`), chave estrangeira para o produto químico (`productId`), chave estrangeira para o responsável técnico (`responsibleUserId`), quantidade de produto químico (`quantityProduct`), unidade de medida (`unit`), procedência (`origin`), destino portuário (`destination`), data de entrada no pátio (`entryDate`), protocolo de documentação declarada (`documentsIds`), carimbos de criação, atualização e `deletedAt` para suporte a soft delete / inativação lógica.
+3. **Como uma carga se relaciona com um produto químico:**
+   - Relacionamento relacional 1:N (`ChemicalProduct` 1 ── N `ChemicalShipment`).
+   - Uma carga química é estritamente vinculada a um produto químico existente via chave estrangeira física (`ChemicalShipment_productId_fkey`).
+   - A nível de aplicação e domínio, o caso de uso (`CreateChemicalShipmentUseCase`) valida previamente a integridade e impede o registro de novas cargas associadas a produtos químicos com status inativo (`INACTIVE`) ou bloqueado (`BLOCKED`).
+4. **Como o status da carga é controlado:**
+   - Armazenado como tipo `ENUM` nativo do MySQL (`REGISTERED`, `ANALYZING`, `INSPECTION`, `APPROVED`, `REPROVED`, `IN_TRANSIT`, `COMPLETED`, `CANCELLED`) indexado para consultas de alta performance.
+   - O controle transicional é executado pela Máquina de Estados Finitos encapsulada no domínio puro (`ChemicalShipment` e `shipment-status-transitions.ts`).
+   - Toda transição gera automaticamente um registro imutável na tabela de auditoria `ChemicalShipmentLog` (ação `STATUS_CHANGED`, registrando autor, data e metadados `{ from, to }`).
+5. **Como os dados poderão evoluir nas próximas fases:**
+   - **Campos Operacionais Implementados:** Código de manifesto (`code`), unidade de medida (`unit`), procedência e destino (`origin`, `destination`) e data de entrada (`entryDate`) já foram promovidos a campos de primeira classe no domínio e persistência. Próxima evolução: matriz de segregação por grupo de compatibilidade (`compatibilityGroup`).
+   - **Cargas Compostas (Multi-item):** Evolução para vistorias e manifestos compostos de múltiplos contêineres e produtos vinculados ao mesmo manifesto de navio (`InspectionScope.CARGO_ITEM`).
+   - **Particionamento e Arquivamento Frio:** Particionamento por faixa de data nas tabelas de log de auditoria (`*Log`) para retenção regulatória de longo prazo.
+
+### 4.3. Ciclo de Vida da Carga, Máquina de Estados e Auditoria
 
 - **Status Canônico em Banco (`ENUM`):** O status da carga é armazenado como um tipo `ENUM` nativo do MySQL (`REGISTERED`, `ANALYZING`, `INSPECTION`, `APPROVED`, `REPROVED`, `IN_TRANSIT`, `COMPLETED`, `CANCELLED`). Toda nova carga nasce estritamente com o status `REGISTERED`.
 - **Regras de Negócio no Domínio:** A máquina de estados não é delegada a constraints de banco nem espalhada em controllers; ela é encapsulada na camada de domínio puro ([`shipment-status-transitions.ts`](./src/modules/chemical-shipment/domain/value-objects/chemical-shipment/shipment-status-transitions.ts)), sendo validada pela entidade [`ChemicalShipment`](./src/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts) antes de qualquer persistência.
@@ -433,13 +468,24 @@ Bloquear, inativar ou excluir um usuário encerra as sessões dele, e reativar a
 
 A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de usuários.
 
+#### Produtos Químicos (`/chemical-products`)
+
+- `POST /chemical-products` — Cadastra novo produto químico perigoso (nome técnico, código único, número ONU, classe de risco e usuário técnico responsável). O status inicial padrão é `UNDER_ANALYSIS`.
+- `GET /chemical-products` — Lista produtos químicos cadastrados com paginação (`page`, `limit`) e filtros (`code`, `technicalName`, `unNumber`, `riskClass`, `status`).
+- `GET /chemical-products/:id` — Retorna os dados cadastrais detalhados do produto e seus documentos regulatórios vinculados.
+- `PATCH /chemical-products/:id` — Atualiza dados cadastrais do produto químico (nome técnico, nome comercial, número ONU, etc.).
+- `PATCH /chemical-products/:id/status` — Altera o status do produto químico (`ACTIVE`, `INACTIVE`, `BLOCKED`). É através deste endpoint que ocorre a inativação ou desbloqueio de produtos pelo Operador Portuário.
+- `DELETE /chemical-products/:id` — Exclui o produto químico do catálogo (quando não vinculado a cargas em andamento).
+- `POST /chemical-products/:id/documents` — Anexa dossiê documental (FISPQ/FDS, Licença Ambiental, etc.) ao produto químico.
+- `DELETE /chemical-products/:id/documents/:documentId` — Remove documento técnico do produto químico.
+
 #### Cargas Químicas (`/chemical-shipment`)
 
-- `POST /chemical-shipment` — Registra uma nova carga química (status inicial `REGISTERED`).
-- `GET /chemical-shipment` — Lista cargas químicas com paginação e filtros (`status`, `productId`, `responsibleUserId`, `documentsIds`).
+- `POST /chemical-shipment` — Registra uma nova carga química (campos: `productId`, `responsibleUserId`, `quantityProduct`, `code`, `unit`, `origin`, `destination`, `entryDate`, `documentsIds`; status inicial `REGISTERED`).
+- `GET /chemical-shipment` — Lista cargas químicas com paginação e filtros (`status`, `productId`, `responsibleUserId`, `code`, `documentsIds`).
 - `GET /chemical-shipment/:id` — Retorna os detalhes de uma carga química pelo ID.
 - `GET /chemical-shipment/:id/transitions` — Consulta as opções de transição válidas para o status atual da carga (**diferencial**).
-- `PATCH /chemical-shipment/:id` — Atualiza dados cadastrais da carga (`quantityProduct`). Permitido exclusivamente nos status `REGISTERED` e `ANALYZING`.
+- `PATCH /chemical-shipment/:id` — Atualiza dados cadastrais da carga (`quantityProduct`, `code`, `unit`, `origin`, `destination`, `entryDate`). Permitido exclusivamente nos status `REGISTERED` e `ANALYZING`.
 - `PATCH /chemical-shipment/:id/status` — Altera o status da carga conforme a máquina de estados do edital.
 - `PATCH /chemical-shipment/:id/release` — Libera a carga química (`APPROVED`), conferindo automaticamente a documentação técnica obrigatória.
 - `PATCH /chemical-shipment/:id/block` — Bloqueia a carga química (`REPROVED`) a partir do status de inspeção.
@@ -498,7 +544,27 @@ Os testes automatizados validam cenários críticos exigidos no Tech Challenge, 
 
 ---
 
-## 8. Integração Contínua (CI/CD)
+## 8. Logs e Observabilidade Inicial (Edital Item 10)
+
+O Quimovia implementa uma estratégia de observabilidade em camadas para facilitar o monitoramento operacional e a auditoria forense do pátio:
+
+1. **Auditoria Transacional em Banco (Tabelas `*Log`):**
+   - Cada bounded context conta com uma tabela de log imutável dedicada (`ChemicalShipmentLog`, `ChemicalProductLog`, `UserLog`, `InspectionLog`, `ShipmentDocumentLog`).
+   - Registra o identificador da entidade afetada (`entityId`), o operador responsável (`actorId`, `actorName`), a ação realizada (`CREATED`, `STATUS_CHANGED`, `DELETED`, etc.), timestamp de auditoria e detalhes contextuais em JSON (como status anterior e novo: `{ from, to }`).
+   - Os logs de auditoria sobrevivem mesmo a eventuais exclusões lógicas das entidades monitoradas e podem ser consultados via endpoint `GET /logs/chemical-shipments`.
+2. **Logs Estruturados na Aplicação (NestJS Logger):**
+   - Uso de `Logger` nativo tipado em Use Cases e Controllers para rastreamento de eventos vitais:
+     - Criação de novos produtos químicos e cargas;
+     - Transições de status e tentativas de violação de máquina de estados;
+     - Bloqueios em vistorias de inspeção e liberações com conformidade documental;
+     - Falhas de autenticação e trocas de perfil de usuários;
+     - Erros de validação e exceções não tratadas.
+3. **Evolução Futura (Prometheus & Grafana):**
+   - Arquitetura preparada para acoplamento de interceptor de métricas RED (Rate, Errors, Duration) e exportador Prometheus para painéis Grafana no terminal portuário.
+
+---
+
+## 9. Integração Contínua (CI/CD)
 
 O projeto conta com um pipeline automatizado de Integração Contínua configurado via GitHub Actions em [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
@@ -537,7 +603,18 @@ O pipeline é disparado automaticamente a cada `push` ou `pull_request` nas bran
 
 ---
 
-## 9. Integrantes do Grupo
+## 10. Diferenciais e APIs Além de REST (Edital Item 14)
+
+Conforme destacado no edital, o core obrigatório da Fase 2 é 100% suportado pela **API RESTful**. Além do fluxo padrão, o projeto implementa diferenciais como:
+
+1. **Endpoint de Transições Abertas (`GET /chemical-shipment/:id/transitions`):**
+   - Permite que interfaces frontend ou sistemas de pátio consultem dinamicamente em tempo real quais transições de status estão abertas para a carga, seus rótulos legíveis e se ela já atingiu um estado terminal.
+2. **Backlog de APIs Complementares (GraphQL / gRPC):**
+   - Para as próximas etapas de evolução do QuimiPort, está prevista a introdução de um gateway GraphQL para consultas compostas (ex.: consultar detalhes de um produto químico agregando histórico de cargas e inspeções em uma única requisição flexível), bem como serviços gRPC para validação de alta vazão nas cancelas físicas de entrada portuária.
+
+---
+
+## 11. Integrantes do Grupo
 
 Projeto desenvolvido para a **Pós-Graduação em Full Stack Development — FIAP**:
 

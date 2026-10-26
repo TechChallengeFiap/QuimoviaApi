@@ -27,6 +27,11 @@ export interface UpdateChemicalShipmentInput {
   responsibleUserId?: string;
   documentsIds?: string;
   quantityProduct?: number;
+  code?: string;
+  unit?: string;
+  origin?: string;
+  destination?: string;
+  entryDate?: Date | string;
 }
 
 @Injectable()
@@ -86,6 +91,26 @@ export class UpdateChemicalShipmentUseCase {
       existingChemicalShipment.changeQuantityProduct(input.quantityProduct);
     }
 
+    if (input.code) {
+      existingChemicalShipment.changeCode(input.code);
+    }
+
+    if (input.unit) {
+      existingChemicalShipment.changeUnit(input.unit);
+    }
+
+    if (input.origin) {
+      existingChemicalShipment.changeOrigin(input.origin);
+    }
+
+    if (input.destination) {
+      existingChemicalShipment.changeDestination(input.destination);
+    }
+
+    if (input.entryDate) {
+      existingChemicalShipment.changeEntryDate(input.entryDate);
+    }
+
     const updated = await this.chemicalShipments.update(existingChemicalShipment);
 
     if (this.auditLogs) {
@@ -108,8 +133,12 @@ export class UpdateChemicalShipmentUseCase {
         action,
         description,
         details: {
+          code: updated.code,
           status: updated.status,
           quantity: updated.quantityProduct,
+          unit: updated.unit,
+          origin: updated.origin,
+          destination: updated.destination,
         },
       });
     }
