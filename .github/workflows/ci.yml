@@ -37,6 +37,9 @@ jobs:
       - name: 3. Geracao do Prisma Client
         run: npx prisma generate
 
+      - name: Verificacao de tipos da aplicacao e dos testes
+        run: npm run typecheck
+
       - name: 4. Verificacao de Build e Compilacao
         run: npm run build
 

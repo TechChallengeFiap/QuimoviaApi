@@ -113,7 +113,7 @@ describe('UpdateChemicalShipmentUseCase', () => {
   });
 
   async function createSampleShipment(
-    status = StatusShipment.ANALYZING,
+    status: StatusShipment = StatusShipment.ANALYZING,
   ): Promise<ChemicalShipment> {
     const shipment = ChemicalShipment.create({
       productId: 'prod-001',

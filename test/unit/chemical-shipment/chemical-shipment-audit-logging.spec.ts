@@ -63,12 +63,10 @@ describe('Chemical Shipment Audit Logging (unit)', () => {
 
     const shipment = await useCase.execute(
       {
-        code: 'CARGA-001',
         productId: product.id,
         quantityProduct: 500,
         responsibleUserId: responsibleUser.id,
         documentsIds: 'DOC-123',
-        status: StatusShipment.REGISTERED,
       },
       { id: responsibleUser.id, name: responsibleUser.name },
     );
@@ -134,7 +132,7 @@ describe('Chemical Shipment Audit Logging (unit)', () => {
 
     await useCase.execute(
       shipment.id,
-      { status: StatusShipment.ANALYZING },
+      { status: StatusShipment.INSPECTION },
       { id: 'op-1', name: 'Operador Santos' },
     );
 
@@ -144,7 +142,7 @@ describe('Chemical Shipment Audit Logging (unit)', () => {
       entityId: shipment.id,
       action: AuditAction.STATUS_CHANGED,
     });
-    expect(auditLogs.logs[0].description).toContain('ANALYZING');
+    expect(auditLogs.logs[0].description).toContain('INSPECTION');
     expect(auditLogs.logs[0].description).toContain('Operador Santos');
   });
 

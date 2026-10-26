@@ -9,11 +9,11 @@ import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { Session } from '@/modules/user/domain/entities/session.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
-import { UserRepositoryMock } from '../../../test/mocks/user-repository.mock.js';
-import { PasswordHasherMock } from '../../../test/mocks/password-hasher.mock.js';
-import { SessionRepositoryMock } from '../../../test/mocks/session-repository.mock.js';
-import { AccessTokenServiceMock } from '../../../test/mocks/access-token-service.mock.js';
-import { AuditLogRecorderMock } from '../../../test/mocks/audit-log-recorder.mock.js';
+import { UserRepositoryMock } from '../../mocks/user-repository.mock.js';
+import { PasswordHasherMock } from '../../mocks/password-hasher.mock.js';
+import { SessionRepositoryMock } from '../../mocks/session-repository.mock.js';
+import { AccessTokenServiceMock } from '../../mocks/access-token-service.mock.js';
+import { AuditLogRecorderMock } from '../../mocks/audit-log-recorder.mock.js';
 import { AuditedEntity } from '@/modules/audit-log/domain/enums/audited-entity.enum.js';
 import { AuditAction } from '@/modules/audit-log/domain/enums/audit-action.enum.js';
 
@@ -40,7 +40,7 @@ describe('User & Auth Audit Logging (unit)', () => {
         name: 'Maria Auditora',
         email: 'maria@empresa.com',
         password: 'Password123!',
-        role: UserRole.QUALITY_ANALYST,
+        role: UserRole.TECHNICAL_MANAGER,
       },
       { id: 'admin-id', name: 'Admin Root' },
     );
@@ -59,24 +59,30 @@ describe('User & Auth Audit Logging (unit)', () => {
   });
 
   it('registra log ao atualizar usuário', async () => {
-    const user = new User({
+    const user = User.restore({
       id: 'user-1',
       name: 'Nome Antigo',
       email: 'antigo@empresa.com',
       passwordHash: 'hash',
       role: UserRole.PORT_OPERATOR,
       status: UserStatus.ACTIVE,
+      lastLoginAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
     await userRepo.create(user);
 
-    const useCase = new UpdateUserUseCase(userRepo, passwordHasher, sessionRepo, auditLogs);
+    const useCase = new UpdateUserUseCase(
+      userRepo,
+      passwordHasher,
+      sessionRepo,
+      auditLogs,
+    );
 
     await useCase.execute(
       'user-1',
       { name: 'Nome Novo' },
-      { id: 'admin-id', role: UserRole.SYSTEM_ADMIN },
+      { userId: 'admin-id', role: UserRole.SYSTEM_ADMIN },
     );
 
     expect(auditLogs.logs).toHaveLength(1);
@@ -88,13 +94,14 @@ describe('User & Auth Audit Logging (unit)', () => {
   });
 
   it('registra log ao alterar perfil do usuário', async () => {
-    const user = new User({
+    const user = User.restore({
       id: 'user-1',
       name: 'Operador Silva',
       email: 'silva@empresa.com',
       passwordHash: 'hash',
       role: UserRole.PORT_OPERATOR,
       status: UserStatus.ACTIVE,
+      lastLoginAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -102,11 +109,10 @@ describe('User & Auth Audit Logging (unit)', () => {
 
     const useCase = new ChangeUserRoleUseCase(userRepo, auditLogs);
 
-    await useCase.execute(
-      'user-1',
-      UserRole.TECHNICAL_MANAGER,
-      { id: 'admin-id', name: 'Admin Root' },
-    );
+    await useCase.execute('user-1', UserRole.TECHNICAL_MANAGER, {
+      id: 'admin-id',
+      name: 'Admin Root',
+    });
 
     expect(auditLogs.logs).toHaveLength(1);
     expect(auditLogs.logs[0]).toMatchObject({
@@ -117,13 +123,14 @@ describe('User & Auth Audit Logging (unit)', () => {
   });
 
   it('registra log ao remover usuário', async () => {
-    const user = new User({
+    const user = User.restore({
       id: 'user-1',
       name: 'Para Deletar',
       email: 'deletar@empresa.com',
       passwordHash: 'hash',
       role: UserRole.PORT_OPERATOR,
       status: UserStatus.ACTIVE,
+      lastLoginAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -141,13 +148,14 @@ describe('User & Auth Audit Logging (unit)', () => {
   });
 
   it('registra log ao fazer login com sucesso', async () => {
-    const user = new User({
+    const user = User.restore({
       id: 'user-1',
       name: 'Carlos Tech',
       email: 'carlos@empresa.com',
       passwordHash: 'hash:S3nhaForte!',
       role: UserRole.TECHNICAL_MANAGER,
       status: UserStatus.ACTIVE,
+      lastLoginAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -173,30 +181,27 @@ describe('User & Auth Audit Logging (unit)', () => {
       entityId: 'user-1',
       action: AuditAction.LOGGED_IN,
     });
-    expect(auditLogs.logs[0].description).toContain('realizou login no sistema');
+    expect(auditLogs.logs[0].description).toContain(
+      'realizou login no sistema',
+    );
   });
 
   it('registra log ao encerrar sessão (logout)', async () => {
-    const user = new User({
+    const user = User.restore({
       id: 'user-1',
       name: 'Carlos Tech',
       email: 'carlos@empresa.com',
       passwordHash: 'hash:S3nhaForte!',
       role: UserRole.TECHNICAL_MANAGER,
       status: UserStatus.ACTIVE,
+      lastLoginAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
     await userRepo.create(user);
 
     const session = await sessionRepo.create(
-      new Session({
-        id: 'session-1',
-        userId: 'user-1',
-        tokenHash: 'hash:token',
-        expiresAt: new Date(Date.now() + 3600 * 1000),
-        createdAt: new Date(),
-      }),
+      Session.start({ userId: 'user-1', durationInSeconds: 3600 }),
     );
 
     const useCase = new LogoutUseCase(sessionRepo, userRepo, auditLogs);

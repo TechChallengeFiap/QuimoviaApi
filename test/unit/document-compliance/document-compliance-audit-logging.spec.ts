@@ -31,7 +31,7 @@ describe('Document Compliance Audit Logging (unit)', () => {
         name: 'Embarcador Santos',
         email: 'santos@quimovia.com',
         passwordHash: 'hash',
-        role: UserRole.OPERATOR,
+        role: UserRole.PORT_OPERATOR,
       }),
     );
   });
