@@ -31,7 +31,6 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
-  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { ChangeChemicalProductStatusUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/change-chemical-product-status.use-case.js';
 import { CreateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/create-chemical-product.use-case.js';
@@ -109,7 +108,8 @@ export class ChemicalProductsController {
     examples: {
       padrao: {
         summary: 'Exemplo de payload válido',
-        description: 'Payload com os dados mínimos obrigatórios para criar o produto químico.',
+        description:
+          'Payload com os dados mínimos obrigatórios para criar o produto químico.',
         value: {
           code: 'H2SO4-98',
           technicalName: 'Ácido sulfúrico',
@@ -122,7 +122,8 @@ export class ChemicalProductsController {
       },
       comDocumentos: {
         summary: 'Exemplo com status inicial e documentos',
-        description: 'Payload completo, com status inicial ACTIVE e um documento vinculado.',
+        description:
+          'Payload completo, com status inicial ACTIVE e um documento vinculado.',
         value: {
           code: 'NH3-01',
           technicalName: 'Amônia anidra',
@@ -147,23 +148,6 @@ export class ChemicalProductsController {
     description: 'Produto químico cadastrado com sucesso.',
     type: ChemicalProductResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos fornecidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'code must be longer than or equal to 1 characters',
-          'technicalName must be longer than or equal to 3 characters',
-          'unNumber deve conter exatamente 4 dígitos',
-          'riskClass must be one of the following values: EXPLOSIVES, GASES, FLAMMABLE_LIQUIDS, FLAMMABLE_SOLIDS, OXIDIZING_SUBSTANCES, TOXIC_SUBSTANCES, RADIOACTIVE_MATERIALS, CORROSIVE_SUBSTANCES, MISCELLANEOUS_DANGEROUS_SUBSTANCES',
-          'physicalState must be one of the following values: SOLID, LIQUID, GASEOUS',
-          'responsibleUserId should not be empty',
-        ],
-        error: 'Bad Request',
-        statusCode: 400,
-      },
-    },
-  })
   @ApiNotFoundResponse({
     description: 'Usuário responsável não encontrado.',
     schema: { example: USER_NOT_FOUND_EXAMPLE },
@@ -172,24 +156,49 @@ export class ChemicalProductsController {
     description: 'Já existe um produto químico com o código informado.',
     schema: {
       example: {
-        message: 'Já existe um produto químico cadastrado com o código "H2SO4-98".',
+        message:
+          'Já existe um produto químico cadastrado com o código "H2SO4-98".',
         error: 'Conflict',
         statusCode: 409,
       },
     },
   })
-  @ApiUnprocessableEntityResponse({
-    description: 'Uma regra de negócio do domínio foi violada.',
-    schema: {
-      example: {
-        message: 'O código "H2 SO4" não é válido: use apenas letras, números, ponto, hífen ou sublinhado.',
-        error: 'Unprocessable Entity',
-        statusCode: 422,
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos ou regra de negócio violada.',
+    content: {
+      'application/json': {
+        examples: {
+          dadosInvalidos: {
+            summary: 'Dados inválidos',
+            value: {
+              message: [
+                'code must be longer than or equal to 1 characters',
+                'technicalName must be longer than or equal to 3 characters',
+                'unNumber deve conter exatamente 4 dígitos',
+                'riskClass must be one of the following values: EXPLOSIVES, GASES, FLAMMABLE_LIQUIDS, FLAMMABLE_SOLIDS, OXIDIZING_SUBSTANCES, TOXIC_SUBSTANCES, RADIOACTIVE_MATERIALS, CORROSIVE_SUBSTANCES, MISCELLANEOUS_DANGEROUS_SUBSTANCES',
+                'physicalState must be one of the following values: SOLID, LIQUID, GASEOUS',
+                'responsibleUserId should not be empty',
+              ],
+              error: 'Bad Request',
+              statusCode: 400,
+            },
+          },
+          regraNegocio: {
+            summary: 'Regra de negócio violada',
+            value: {
+              message:
+                'O código "H2 SO4" não é válido: use apenas letras, números, ponto, hífen ou sublinhado.',
+              error: 'Bad Request',
+              statusCode: 400,
+            },
+          },
+        },
       },
     },
   })
   @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar o cadastro do produto químico.',
+    description:
+      'Erro interno do servidor ao processar o cadastro do produto químico.',
   })
   async create(
     @Body(
@@ -215,7 +224,8 @@ export class ChemicalProductsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Lista os produtos químicos, com filtro por classe de risco, estado físico e status',
+    summary:
+      'Lista os produtos químicos, com filtro por classe de risco, estado físico e status',
     description:
       'Retorna uma lista paginada de produtos químicos, ordenada do mais recente para o mais antigo. Todos os filtros são opcionais.',
   })
@@ -279,7 +289,8 @@ export class ChemicalProductsController {
     },
   })
   @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar a listagem dos produtos químicos.',
+    description:
+      'Erro interno do servidor ao processar a listagem dos produtos químicos.',
   })
   async list(
     @Query(
@@ -316,7 +327,8 @@ export class ChemicalProductsController {
     schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
   })
   @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar a busca do produto químico.',
+    description:
+      'Erro interno do servidor ao processar a busca do produto químico.',
   })
   async findById(@Param('id') id: string): Promise<ChemicalProductResponseDto> {
     try {
@@ -341,7 +353,8 @@ export class ChemicalProductsController {
     examples: {
       padrao: {
         summary: 'Exemplo de payload válido',
-        description: 'Altera o nome técnico, remove o nome comercial e corrige o número ONU.',
+        description:
+          'Altera o nome técnico, remove o nome comercial e corrige o número ONU.',
         value: {
           technicalName: 'Ácido sulfúrico concentrado',
           tradeName: null,
@@ -358,16 +371,6 @@ export class ChemicalProductsController {
     description: 'Produto químico atualizado com sucesso.',
     type: ChemicalProductResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos fornecidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: ['property status should not exist', 'unNumber deve conter exatamente 4 dígitos'],
-        error: 'Bad Request',
-        statusCode: 400,
-      },
-    },
-  })
   @ApiNotFoundResponse({
     description: 'Produto químico ou usuário responsável não encontrado.',
     schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
@@ -376,24 +379,45 @@ export class ChemicalProductsController {
     description: 'Já existe outro produto químico com o código informado.',
     schema: {
       example: {
-        message: 'Já existe um produto químico cadastrado com o código "NH3-01".',
+        message:
+          'Já existe um produto químico cadastrado com o código "NH3-01".',
         error: 'Conflict',
         statusCode: 409,
       },
     },
   })
-  @ApiUnprocessableEntityResponse({
-    description: 'Uma regra de negócio do domínio foi violada.',
-    schema: {
-      example: {
-        message: 'O nome técnico do produto químico deve ter ao menos 3 caracteres.',
-        error: 'Unprocessable Entity',
-        statusCode: 422,
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos ou regra de negócio violada.',
+    content: {
+      'application/json': {
+        examples: {
+          dadosInvalidos: {
+            summary: 'Dados inválidos',
+            value: {
+              message: [
+                'property status should not exist',
+                'unNumber deve conter exatamente 4 dígitos',
+              ],
+              error: 'Bad Request',
+              statusCode: 400,
+            },
+          },
+          regraNegocio: {
+            summary: 'Regra de negócio violada',
+            value: {
+              message:
+                'O nome técnico do produto químico deve ter ao menos 3 caracteres.',
+              error: 'Bad Request',
+              statusCode: 400,
+            },
+          },
+        },
       },
     },
   })
   @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar a atualização do produto químico.',
+    description:
+      'Erro interno do servidor ao processar a atualização do produto químico.',
   })
   async update(
     @Param('id') id: string,
@@ -451,7 +475,9 @@ export class ChemicalProductsController {
     description: 'Status inválido ou não permitido.',
     schema: {
       example: {
-        message: ['status must be one of the following values: ACTIVE, INACTIVE, BLOCKED'],
+        message: [
+          'status must be one of the following values: ACTIVE, INACTIVE, BLOCKED',
+        ],
         error: 'Bad Request',
         statusCode: 400,
       },
@@ -462,7 +488,8 @@ export class ChemicalProductsController {
     schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
   })
   @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar a alteração de status do produto químico.',
+    description:
+      'Erro interno do servidor ao processar a alteração de status do produto químico.',
   })
   async changeStatus(
     @Param('id') id: string,
@@ -478,10 +505,17 @@ export class ChemicalProductsController {
   ): Promise<ChemicalProductResponseDto> {
     try {
       const actor = req?.auth ? { id: req.auth.userId } : null;
-      const product = await this.changeProductStatus.execute(id, dto.status, actor);
+      const product = await this.changeProductStatus.execute(
+        id,
+        dto.status,
+        actor,
+      );
       return ChemicalProductResponseDto.fromEntity(product);
     } catch (error) {
-      this.handleError(error, `a alteração de status do produto químico com ID ${id}`);
+      this.handleError(
+        error,
+        `a alteração de status do produto químico com ID ${id}`,
+      );
     }
   }
 
@@ -489,26 +523,32 @@ export class ChemicalProductsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Remove um produto químico',
-    description: 'Remove o produto químico pelo ID, junto com todos os documentos vinculados a ele.',
+    description:
+      'Remove o produto químico pelo ID, junto com todos os documentos vinculados a ele.',
   })
   @ApiParam(PRODUCT_ID_PARAM)
-  @ApiNoContentResponse({ description: 'Produto químico removido com sucesso.' })
+  @ApiNoContentResponse({
+    description: 'Produto químico removido com sucesso.',
+  })
   @ApiNotFoundResponse({
     description: 'Produto químico não encontrado.',
     schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
   })
   @ApiConflictResponse({
-    description: 'Produto químico possui cargas ou registros vinculados e não pode ser removido.',
+    description:
+      'Produto químico possui cargas ou registros vinculados e não pode ser removido.',
     schema: {
       example: {
-        message: 'Não é possível excluir o produto químico porque existem registros associados a ele.',
+        message:
+          'Não é possível excluir o produto químico porque existem registros associados a ele.',
         error: 'Conflict',
         statusCode: 409,
       },
     },
   })
   @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar a remoção do produto químico.',
+    description:
+      'Erro interno do servidor ao processar a remoção do produto químico.',
   })
   async remove(
     @Param('id') id: string,
@@ -523,7 +563,7 @@ export class ChemicalProductsController {
   }
 
   /**
-   * Erros de domínio e HTTP são esperados (404, 409, 422...) e seguem para o
+   * Erros de domínio e HTTP são esperados (404, 409, 400...) e seguem para o
    * DomainExceptionFilter e para o Nest. Qualquer outro erro é registrado com
    * stack trace e convertido em 500, sem vazar detalhes internos.
    */

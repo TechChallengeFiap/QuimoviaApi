@@ -26,7 +26,6 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
-  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { ChangeUserRoleUseCase } from '@/modules/user/application/use-cases/users/change-user-role.use-case.js';
 import { CreateUserUseCase } from '@/modules/user/application/use-cases/users/create-user.use-case.js';
@@ -91,12 +90,6 @@ const BLOCK_USER_DENIED_EXAMPLE = {
   statusCode: HttpStatus.FORBIDDEN,
 };
 
-const BUSINESS_RULE_EXAMPLE = {
-  message: 'O nome do usuário deve ter ao menos 3 caracteres.',
-  error: 'Unprocessable Entity',
-  statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-};
-
 @ApiTags('Operações dos usuários')
 @Controller('users')
 @UseFilters(DomainExceptionFilter)
@@ -156,27 +149,38 @@ export class UsersController {
     description: 'Usuário cadastrado com sucesso.',
     type: UserResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'name must be longer than or equal to 3 characters',
-          'email must be an email',
-          'password must be longer than or equal to 8 characters',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
   @ApiConflictResponse({
     description: 'Já existe um usuário cadastrado com o e-mail informado.',
     schema: { example: EMAIL_CONFLICT_EXAMPLE },
   })
-  @ApiUnprocessableEntityResponse({
-    description: 'Os dados violam uma regra de negócio do usuário.',
-    schema: { example: BUSINESS_RULE_EXAMPLE },
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos ou regra de negócio violada.',
+    content: {
+      'application/json': {
+        examples: {
+          dadosInvalidos: {
+            summary: 'Dados inválidos',
+            value: {
+              message: [
+                'name must be longer than or equal to 3 characters',
+                'email must be an email',
+                'password must be longer than or equal to 8 characters',
+              ],
+              error: 'Bad Request',
+              statusCode: HttpStatus.BAD_REQUEST,
+            },
+          },
+          regraNegocio: {
+            summary: 'Regra de negócio violada',
+            value: {
+              message: 'O nome do usuário deve ter ao menos 3 caracteres.',
+              error: 'Bad Request',
+              statusCode: HttpStatus.BAD_REQUEST,
+            },
+          },
+        },
+      },
+    },
   })
   @ApiRequiresAuthentication()
   @ApiForbiddenResponse({
@@ -188,7 +192,9 @@ export class UsersController {
     @Body(validationPipeFor(CreateUserDto)) createUserDto: CreateUserDto,
     @CurrentSession() session: AuthenticatedSession,
   ): Promise<UserResponseDto> {
-    const user = await this.createUserUseCase.execute(createUserDto, { id: session.userId });
+    const user = await this.createUserUseCase.execute(createUserDto, {
+      id: session.userId,
+    });
     return UserResponseDto.fromEntity(user);
   }
 
@@ -327,18 +333,6 @@ export class UsersController {
     description: 'Usuário atualizado com sucesso.',
     type: UserResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'status must be one of the following values: ACTIVE, INACTIVE, BLOCKED',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
   @ApiNotFoundResponse({
     description: 'Usuário não encontrado.',
     schema: { example: USER_NOT_FOUND_EXAMPLE },
@@ -347,9 +341,32 @@ export class UsersController {
     description: 'O novo e-mail já pertence a outro usuário.',
     schema: { example: EMAIL_CONFLICT_EXAMPLE },
   })
-  @ApiUnprocessableEntityResponse({
-    description: 'A alteração viola uma regra de negócio do usuário.',
-    schema: { example: BUSINESS_RULE_EXAMPLE },
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos ou regra de negócio violada.',
+    content: {
+      'application/json': {
+        examples: {
+          dadosInvalidos: {
+            summary: 'Dados inválidos',
+            value: {
+              message: [
+                'status must be one of the following values: ACTIVE, INACTIVE, BLOCKED',
+              ],
+              error: 'Bad Request',
+              statusCode: HttpStatus.BAD_REQUEST,
+            },
+          },
+          regraNegocio: {
+            summary: 'Regra de negócio violada',
+            value: {
+              message: 'O nome do usuário deve ter ao menos 3 caracteres.',
+              error: 'Bad Request',
+              statusCode: HttpStatus.BAD_REQUEST,
+            },
+          },
+        },
+      },
+    },
   })
   @ApiRequiresAuthentication()
   @ApiForbiddenResponse({

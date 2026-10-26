@@ -5,6 +5,8 @@ import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exce
 import {
   AccessDeniedError,
   AuthenticationError,
+  BusinessRuleError,
+  ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 
@@ -49,6 +51,16 @@ describe('DomainExceptionFilter', () => {
 
   it.each([
     [
+      'BusinessRuleError',
+      HttpStatus.BAD_REQUEST,
+      new BusinessRuleError('A quantidade deve ser maior que zero.'),
+    ],
+    [
+      'ConflictError',
+      HttpStatus.CONFLICT,
+      new ConflictError('O recurso já existe.'),
+    ],
+    [
       'AuthenticationError',
       HttpStatus.UNAUTHORIZED,
       new AuthenticationError('E-mail ou senha inválidos.'),
@@ -79,6 +91,18 @@ describe('DomainExceptionFilter', () => {
     expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({ statusCode: HttpStatus.NOT_FOUND }),
+    );
+  });
+
+  it('retorna 400 para uma regra de negócio também sem httpAdapterHost', () => {
+    const error = new BusinessRuleError('Transição de status inválida.');
+    new DomainExceptionFilter().catch(error, mockHost);
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: error.message,
+      }),
     );
   });
 });

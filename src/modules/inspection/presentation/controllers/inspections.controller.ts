@@ -25,7 +25,6 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
-  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { CreateInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/create-inspection.use-case.js';
 import { DeleteInspectionUseCase } from '@/modules/inspection/application/use-cases/inspections/delete-inspection.use-case.js';
@@ -121,27 +120,32 @@ export class InspectionsController {
     example: ENRICHED_INSPECTION_RESPONSE_EXAMPLE,
   })
   @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'cargoId must be a UUID',
-          'compositionVersion must not be less than 1',
-          'requirements should not be empty',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
-  @ApiUnprocessableEntityResponse({
-    description: 'Os dados violam uma regra de negócio da inspeção.',
-    schema: {
-      example: {
-        message:
-          'A inspeção de um item da carga exige o identificador do item.',
-        error: 'Unprocessable Entity',
-        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+    description: 'Dados inválidos ou regra de negócio violada.',
+    content: {
+      'application/json': {
+        examples: {
+          dadosInvalidos: {
+            summary: 'Dados inválidos',
+            value: {
+              message: [
+                'cargoId must be a UUID',
+                'compositionVersion must not be less than 1',
+                'requirements should not be empty',
+              ],
+              error: 'Bad Request',
+              statusCode: HttpStatus.BAD_REQUEST,
+            },
+          },
+          regraNegocio: {
+            summary: 'Regra de negócio violada',
+            value: {
+              message:
+                'A inspeção de um item da carga exige o identificador do item.',
+              error: 'Bad Request',
+              statusCode: HttpStatus.BAD_REQUEST,
+            },
+          },
+        },
       },
     },
   })
@@ -166,8 +170,10 @@ export class InspectionsController {
     @Req() req: AuthenticatedRequest,
   ): Promise<InspectionResponseDto> {
     const actor = req?.auth ? { id: req.auth.userId } : null;
-    const inspection =
-      await this.createInspectionUseCase.execute(createInspectionDto, actor);
+    const inspection = await this.createInspectionUseCase.execute(
+      createInspectionDto,
+      actor,
+    );
     return InspectionResponseDto.fromEntity(inspection);
   }
 
@@ -330,18 +336,6 @@ export class InspectionsController {
     type: InspectionResponseDto,
     example: ENRICHED_INSPECTION_RESPONSE_EXAMPLE,
   })
-  @ApiBadRequestResponse({
-    description: 'Dados inválidos no corpo da requisição.',
-    schema: {
-      example: {
-        message: [
-          'status must be one of the following values: PENDING, IN_PROGRESS, COMPLETED',
-        ],
-        error: 'Bad Request',
-        statusCode: HttpStatus.BAD_REQUEST,
-      },
-    },
-  })
   @ApiNotFoundResponse({
     description: 'Inspeção ou novo Fiscal não encontrado(a).',
     schema: {
@@ -357,15 +351,31 @@ export class InspectionsController {
       },
     },
   })
-  @ApiUnprocessableEntityResponse({
-    description:
-      'A alteração viola uma regra da inspeção, como concluir com verificações pendentes ou alterar uma inspeção concluída.',
-    schema: {
-      example: {
-        message:
-          'A inspeção só pode ser concluída com o resultado de todas as verificações. Pendentes: NO_LEAKAGE.',
-        error: 'Unprocessable Entity',
-        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos ou regra de negócio violada.',
+    content: {
+      'application/json': {
+        examples: {
+          dadosInvalidos: {
+            summary: 'Dados inválidos',
+            value: {
+              message: [
+                'status must be one of the following values: PENDING, IN_PROGRESS, COMPLETED',
+              ],
+              error: 'Bad Request',
+              statusCode: HttpStatus.BAD_REQUEST,
+            },
+          },
+          regraNegocio: {
+            summary: 'Regra de negócio violada',
+            value: {
+              message:
+                'A inspeção só pode ser concluída com o resultado de todas as verificações. Pendentes: NO_LEAKAGE.',
+              error: 'Bad Request',
+              statusCode: HttpStatus.BAD_REQUEST,
+            },
+          },
+        },
       },
     },
   })
@@ -402,14 +412,14 @@ export class InspectionsController {
     description: 'Inspeção não encontrada.',
     schema: { example: INSPECTION_NOT_FOUND_EXAMPLE },
   })
-  @ApiUnprocessableEntityResponse({
+  @ApiBadRequestResponse({
     description: 'A inspeção já foi iniciada e não pode ser removida.',
     schema: {
       example: {
         message:
           'Somente inspeções pendentes podem ser removidas; as demais fazem parte do histórico da carga.',
-        error: 'Unprocessable Entity',
-        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        error: 'Bad Request',
+        statusCode: HttpStatus.BAD_REQUEST,
       },
     },
   })

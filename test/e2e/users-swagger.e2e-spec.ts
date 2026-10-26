@@ -251,7 +251,6 @@ describe('Swagger do módulo user (e2e)', () => {
       '401',
       '403',
       '409',
-      '422',
     ]);
     expect(statusesOf('/users', 'get')).toEqual(['200', '400']);
     expect(statusesOf('/users/{id}', 'get')).toEqual(['200', '404']);
@@ -262,7 +261,6 @@ describe('Swagger do módulo user (e2e)', () => {
       '403',
       '404',
       '409',
-      '422',
     ]);
     expect(statusesOf('/users/{id}/role', 'patch')).toEqual([
       '200',

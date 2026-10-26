@@ -98,7 +98,7 @@ src/modules/<contexto>/
 
 Duas convenções dão forma às camadas internas. As **entidades** têm estado privado (campos `#`), sem setters públicos, e só mudam por métodos com nome de negócio, como `start()` e `complete()`, que lançam `BusinessRuleError` quando algo é proibido. Elas são criadas por `create()`, que valida os dados, ou reconstruídas do banco por `restore()`, sem revalidar, e referenciam outros agregados apenas pelo ID (`shipmentId`, `inspectorId`). Os **casos de uso** têm um único método `execute`. Quando a entrada é a mesma da criação da entidade, eles reaproveitam o tipo dela (`CreateInspectionData`); nas listagens, a entrada é `Partial` dos filtros do repositório (`Partial<InspectionSearchFilters>`) e o resultado, um `Page<T>` de `shared/domain/pagination.ts`; nos demais casos, declaram o tipo de entrada no próprio arquivo. Eles também ficam com as regras que dependem de dados fora do agregado, como a unicidade de um e-mail.
 
-A presentation e o domínio validam coisas diferentes. O DTO valida o **formato** ("é um UUID?") e responde 400. A entidade valida a **regra** ("uma inspeção de item exige o ID do item") e lança um erro de domínio, que vira 422. A validação da entidade vale mesmo quando o caso de uso não é chamado por HTTP.
+A presentation e o domínio validam coisas diferentes. O DTO valida o **formato** ("é um UUID?") e responde 400. A entidade valida a **regra** ("uma inspeção de item exige o ID do item") e lança um erro de domínio, que vira 400. A validação da entidade vale mesmo quando o caso de uso não é chamado por HTTP.
 
 ---
 
@@ -221,7 +221,7 @@ O domínio lança erros de negócio sem saber nada de HTTP. O caso de uso regist
 
 | Erro | Quando usar | HTTP |
 | --- | --- | --- |
-| `BusinessRuleError` | Uma regra de negócio foi violada | 422 |
+| `BusinessRuleError` | Uma regra de negócio foi violada | 400 |
 | `ResourceNotFoundError` | O recurso não existe | 404 |
 | `ConflictError` | A operação conflita com um recurso existente | 409 |
 | `AuthenticationError` / `AccessDeniedError` | Credencial inválida / sem permissão | 401 / 403 |
@@ -325,7 +325,7 @@ async createInspection(
 
 Repare nas duas validações trabalhando juntas. O DTO aceita `shipmentItemId` ausente, porque o formato está correto, mas `Inspection.create()` o exige quando o escopo é `SHIPMENT_ITEM`. O `validationPipeFor(Dto)` informa ao pipe qual DTO validar, já que o `tsx` não emite metadados de tipo.
 
-**6. Registre no módulo e teste.** Registre o caso de uso, o controller e, se o contrato for novo, o `useClass` no `InspectionModule` (seção 3.2). Depois escreva três testes: o da entidade, sem mocks (`test/unit/inspection/inspection.entity.spec.ts`); o do caso de uso, com o `InspectionRepositoryMock` e a fábrica `buildInspection()` (`test/mocks/entities.mock.ts`), que monta uma inspeção válida; e o da rota, em `test/e2e/inspections.e2e-spec.ts`, que espera 201 para um cadastro válido, 400 para um payload malformado e 422 para uma regra violada.
+**6. Registre no módulo e teste.** Registre o caso de uso, o controller e, se o contrato for novo, o `useClass` no `InspectionModule` (seção 3.2). Depois escreva três testes: o da entidade, sem mocks (`test/unit/inspection/inspection.entity.spec.ts`); o do caso de uso, com o `InspectionRepositoryMock` e a fábrica `buildInspection()` (`test/mocks/entities.mock.ts`), que monta uma inspeção válida; e o da rota, em `test/e2e/inspections.e2e-spec.ts`, que espera 201 para um cadastro válido, 400 para um payload malformado e 400 para uma regra violada.
 
 Quando a funcionalidade **altera** um agregado existente, o roteiro muda pouco: o caso de uso busca o agregado, chama os métodos de negócio e salva. É o que faz o `UpdateInspectionUseCase` (simplificado):
 

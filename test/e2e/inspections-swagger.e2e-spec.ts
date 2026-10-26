@@ -134,9 +134,7 @@ describe('Swagger do módulo inspection (e2e)', () => {
         updatedAt: { type: 'string', format: 'date-time' },
         cargo: {
           nullable: true,
-          allOf: [
-            { $ref: '#/components/schemas/ChemicalShipmentResponseDto' },
-          ],
+          allOf: [{ $ref: '#/components/schemas/ChemicalShipmentResponseDto' }],
         },
         inspector: {
           nullable: true,
@@ -308,24 +306,18 @@ describe('Swagger do módulo inspection (e2e)', () => {
       method: 'get' | 'post' | 'patch' | 'delete',
     ) => Object.keys(document.paths[path]?.[method]?.responses ?? {}).sort();
 
-    expect(statusesOf('/inspections', 'post')).toEqual([
-      '201',
-      '400',
-      '404',
-      '422',
-    ]);
+    expect(statusesOf('/inspections', 'post')).toEqual(['201', '400', '404']);
     expect(statusesOf('/inspections', 'get')).toEqual(['200', '400']);
     expect(statusesOf('/inspections/{id}', 'get')).toEqual(['200', '404']);
     expect(statusesOf('/inspections/{id}', 'patch')).toEqual([
       '200',
       '400',
       '404',
-      '422',
     ]);
     expect(statusesOf('/inspections/{id}', 'delete')).toEqual([
       '204',
+      '400',
       '404',
-      '422',
     ]);
   });
 });

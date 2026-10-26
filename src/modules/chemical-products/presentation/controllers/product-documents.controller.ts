@@ -23,7 +23,6 @@ import {
   ApiOperation,
   ApiParam,
   ApiTags,
-  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import type { ValidationError } from 'class-validator';
 import { AddProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/add-product-document.use-case.js';
@@ -64,10 +63,7 @@ const DOCUMENT_VALIDATION = {
   description: 'Produto químico ou documento não encontrado.',
 })
 @ApiBadRequestResponse({
-  description: 'Dados inválidos ou campos não permitidos.',
-})
-@ApiUnprocessableEntityResponse({
-  description: 'Regra de negócio do documento violada.',
+  description: 'Dados inválidos ou regra de negócio violada.',
 })
 export class ProductDocumentsController {
   constructor(
