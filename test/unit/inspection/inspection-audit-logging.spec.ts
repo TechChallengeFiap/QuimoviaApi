@@ -35,7 +35,7 @@ describe('Inspection Audit Logging (unit)', () => {
         name: 'Inspetor Lima',
         email: 'lima@quimovia.com',
         passwordHash: 'hash',
-        role: UserRole.QUALITY_ANALYST,
+        role: UserRole.TECHNICAL_MANAGER,
       }),
     );
 
@@ -61,9 +61,9 @@ describe('Inspection Audit Logging (unit)', () => {
       {
         cargoId: shipment.id,
         compositionVersion: 1,
-        scope: InspectionScope.ENTIRE_CARGO,
+        scope: InspectionScope.CARGO,
         inspectorId: inspectorUser.id,
-        requirements: [InspectionRequirement.SEAL_INTACT],
+        requirements: [InspectionRequirement.PACKAGING_INTEGRITY],
       },
       { id: inspectorUser.id, name: inspectorUser.name },
     );
@@ -83,9 +83,9 @@ describe('Inspection Audit Logging (unit)', () => {
       Inspection.create({
         cargoId: shipment.id,
         compositionVersion: 1,
-        scope: InspectionScope.ENTIRE_CARGO,
+        scope: InspectionScope.CARGO,
         inspectorId: inspectorUser.id,
-        requirements: [InspectionRequirement.SEAL_INTACT],
+        requirements: [InspectionRequirement.PACKAGING_INTEGRITY],
       }),
     );
 
@@ -115,9 +115,9 @@ describe('Inspection Audit Logging (unit)', () => {
       Inspection.create({
         cargoId: shipment.id,
         compositionVersion: 1,
-        scope: InspectionScope.ENTIRE_CARGO,
+        scope: InspectionScope.CARGO,
         inspectorId: inspectorUser.id,
-        requirements: [InspectionRequirement.SEAL_INTACT],
+        requirements: [InspectionRequirement.PACKAGING_INTEGRITY],
       }),
     );
 

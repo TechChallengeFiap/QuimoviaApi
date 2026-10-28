@@ -275,6 +275,7 @@ npm run start:dev
 | `npm run migrate:deploy` | Aplica migrações pendentes em produção/CI. |
 | `npm run migrate:seed` | Executa o seed de dados iniciais. |
 | `npm run lint` | Executa a análise estática com Oxlint. |
+| `npm run typecheck` | Validação estática de tipos TypeScript (`tsc`). |
 | `npm run format` | Formata os arquivos de código e testes com Prettier. |
 
 ---
@@ -476,6 +477,20 @@ Bloquear, inativar ou excluir um usuário encerra as sessões dele, e reativar a
 - `PATCH /inspections/:id` — Atualiza o status (`IN_PROGRESS`, `COMPLETED`) e resultado dos itens (`COMPLIANT`, `NON_COMPLIANT`).
 - `DELETE /inspections/:id` — Remove registro de inspeção.
 
+#### Documentação das Cargas (`/shipment-documents`)
+
+- `POST /shipment-documents` — Cadastra a documentação em preparação, com anexos e responsável técnico opcionais.
+- `GET /shipment-documents` — Lista documentos com paginação e filtros por carga, embarcador e status.
+- `GET /shipment-documents/:id` — Consulta o documento e o histórico dos anexos.
+- `PATCH /shipment-documents/:id` — Altera o responsável e adiciona, substitui ou remove anexos enquanto o documento está em preparação.
+- `DELETE /shipment-documents/:id` — Exclui a documentação em preparação.
+
+Ao informar `responsibleUserId`, o usuário deve existir; caso contrário, a API retorna `404`. Omitir o campo na atualização preserva o vínculo. As respostas incluem `responsibleUserId` e `responsibleUser` (`id` e `name`), sem credenciais. Os nomes são obtidos pelo contrato público de Identidade e Acesso, em lote nas listagens. Se o usuário for removido, o identificador histórico permanece e o resumo passa a ser `null`.
+
+A migração `20261026000000_isolate_document_responsible_user` remove apenas a chave estrangeira entre os contextos, preservando identificadores e índice. A existência do responsável passa a ser validada pela aplicação; não há garantia transacional entre a consulta ao usuário e a gravação documental. Aplique as migrações com `npm run migrate:deploy` antes de executar esta versão e gere o cliente com `npm run migrate:generate`.
+
+Erros de validação retornam `400`; violações de regras de negócio retornam `422`, recursos ausentes retornam `404` e conflitos retornam `409`. O cadastro de documentação de cargas mantém seu contrato específico de validação com `400`.
+
 #### Usuários e Acessos (`/users`)
 
 Cadastrar usuários internos, remover e trocar o perfil de usuários exige o token de um Administrador do Sistema (`401` sem token e `403` para os outros perfis). Na edição, o administrador altera qualquer usuário, e os demais perfis só os próprios dados, sem poder se bloquear. Os embarcadores (usuários externos) se cadastram sozinhos pela rota pública `POST /users/shippers`.
@@ -500,6 +515,9 @@ npm test
 
 # Testes em modo contínuo (watch)
 npm run test:watch
+
+# Verificação estática de tipos TypeScript
+npm run typecheck
 
 # Testes HTTP ponta a ponta (E2E)
 npm run test:e2e
@@ -568,16 +586,19 @@ O pipeline é disparado automaticamente a cada `push` ou `pull_request` nas bran
 5. Geração do Prisma Client (npx prisma generate)
         │
         ▼
-6. Verificação de Build e Compilação TypeScript (npm run build)
+6. Verificação de Tipos TypeScript (npm run typecheck)
         │
         ▼
-7. Execução dos Testes Unitários (npm test)
+7. Verificação de Build e Compilação (npm run build)
         │
         ▼
-8. Execução dos Testes E2E (npm run test:e2e)
+8. Execução dos Testes Unitários (npm test)
         │
         ▼
-9. Geração e Upload do Relatório de Cobertura (coverage-report)
+9. Execução dos Testes E2E (npm run test:e2e)
+        │
+        ▼
+10. Geração e Upload do Relatório de Cobertura (coverage-report)
 ```
 
 ---

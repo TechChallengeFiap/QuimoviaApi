@@ -13,6 +13,35 @@ import {
 } from '../../mocks/shipment-document.fixture.js';
 
 describe('ShipmentDocument', () => {
+  it('preserves the responsible user when attachment validation fails', () => {
+    const originalUser = { id: randomUUID(), name: 'Maria Silva' };
+    const document = ShipmentDocument.restore({
+      ...ShipmentDocument.create(createShipmentDocumentData()).toObject(),
+      responsibleUserId: originalUser.id,
+    });
+    const before = document.toObject();
+    expect(() =>
+      document.revise({
+        responsibleUserId: randomUUID(),
+        attachments: [createAttachmentData({ name: ' ' })],
+      }),
+    ).toThrow(BusinessRuleError);
+    expect(document.toObject()).toEqual(before);
+  });
+
+  it('normaliza o identificador do responsável na criação e na revisão', () => {
+    const responsibleUserId = randomUUID();
+    const document = ShipmentDocument.create(
+      createShipmentDocumentData({
+        responsibleUserId: responsibleUserId.toUpperCase(),
+      }),
+    );
+    expect(document.responsibleUserId).toBe(responsibleUserId);
+    const replacementId = randomUUID();
+    document.revise({ responsibleUserId: replacementId.toUpperCase() });
+    expect(document.responsibleUserId).toBe(replacementId);
+  });
+
   it('inicia em preparação e permite não possuir anexos antes do envio', () => {
     const document = ShipmentDocument.create(
       createShipmentDocumentData({ attachments: [] }),
@@ -243,6 +272,7 @@ describe('ShipmentDocument — validação dos anexos', () => {
         id: randomUUID(),
         shipmentId: randomUUID(),
         shipperId: randomUUID(),
+        responsibleUserId: null,
         compositionVersion: 1,
         status: ShipmentDocumentStatus.NON_COMPLIANT,
         submittedAt: new Date(),
@@ -305,6 +335,7 @@ describe('ShipmentDocument — validação dos anexos', () => {
         id: document.id,
         shipmentId: document.shipmentId,
         shipperId: document.shipperId,
+        responsibleUserId: document.responsibleUserId,
         compositionVersion: document.compositionVersion,
         status: ShipmentDocumentStatus.COMPLIANT,
         submittedAt: new Date(),

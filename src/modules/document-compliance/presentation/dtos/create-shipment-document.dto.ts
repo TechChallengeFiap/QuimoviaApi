@@ -33,6 +33,19 @@ export class CreateShipmentDocumentDto {
   })
   shipperId!: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    format: 'uuid',
+    description:
+      'Identificador de um usuário existente responsável técnico pela documentação.',
+    example: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
+  })
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsUUID('all', {
+    message: 'O identificador do responsável técnico deve ser um UUID válido.',
+  })
+  responsibleUserId?: string;
+
   @ApiProperty({
     type: Number,
     minimum: 1,

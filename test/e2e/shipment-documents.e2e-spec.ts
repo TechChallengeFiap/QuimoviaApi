@@ -10,6 +10,12 @@ import { ShipmentDocument } from '@/modules/document-compliance/domain/entities/
 import { ShipmentDocumentStatus } from '@/modules/document-compliance/domain/enums/shipment-document-status.enum.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { ShipmentDocumentRepositoryMock } from '../mocks/shipment-document-repository.mock.js';
+import { UserModule } from '@/modules/user/user.module.js';
+import { USER_DIRECTORY } from '@/modules/user/public/index.js';
+import { UserDirectoryMock } from '../mocks/user-directory.mock.js';
+import { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
+import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 import {
   createShipmentDocumentData,
   SHIPPER_ID,
@@ -33,12 +39,31 @@ const documentPayload = () => ({
 describe('ShipmentDocumentsController (e2e)', () => {
   let app: INestApplication;
   let documents: ShipmentDocumentRepositoryMock;
+  let users: UserRepositoryMock;
+  let responsibleUser: User;
 
   beforeEach(async () => {
+    users = new UserRepositoryMock();
+    responsibleUser = await users.create(
+      User.create({
+        name: 'Maria Silva',
+        email: 'maria@example.com',
+        passwordHash: 'internal-password-hash',
+        role: UserRole.TECHNICAL_MANAGER,
+      }),
+    );
     documents = new ShipmentDocumentRepositoryMock();
     const moduleFixture = await Test.createTestingModule({
       imports: [DocumentComplianceModule],
     })
+      .overrideModule(UserModule)
+      .useModule({
+        module: class TestUserModule {},
+        providers: [
+          { provide: USER_DIRECTORY, useValue: new UserDirectoryMock(users) },
+        ],
+        exports: [USER_DIRECTORY],
+      })
       .overrideProvider(SHIPMENT_DOCUMENT_REPOSITORY)
       .useValue(documents)
       .compile();
@@ -125,6 +150,146 @@ describe('ShipmentDocumentsController (e2e)', () => {
       .get(`/shipment-documents/${id}`)
       .expect(404);
   });
+
+  it('creates, reads, lists and updates the responsible user without exposing internal data', async () => {
+    const summary = { id: responsibleUser.id, name: responsibleUser.name };
+    const created = await request(app.getHttpServer())
+      .post('/shipment-documents')
+      .send({
+        ...documentPayload(),
+        responsibleUserId: responsibleUser.id.toUpperCase(),
+      })
+      .expect(201);
+    const path = `/shipment-documents/${created.body.id}`;
+    const found = await request(app.getHttpServer()).get(path).expect(200);
+    const listed = await request(app.getHttpServer())
+      .get('/shipment-documents')
+      .expect(200);
+    for (const body of [created.body, found.body, listed.body.items[0]]) {
+      expect(body.responsibleUserId).toBe(responsibleUser.id);
+      expect(body.responsibleUser).toEqual(summary);
+      expect(JSON.stringify(body)).not.toMatch(
+        /passwordHash|internal-password-hash|maria@example.com|token|credential/i,
+      );
+    }
+    const preserved = await request(app.getHttpServer())
+      .patch(path)
+      .send({ attachments: [attachmentPayload()] })
+      .expect(200);
+    expect(preserved.body.responsibleUser).toEqual(summary);
+
+    const replacement = await users.create(
+      User.create({
+        name: 'João Santos',
+        email: 'joao@example.com',
+        passwordHash: 'other-hash',
+        role: UserRole.TECHNICAL_MANAGER,
+      }),
+    );
+    const updated = await request(app.getHttpServer())
+      .patch(path)
+      .send({ responsibleUserId: replacement.id.toUpperCase() })
+      .expect(200);
+    expect(updated.body.responsibleUserId).toBe(replacement.id);
+    expect(updated.body.responsibleUser).toEqual({
+      id: replacement.id,
+      name: replacement.name,
+    });
+    expect(updated.body.attachments).toEqual(preserved.body.attachments);
+    const after = await request(app.getHttpServer()).get(path).expect(200);
+    expect(after.body.responsibleUser).toEqual(updated.body.responsibleUser);
+  });
+
+  it('preserves legacy documents and allows assigning the same user to multiple documents', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/shipment-documents')
+      .send(documentPayload())
+      .expect(201);
+    expect(created.body.responsibleUserId).toBeNull();
+    expect(created.body.responsibleUser).toBeNull();
+    await request(app.getHttpServer())
+      .patch(`/shipment-documents/${created.body.id}`)
+      .send({ responsibleUserId: responsibleUser.id })
+      .expect(200);
+    await request(app.getHttpServer())
+      .post('/shipment-documents')
+      .send({ ...documentPayload(), responsibleUserId: responsibleUser.id })
+      .expect(201);
+    const listed = await request(app.getHttpServer())
+      .get('/shipment-documents')
+      .expect(200);
+    expect(listed.body.total).toBe(2);
+    expect(
+      listed.body.items.every(
+        (item: { responsibleUserId: string }) =>
+          item.responsibleUserId === responsibleUser.id,
+      ),
+    ).toBe(true);
+  });
+
+  it('preserva o documento e o identificador histórico quando o responsável deixa de existir', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/shipment-documents')
+      .send({ ...documentPayload(), responsibleUserId: responsibleUser.id })
+      .expect(201);
+    responsibleUser.delete();
+    await users.update(responsibleUser);
+    const path = `/shipment-documents/${created.body.id}`;
+    const found = await request(app.getHttpServer()).get(path).expect(200);
+    const page = await request(app.getHttpServer())
+      .get('/shipment-documents')
+      .expect(200);
+    const updated = await request(app.getHttpServer())
+      .patch(path)
+      .send({ attachments: [attachmentPayload()] })
+      .expect(200);
+    for (const document of [found.body, page.body.items[0], updated.body]) {
+      expect(document.responsibleUserId).toBe(responsibleUser.id);
+      expect(document.responsibleUser).toBeNull();
+    }
+  });
+
+  it('rejects unknown users on create and update without changing persisted data', async () => {
+    const unknownId = randomUUID();
+    const rejected = await request(app.getHttpServer())
+      .post('/shipment-documents')
+      .send({ ...documentPayload(), responsibleUserId: unknownId })
+      .expect(404);
+    expect(rejected.body.message).toContain('Responsável técnico');
+    expect((await documents.list({ page: 1, pageSize: 20 })).total).toBe(0);
+    const created = await request(app.getHttpServer())
+      .post('/shipment-documents')
+      .send({ ...documentPayload(), responsibleUserId: responsibleUser.id })
+      .expect(201);
+    const path = `/shipment-documents/${created.body.id}`;
+    await request(app.getHttpServer())
+      .patch(path)
+      .send({
+        responsibleUserId: unknownId,
+        attachments: [attachmentPayload()],
+      })
+      .expect(404);
+    const after = await request(app.getHttpServer()).get(path).expect(200);
+    expect(after.body).toEqual(created.body);
+  });
+
+  it.each([null, '', 'invalid', 42])(
+    'rejects an invalid responsible user identifier on create and update: %j',
+    async (responsibleUserId) => {
+      await request(app.getHttpServer())
+        .post('/shipment-documents')
+        .send({ ...documentPayload(), responsibleUserId })
+        .expect(400);
+      const created = await request(app.getHttpServer())
+        .post('/shipment-documents')
+        .send(documentPayload())
+        .expect(201);
+      await request(app.getHttpServer())
+        .patch(`/shipment-documents/${created.body.id}`)
+        .send({ responsibleUserId })
+        .expect(400);
+    },
+  );
 
   it('permite iniciar a preparação vazia e adicionar anexos de um item depois', async () => {
     const payload = documentPayload();
@@ -429,6 +594,37 @@ describe('ShipmentDocumentsController (e2e)', () => {
     expect(
       specification.components?.schemas?.UpdateShipmentDocumentDto,
     ).not.toHaveProperty('properties.shipmentId');
+    expect(
+      specification.paths['/shipment-documents'].post?.responses,
+    ).toHaveProperty('404');
+    for (const name of [
+      'CreateShipmentDocumentDto',
+      'UpdateShipmentDocumentDto',
+    ]) {
+      expect(specification.components?.schemas?.[name]).toMatchObject({
+        properties: { responsibleUserId: { type: 'string', format: 'uuid' } },
+      });
+      expect(specification.components?.schemas?.[name]).not.toHaveProperty(
+        'required',
+        expect.arrayContaining(['responsibleUserId']),
+      );
+    }
+    expect(
+      specification.components?.schemas?.ShipmentDocumentResponseDto,
+    ).toMatchObject({
+      properties: {
+        responsibleUserId: { type: 'string', format: 'uuid', nullable: true },
+        responsibleUser: { nullable: true },
+      },
+    });
+    expect(
+      specification.components?.schemas?.ShipmentDocumentResponsibleUserDto,
+    ).toMatchObject({
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+      },
+    });
     expect(
       specification.components?.schemas?.DocumentAttachmentResponseDto,
     ).toMatchObject({

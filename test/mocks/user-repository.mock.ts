@@ -31,6 +31,11 @@ export class UserRepositoryMock implements UserRepository {
     return this.activeUsers().find((user) => user.id === id) ?? null;
   }
 
+  async findByIds(ids: readonly string[]): Promise<User[]> {
+    const identifiers = new Set(ids);
+    return this.activeUsers().filter((user) => identifiers.has(user.id));
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.activeUsers().find((user) => user.email === email) ?? null;
   }

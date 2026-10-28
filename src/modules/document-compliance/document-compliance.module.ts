@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { UserModule } from '@/modules/user/public/index.js';
 import { CreateShipmentDocumentUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/create-shipment-document.use-case.js';
 import { DeleteShipmentDocumentUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/delete-shipment-document.use-case.js';
 import { FindShipmentDocumentByIdUseCase } from '@/modules/document-compliance/application/use-cases/shipment-documents/find-shipment-document-by-id.use-case.js';
@@ -11,6 +12,7 @@ import { SHIPMENT_DOCUMENTATION_CHECKER } from './public/shipment-documentation-
 import { CheckShipmentDocumentationUseCase } from './application/use-cases/shipment-documents/check-shipment-documentation.use-case.js';
 
 @Module({
+  imports: [UserModule],
   controllers: [ShipmentDocumentsController],
   providers: [
     CreateShipmentDocumentUseCase,
