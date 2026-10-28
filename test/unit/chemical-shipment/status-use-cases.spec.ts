@@ -273,7 +273,7 @@ describe('Chemical Shipment Status Use Cases', () => {
       const originalUpdate = shipmentsRepo.update.bind(shipmentsRepo);
       jest
         .spyOn(shipmentsRepo, 'update')
-        .mockImplementation(async (entity, expectedStatus) => {
+        .mockImplementation(async (entity, _expectedStatus) => {
           // Força status divergente no repositório para simular escrita obsoleta
           return originalUpdate(entity, StatusShipment.CANCELLED);
         });

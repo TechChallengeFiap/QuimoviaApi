@@ -24,10 +24,21 @@ export class ChemicalShipmentMock implements ChemicalShipmentRepository {
     return this.chemicalShipments.get(id) ?? null;
   }
 
+  async findByCode(code: string): Promise<ChemicalShipment | null> {
+    const found = Array.from(this.chemicalShipments.values()).find(
+      (shipment) => shipment.code === code && !shipment.deletedAt,
+    );
+    return found ?? null;
+  }
+
   async list(
     filters: ChemicalShipmentSearchFilters,
   ): Promise<ChemicalShipmentPage> {
     let items = Array.from(this.chemicalShipments.values());
+
+    if (filters.code) {
+      items = items.filter((shipment) => shipment.code === filters.code);
+    }
 
     if (filters.status) {
       items = items.filter((shipment) => shipment.status === filters.status);

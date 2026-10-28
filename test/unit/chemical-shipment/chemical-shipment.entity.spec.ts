@@ -216,6 +216,66 @@ describe('ChemicalShipment Entity', () => {
       expect(() => shipment.changeQuantityProduct(500)).toThrow(
         BusinessRuleError,
       );
+      expect(() => shipment.changeCode('NEW-CODE')).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => shipment.changeUnit('litros')).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => shipment.changeOrigin('Santos')).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => shipment.changeDestination('Mauá')).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => shipment.changeEntryDate(new Date())).toThrow(
+        BusinessRuleError,
+      );
+    });
+
+    it('inicializa e permite alterar os campos adicionais do edital (code, unit, origin, destination, entryDate)', () => {
+      const entryDate = new Date('2026-10-24T12:00:00.000Z');
+      const shipment = ChemicalShipment.create({
+        productId: 'prod-001',
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-001',
+        quantityProduct: 500,
+        code: 'CARGO-2026-XYZ',
+        unit: 'toneladas',
+        origin: 'Porto de Santos',
+        destination: 'Terminal Mauá',
+        entryDate,
+      });
+
+      expect(shipment.code).toBe('CARGO-2026-XYZ');
+      expect(shipment.unit).toBe('toneladas');
+      expect(shipment.origin).toBe('Porto de Santos');
+      expect(shipment.destination).toBe('Terminal Mauá');
+      expect(shipment.entryDate).toEqual(entryDate);
+
+      shipment.changeCode('CARGO-2026-ABC');
+      shipment.changeUnit('kg');
+      shipment.changeOrigin('Terminal Saboó');
+      shipment.changeDestination('Terminal Cubatão');
+      shipment.changeEntryDate('2026-10-25T14:30:00.000Z');
+
+      expect(shipment.code).toBe('CARGO-2026-ABC');
+      expect(shipment.unit).toBe('kg');
+      expect(shipment.origin).toBe('Terminal Saboó');
+      expect(shipment.destination).toBe('Terminal Cubatão');
+      expect(shipment.entryDate).toEqual(new Date('2026-10-25T14:30:00.000Z'));
+    });
+
+    it('rejeita valores vazios ou inválidos para os campos adicionais', () => {
+      const shipment = createValidShipment();
+
+      expect(() => shipment.changeCode('')).toThrow(BusinessRuleError);
+      expect(() => shipment.changeUnit('')).toThrow(BusinessRuleError);
+      expect(() => shipment.changeOrigin('')).toThrow(BusinessRuleError);
+      expect(() => shipment.changeDestination('')).toThrow(BusinessRuleError);
+      expect(() => shipment.changeEntryDate('data-invalida')).toThrow(
+        BusinessRuleError,
+      );
     });
   });
 });

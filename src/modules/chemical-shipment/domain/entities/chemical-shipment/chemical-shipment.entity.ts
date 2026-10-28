@@ -18,14 +18,24 @@ export interface CreateChemicalShipmentData {
   responsibleUserId: string;
   documentsIds: string;
   quantityProduct: number;
+  code?: string;
+  unit?: string;
+  origin?: string;
+  destination?: string;
+  entryDate?: Date | string;
 }
 
 export interface ChemicalShipmentProperties {
   id: string;
+  code: string;
   createdAt: Date;
   productId: string;
   product?: ChemicalProduct | null;
   quantityProduct: number;
+  unit: string;
+  origin: string;
+  destination: string;
+  entryDate: Date;
   status: StatusShipment;
   responsibleUserId: string;
   responsibleUser?: User | null;
@@ -46,9 +56,14 @@ export class ChemicalShipment {
   readonly id: string;
   readonly createdAt: Date;
 
+  #code: string;
   #productId: string;
   #product?: ChemicalProduct | null;
   #quantityProduct: number;
+  #unit: string;
+  #origin: string;
+  #destination: string;
+  #entryDate: Date;
   #status: StatusShipment;
   #responsibleUserId: string;
   #responsibleUser?: User | null;
@@ -59,9 +74,14 @@ export class ChemicalShipment {
   private constructor(props: ChemicalShipmentProperties) {
     this.id = props.id;
     this.createdAt = props.createdAt;
+    this.#code = props.code;
     this.#productId = props.productId;
     this.#product = props.product ?? null;
     this.#quantityProduct = props.quantityProduct;
+    this.#unit = props.unit;
+    this.#origin = props.origin;
+    this.#destination = props.destination;
+    this.#entryDate = props.entryDate;
     this.#status = props.status;
     this.#responsibleUserId = props.responsibleUserId;
     this.#responsibleUser = props.responsibleUser ?? null;
@@ -83,13 +103,33 @@ export class ChemicalShipment {
       );
     }
 
+    const code =
+      data.code?.trim() ||
+      `CARGO-${now.getFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const unit = data.unit?.trim() || 'kg';
+    const origin = data.origin?.trim() || 'Porto de Santos';
+    const destination = data.destination?.trim() || 'Terminal Portuário';
+    const entryDate = data.entryDate
+      ? typeof data.entryDate === 'string'
+        ? new Date(data.entryDate)
+        : data.entryDate
+      : now;
+
     return new ChemicalShipment({
       id: randomUUID(),
+      code,
+      productId: data.productId,
+      responsibleUserId: data.responsibleUserId,
+      documentsIds: data.documentsIds,
+      quantityProduct: data.quantityProduct,
+      unit,
+      origin,
+      destination,
+      entryDate,
+      status: StatusShipment.REGISTERED,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
-      status: StatusShipment.REGISTERED,
-      ...data,
     });
   }
 
@@ -130,6 +170,53 @@ export class ChemicalShipment {
     return isTerminalStatus(this.#status);
   }
 
+  changeCode(code: string): void {
+    this.validateCanBeUpdated();
+    if (!code || !code.trim()) {
+      throw new BusinessRuleError('O código da carga não pode ser vazio');
+    }
+    this.#code = code.trim();
+    this.#updatedAt = new Date();
+  }
+
+  changeUnit(unit: string): void {
+    this.validateCanBeUpdated();
+    if (!unit || !unit.trim()) {
+      throw new BusinessRuleError('A unidade de medida não pode ser vazia');
+    }
+    this.#unit = unit.trim();
+    this.#updatedAt = new Date();
+  }
+
+  changeOrigin(origin: string): void {
+    this.validateCanBeUpdated();
+    if (!origin || !origin.trim()) {
+      throw new BusinessRuleError('A origem da carga não pode ser vazia');
+    }
+    this.#origin = origin.trim();
+    this.#updatedAt = new Date();
+  }
+
+  changeDestination(destination: string): void {
+    this.validateCanBeUpdated();
+    if (!destination || !destination.trim()) {
+      throw new BusinessRuleError('O destino da carga não pode ser vazio');
+    }
+    this.#destination = destination.trim();
+    this.#updatedAt = new Date();
+  }
+
+  changeEntryDate(entryDate: Date | string): void {
+    this.validateCanBeUpdated();
+    const date =
+      typeof entryDate === 'string' ? new Date(entryDate) : entryDate;
+    if (isNaN(date.getTime())) {
+      throw new BusinessRuleError('A data de entrada informada é inválida');
+    }
+    this.#entryDate = date;
+    this.#updatedAt = new Date();
+  }
+
   changeProduct(productId: string): void {
     this.validateCanBeUpdated();
     this.#productId = productId;
@@ -167,8 +254,58 @@ export class ChemicalShipment {
     }
   }
 
-  static restore(properties: ChemicalShipmentProperties): ChemicalShipment {
-    return new ChemicalShipment(properties);
+  static restore(properties: Partial<ChemicalShipmentProperties> & {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    status: StatusShipment;
+    productId: string;
+    quantityProduct: number;
+    responsibleUserId: string;
+    documentsIds: string;
+  }): ChemicalShipment {
+    return new ChemicalShipment({
+      id: properties.id,
+      code:
+        properties.code ||
+        `CARGO-${properties.id.slice(0, 8).toUpperCase()}`,
+      createdAt: properties.createdAt,
+      updatedAt: properties.updatedAt,
+      status: properties.status,
+      productId: properties.productId,
+      product: properties.product,
+      quantityProduct: properties.quantityProduct,
+      unit: properties.unit || 'kg',
+      origin: properties.origin || 'Porto de Santos',
+      destination: properties.destination || 'Terminal Portuário',
+      entryDate: properties.entryDate
+        ? new Date(properties.entryDate)
+        : properties.createdAt,
+      responsibleUserId: properties.responsibleUserId,
+      responsibleUser: properties.responsibleUser,
+      documentsIds: properties.documentsIds,
+      deletedAt: properties.deletedAt ?? null,
+    });
+  }
+
+  get code(): string {
+    return this.#code;
+  }
+
+  get unit(): string {
+    return this.#unit;
+  }
+
+  get origin(): string {
+    return this.#origin;
+  }
+
+  get destination(): string {
+    return this.#destination;
+  }
+
+  get entryDate(): Date {
+    return this.#entryDate;
   }
 
   get productId(): string {
@@ -207,6 +344,26 @@ export class ChemicalShipment {
     return this.#deletedAt;
   }
 
+  set code(code: string) {
+    this.changeCode(code);
+  }
+
+  set unit(unit: string) {
+    this.changeUnit(unit);
+  }
+
+  set origin(origin: string) {
+    this.changeOrigin(origin);
+  }
+
+  set destination(destination: string) {
+    this.changeDestination(destination);
+  }
+
+  set entryDate(entryDate: Date) {
+    this.changeEntryDate(entryDate);
+  }
+
   set productId(productId: string) {
     this.#productId = productId;
   }
@@ -242,12 +399,17 @@ export class ChemicalShipment {
   toObject(): ChemicalShipmentProperties {
     return {
       id: this.id,
+      code: this.#code,
       createdAt: this.createdAt,
       updatedAt: this.#updatedAt,
       status: this.#status,
       productId: this.#productId,
       product: this.#product,
       quantityProduct: this.#quantityProduct,
+      unit: this.#unit,
+      origin: this.#origin,
+      destination: this.#destination,
+      entryDate: this.#entryDate,
       responsibleUserId: this.#responsibleUserId,
       responsibleUser: this.#responsibleUser,
       documentsIds: this.#documentsIds,

@@ -13,6 +13,7 @@ import { ChemicalShipment } from '@/modules/chemical-shipment/domain/entities/ch
 import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import {
   BusinessRuleError,
+  ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 
@@ -193,13 +194,84 @@ describe('UpdateChemicalShipmentUseCase', () => {
     ).rejects.toThrow(BusinessRuleError);
   });
 
-  it('deve lançar BusinessRuleError ao tentar atualizar carga aprovada', async () => {
-    const shipment = await createSampleShipment(StatusShipment.APPROVED);
+  it('deve atualizar os campos adicionais code, unit, origin, destination e entryDate com sucesso', async () => {
+    const shipment = await createSampleShipment();
+    const newEntryDate = new Date('2026-10-25T10:00:00.000Z');
+
+    const updated = await useCase.execute(shipment.id, {
+      code: 'CARGO-UPDATED-001',
+      unit: 'toneladas',
+      origin: 'Porto de Paranaguá',
+      destination: 'Terminal Químico de Santos',
+      entryDate: newEntryDate,
+    });
+
+    expect(updated.code).toBe('CARGO-UPDATED-001');
+    expect(updated.unit).toBe('toneladas');
+    expect(updated.origin).toBe('Porto de Paranaguá');
+    expect(updated.destination).toBe('Terminal Químico de Santos');
+    expect(updated.entryDate).toEqual(newEntryDate);
+  });
+
+  it('deve lançar BusinessRuleError ao tentar atualizar com campos textuais vazios', async () => {
+    const shipment = await createSampleShipment();
 
     await expect(
       useCase.execute(shipment.id, {
-        responsibleUserId: 'user-002',
+        code: '',
       }),
     ).rejects.toThrow(BusinessRuleError);
+
+    await expect(
+      useCase.execute(shipment.id, {
+        unit: '   ',
+      }),
+    ).rejects.toThrow(BusinessRuleError);
+
+    await expect(
+      useCase.execute(shipment.id, {
+        origin: '',
+      }),
+    ).rejects.toThrow(BusinessRuleError);
+
+    await expect(
+      useCase.execute(shipment.id, {
+        destination: '',
+      }),
+    ).rejects.toThrow(BusinessRuleError);
+  });
+
+  it('deve lançar ConflictError ao tentar atualizar para um código já em uso por outra carga', async () => {
+    const shipment1 = await chemicalShipments.create(
+      ChemicalShipment.create({
+        code: 'CARGO-UNIQUE-01',
+        productId: 'prod-001',
+        quantityProduct: 100,
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-001',
+      }),
+    );
+
+    const shipment2 = await chemicalShipments.create(
+      ChemicalShipment.create({
+        code: 'CARGO-UNIQUE-02',
+        productId: 'prod-001',
+        quantityProduct: 200,
+        responsibleUserId: 'user-001',
+        documentsIds: 'doc-002',
+      }),
+    );
+
+    await expect(
+      useCase.execute(shipment2.id, {
+        code: 'CARGO-UNIQUE-01',
+      }),
+    ).rejects.toThrow(ConflictError);
+
+    // Atualizar mantendo o próprio código não deve dar conflito
+    const updatedSame = await useCase.execute(shipment1.id, {
+      code: 'CARGO-UNIQUE-01',
+    });
+    expect(updatedSame.code).toBe('CARGO-UNIQUE-01');
   });
 });
