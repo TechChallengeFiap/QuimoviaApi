@@ -124,7 +124,7 @@ enum StatusShipment {
 
 model ChemicalShipment {
   id                String          @id @default(uuid())
-  code              String          @default("") @db.VarChar(60)
+  code              String          @unique @db.VarChar(60)
   productId         String
   product           ChemicalProduct @relation(fields: [productId], references: [id])
   quantityProduct   Float           @db.Float
@@ -143,7 +143,6 @@ model ChemicalShipment {
 
   @@index([responsibleUserId])
   @@index([status])
-  @@index([code])
 }
 
 enum ShipmentDocumentStatus {

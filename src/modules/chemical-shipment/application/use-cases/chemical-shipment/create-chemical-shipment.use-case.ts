@@ -9,6 +9,7 @@ import {
 } from '@/modules/user/domain/repositories/user.repository.js';
 import {
   BusinessRuleError,
+  ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
@@ -51,6 +52,17 @@ export class CreateChemicalShipmentUseCase {
   ): Promise<ChemicalShipment> {
     try {
       const { responsibleUser, chemicalProduct } = await this.validateInput(input);
+
+      if (input.code) {
+        const normalizedCode = input.code.trim();
+        const existingByCode =
+          await this.chemicalShipmentRepository.findByCode(normalizedCode);
+        if (existingByCode) {
+          throw new ConflictError(
+            `Já existe uma carga química cadastrada com o código "${normalizedCode}".`,
+          );
+        }
+      }
 
       const chemicalShipment = ChemicalShipment.create(input);
       const created = await this.chemicalShipmentRepository.create(chemicalShipment);

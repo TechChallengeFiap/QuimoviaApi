@@ -54,7 +54,12 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
         });
 
       return PrismaChemicalShipmentRepository.toDomain(createdChemicalShipment);
-    } catch (error) {
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && 'code' in error && (error as { code: string }).code === 'P2002') {
+        throw new ConflictError(
+          `Já existe uma carga química cadastrada com o código "${chemicalShipment.code}".`,
+        );
+      }
       this.logger.error(
         `Erro ao persistir carga química no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
@@ -123,6 +128,25 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
     } catch (error) {
       this.logger.error(
         `Erro ao buscar carga química por ID ${id} no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  async findByCode(code: string): Promise<ChemicalShipment | null> {
+    try {
+      const record = await this.prismaService.chemicalShipment.findFirst({
+        where: { code, deletedAt: null },
+        include: {
+          responsibleUser: true,
+        },
+      });
+
+      return record ? PrismaChemicalShipmentRepository.toDomain(record) : null;
+    } catch (error) {
+      this.logger.error(
+        `Erro ao buscar carga química por código ${code} no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
@@ -209,9 +233,14 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
         });
 
       return PrismaChemicalShipmentRepository.toDomain(updatedChemicalShipment);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof DomainError) {
         throw error;
+      }
+      if (typeof error === 'object' && error !== null && 'code' in error && (error as { code: string }).code === 'P2002') {
+        throw new ConflictError(
+          `Já existe uma carga química cadastrada com o código "${chemicalShipment.code}".`,
+        );
       }
       this.logger.error(
         `Erro ao persistir carga química no banco de dados: ${error instanceof Error ? error.message : String(error)}`,

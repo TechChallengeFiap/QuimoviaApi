@@ -284,6 +284,57 @@ describe('ChemicalShipmentController (e2e)', () => {
       });
       expect(new Date(response.body.entryDate).toISOString()).toBe(entryDate);
     });
+
+    it('rejeita cadastro com código já existente (409 Conflict)', async () => {
+      const code = `CARGO-DUP-${randomUUID().slice(0, 8)}`;
+      await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send({
+          productId: activeProduct.id,
+          responsibleUserId: responsibleUser.id,
+          quantityProduct: 100,
+          documentsIds: 'doc-001',
+          code,
+        })
+        .expect(201);
+
+      const dupResponse = await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send({
+          productId: activeProduct.id,
+          responsibleUserId: responsibleUser.id,
+          quantityProduct: 200,
+          documentsIds: 'doc-002',
+          code,
+        })
+        .expect(409);
+
+      expect(dupResponse.body.message).toContain('Já existe uma carga química');
+    });
+
+    it('rejeita cadastro com campos textuais que excedem o tamanho máximo permitido (400 Bad Request)', async () => {
+      await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send({
+          productId: activeProduct.id,
+          responsibleUserId: responsibleUser.id,
+          quantityProduct: 100,
+          documentsIds: 'doc-001',
+          unit: 'u'.repeat(25),
+        })
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send({
+          productId: activeProduct.id,
+          responsibleUserId: responsibleUser.id,
+          quantityProduct: 100,
+          documentsIds: 'doc-001',
+          code: 'c'.repeat(65),
+        })
+        .expect(400);
+    });
   });
 
   describe('GET /chemical-shipment — Consulta e Listagem', () => {
@@ -583,6 +634,33 @@ describe('ChemicalShipmentController (e2e)', () => {
         quantityProduct: 300,
       });
       expect(new Date(updateRes.body.entryDate).toISOString()).toBe(newEntryDate);
+    });
+
+    it('rejeita atualização com campos textuais vazios (422 Unprocessable Entity)', async () => {
+      const created = await createValidShipment();
+
+      const response = await request(app.getHttpServer())
+        .patch(`/chemical-shipment/${created.id}`)
+        .send({
+          code: '   ',
+        })
+        .expect(422);
+
+      expect(response.body.message).toContain('código da carga não pode ser vazio');
+    });
+
+    it('rejeita atualização com código já pertencente a outra carga (409 Conflict)', async () => {
+      const shipment1 = await createValidShipment();
+      const shipment2 = await createValidShipment();
+
+      const response = await request(app.getHttpServer())
+        .patch(`/chemical-shipment/${shipment2.id}`)
+        .send({
+          code: shipment1.code,
+        })
+        .expect(409);
+
+      expect(response.body.message).toContain('Já existe uma carga química');
     });
   });
 

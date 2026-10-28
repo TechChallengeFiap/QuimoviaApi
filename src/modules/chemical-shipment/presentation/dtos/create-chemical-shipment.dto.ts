@@ -6,17 +6,20 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateChemicalShipmentDTO {
   @ApiPropertyOptional({
     type: String,
+    maxLength: 60,
     description:
       'Código identificador único da carga química (ex.: CARGO-2026-001). Se omitido, será gerado automaticamente.',
     example: 'CARGO-2026-001',
   })
   @IsOptional()
   @IsString({ message: 'O code deve ser uma string' })
+  @MaxLength(60, { message: 'O code deve ter no máximo 60 caracteres' })
   code?: string;
 
   @ApiProperty({
@@ -42,32 +45,44 @@ export class CreateChemicalShipmentDTO {
 
   @ApiPropertyOptional({
     type: String,
+    maxLength: 20,
     description: 'Unidade de medida da carga (ex.: kg, toneladas, m³, L)',
     example: 'toneladas',
     default: 'kg',
   })
   @IsOptional()
   @IsString({ message: 'A unidade de medida (unit) deve ser uma string' })
+  @MaxLength(20, {
+    message: 'A unidade de medida (unit) deve ter no máximo 20 caracteres',
+  })
   unit?: string;
 
   @ApiPropertyOptional({
     type: String,
+    maxLength: 120,
     description: 'Origem da carga / Porto ou terminal de embarque',
     example: 'Porto de Santos - Terminal Químico',
     default: 'Porto de Santos',
   })
   @IsOptional()
   @IsString({ message: 'A origem (origin) deve ser uma string' })
+  @MaxLength(120, {
+    message: 'A origem (origin) deve ter no máximo 120 caracteres',
+  })
   origin?: string;
 
   @ApiPropertyOptional({
     type: String,
+    maxLength: 120,
     description: 'Destino da carga / Porto ou terminal de desembarque',
     example: 'Terminal Industrial Mauá',
     default: 'Terminal Portuário',
   })
   @IsOptional()
   @IsString({ message: 'O destino (destination) deve ser uma string' })
+  @MaxLength(120, {
+    message: 'O destino (destination) deve ter no máximo 120 caracteres',
+  })
   destination?: string;
 
   @ApiPropertyOptional({

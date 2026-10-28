@@ -23,6 +23,7 @@ import { OptionalAuthGuard } from '@/modules/user/infrastructure/auth/optional-a
 import {
   ApiBadRequestResponse,
   ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
@@ -152,6 +153,17 @@ export class ChemicalShipmentController {
         message: 'Usuário não encontrado(a) para o identificador "user-001".',
         error: 'Not Found',
         statusCode: 404,
+      },
+    },
+  })
+  @ApiConflictResponse({
+    description: 'Já existe uma carga química cadastrada com o código fornecido.',
+    schema: {
+      example: {
+        message:
+          'Já existe uma carga química cadastrada com o código "CARGO-2026-001".',
+        error: 'Conflict',
+        statusCode: 409,
       },
     },
   })
@@ -382,6 +394,17 @@ export class ChemicalShipmentController {
         message: ['Carga química não encontrada.'],
         error: 'Not Found',
         statusCode: 404,
+      },
+    },
+  })
+  @ApiConflictResponse({
+    description: 'Já existe uma carga química cadastrada com o código fornecido.',
+    schema: {
+      example: {
+        message:
+          'Já existe uma carga química cadastrada com o código "CARGO-2026-001".',
+        error: 'Conflict',
+        statusCode: 409,
       },
     },
   })

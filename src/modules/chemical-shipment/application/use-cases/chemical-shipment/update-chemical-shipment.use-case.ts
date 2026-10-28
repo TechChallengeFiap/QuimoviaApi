@@ -10,6 +10,7 @@ import {
 } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
 import {
   BusinessRuleError,
+  ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import { Inject, Injectable, Optional } from '@nestjs/common';
@@ -83,7 +84,7 @@ export class UpdateChemicalShipmentUseCase {
       existingChemicalShipment.changeResponsibleUser(input.responsibleUserId);
     }
 
-    if (input.documentsIds) {
+    if (input.documentsIds !== undefined) {
       existingChemicalShipment.changeDocuments(input.documentsIds);
     }
 
@@ -91,23 +92,33 @@ export class UpdateChemicalShipmentUseCase {
       existingChemicalShipment.changeQuantityProduct(input.quantityProduct);
     }
 
-    if (input.code) {
+    if (input.code !== undefined) {
+      const normalizedCode = input.code.trim();
+      if (normalizedCode && normalizedCode !== existingChemicalShipment.code) {
+        const existingWithCode =
+          await this.chemicalShipments.findByCode(normalizedCode);
+        if (existingWithCode && existingWithCode.id !== existingChemicalShipment.id) {
+          throw new ConflictError(
+            `Já existe uma carga química cadastrada com o código "${normalizedCode}".`,
+          );
+        }
+      }
       existingChemicalShipment.changeCode(input.code);
     }
 
-    if (input.unit) {
+    if (input.unit !== undefined) {
       existingChemicalShipment.changeUnit(input.unit);
     }
 
-    if (input.origin) {
+    if (input.origin !== undefined) {
       existingChemicalShipment.changeOrigin(input.origin);
     }
 
-    if (input.destination) {
+    if (input.destination !== undefined) {
       existingChemicalShipment.changeDestination(input.destination);
     }
 
-    if (input.entryDate) {
+    if (input.entryDate !== undefined) {
       existingChemicalShipment.changeEntryDate(input.entryDate);
     }
 

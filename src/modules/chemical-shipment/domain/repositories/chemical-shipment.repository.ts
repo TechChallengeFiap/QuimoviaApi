@@ -22,6 +22,7 @@ export interface ChemicalShipmentRepository {
   create(chemicalShipment: ChemicalShipment): Promise<ChemicalShipment>;
   list(filters: ChemicalShipmentSearchFilters): Promise<ChemicalShipmentPage>;
   findById(id: string): Promise<ChemicalShipment | null>;
+  findByCode(code: string): Promise<ChemicalShipment | null>;
   update(
     chemicalShipment: ChemicalShipment,
     expectedPreviousStatus?: StatusShipment | StatusShipment[],
