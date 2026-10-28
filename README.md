@@ -275,6 +275,7 @@ npm run start:dev
 | `npm run migrate:deploy` | Aplica migrações pendentes em produção/CI. |
 | `npm run migrate:seed` | Executa o seed de dados iniciais. |
 | `npm run lint` | Executa a análise estática com Oxlint. |
+| `npm run typecheck` | Validação estática de tipos TypeScript (`tsc`). |
 | `npm run format` | Formata os arquivos de código e testes com Prettier. |
 
 ---
@@ -585,16 +586,19 @@ O pipeline é disparado automaticamente a cada `push` ou `pull_request` nas bran
 5. Geração do Prisma Client (npx prisma generate)
         │
         ▼
-6. Verificação de Build e Compilação TypeScript (npm run build)
+6. Verificação de Tipos TypeScript (npm run typecheck)
         │
         ▼
-7. Execução dos Testes Unitários (npm test)
+7. Verificação de Build e Compilação (npm run build)
         │
         ▼
-8. Execução dos Testes E2E (npm run test:e2e)
+8. Execução dos Testes Unitários (npm test)
         │
         ▼
-9. Geração e Upload do Relatório de Cobertura (coverage-report)
+9. Execução dos Testes E2E (npm run test:e2e)
+        │
+        ▼
+10. Geração e Upload do Relatório de Cobertura (coverage-report)
 ```
 
 ---
