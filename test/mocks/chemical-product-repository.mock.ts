@@ -2,6 +2,7 @@ import type {
   ChemicalProductRepository,
   ChemicalProductSearchFilters,
   ChemicalProductPage,
+  FindChemicalProductOptions,
 } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
 import type { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
 
@@ -19,20 +20,29 @@ export class ChemicalProductRepositoryMock implements ChemicalProductRepository 
     return product;
   }
 
-  async remove(id: string): Promise<void> {
-    this.products.delete(id);
+  async findById(
+    id: string,
+    options: FindChemicalProductOptions = {},
+  ): Promise<ChemicalProduct | null> {
+    const product = this.products.get(id) ?? null;
+
+    return product && (options.includeDeleted || !product.isDeleted()) ? product : null;
   }
 
-  async findById(id: string): Promise<ChemicalProduct | null> {
-    return this.products.get(id) ?? null;
-  }
-
-  async findByCode(code: string): Promise<ChemicalProduct | null> {
-    return [...this.products.values()].find((product) => product.code === code) ?? null;
+  async findByCode(
+    code: string,
+    options: FindChemicalProductOptions = {},
+  ): Promise<ChemicalProduct | null> {
+    return (
+      [...this.products.values()].find(
+        (product) =>
+          product.code === code && (options.includeDeleted || !product.isDeleted()),
+      ) ?? null
+    );
   }
 
   async list(filters: ChemicalProductSearchFilters): Promise<ChemicalProductPage> {
-    let items = [...this.products.values()];
+    let items = [...this.products.values()].filter((product) => !product.isDeleted());
 
     if (filters.riskClass) {
       items = items.filter((product) => product.riskClass === filters.riskClass);

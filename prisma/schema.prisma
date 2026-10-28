@@ -247,8 +247,11 @@ model ChemicalProduct {
   shipments         ChemicalShipment[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
+  lots              Lot[]
+  deletedAt         DateTime?
 
   @@index([responsibleUserId])
+  @@index([deletedAt])
 }
 
 model ProductDocument {
@@ -354,4 +357,31 @@ model ShipmentDocumentLog {
 
   @@index([entityId, createdAt])
   @@index([actorId, createdAt])
+}
+
+enum LotStatus {
+  RECEIVED
+  UNDER_INSPECTION
+  AVAILABLE
+  RESERVED
+  IN_STORAGE
+  QUARANTINED
+  RELEASED
+  EXPIRED
+  DISPOSED
+}
+
+model Lot {
+  id                     String          @id @default(uuid())
+  chemicalProductId      String
+  chemicalProduct        ChemicalProduct @relation(fields: [chemicalProductId], references: [id])
+  lotNumber              String          @db.VarChar(60)
+  quantity               Decimal         @db.Decimal(14, 3)
+  status                 LotStatus       @default(RECEIVED)
+  reservedForOperationId String?         @db.VarChar(120)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  @@unique([chemicalProductId, lotNumber])
+  @@index([chemicalProductId, status])
 }

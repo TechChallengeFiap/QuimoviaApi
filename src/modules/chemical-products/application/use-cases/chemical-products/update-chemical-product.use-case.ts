@@ -28,8 +28,8 @@ export interface UpdateChemicalProductInput {
 /**
  * Atualiza os dados cadastrais de um produto químico (Responsável Técnico).
  *
- * A alteração de status é um caso de uso à parte, de outro ator, e por isso
- * fica em ChangeChemicalProductStatusUseCase.
+ * A alteração de status é feita pelos casos de uso de ação (ativar, inativar e
+ * bloquear), de outro ator, e por isso não passa por aqui.
  */
 @Injectable()
 export class UpdateChemicalProductUseCase {
@@ -119,7 +119,7 @@ export class UpdateChemicalProductUseCase {
       return;
     }
 
-    const existing = await this.products.findByCode(normalizedCode);
+    const existing = await this.products.findByCode(normalizedCode, { includeDeleted: true });
 
     if (existing) {
       throw new ConflictError(
