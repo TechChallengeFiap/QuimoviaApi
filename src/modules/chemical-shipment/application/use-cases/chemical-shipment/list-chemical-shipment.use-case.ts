@@ -10,6 +10,7 @@ export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 20;
 
 export interface ListChemicalShipmentInput {
+  code?: string;
   status?: StatusShipment;
   productId?: string;
   responsibleUserId?: string;
@@ -32,6 +33,7 @@ export class ListChemicalShipmentUseCase {
   ): Promise<ChemicalShipmentPage> {
     try {
       return await this.chemicalShipments.list({
+        code: input.code,
         status: input.status,
         productId: input.productId,
         responsibleUserId: input.responsibleUserId,

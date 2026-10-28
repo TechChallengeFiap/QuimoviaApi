@@ -159,9 +159,14 @@ describe('ChemicalShipmentController (e2e)', () => {
 
     return response.body as {
       id: string;
+      code: string;
       productId: string;
       responsibleUserId: string;
       quantityProduct: number;
+      unit: string;
+      origin: string;
+      destination: string;
+      entryDate: string;
       documentsIds: string;
       status: StatusShipment;
       createdAt: string;
@@ -251,6 +256,89 @@ describe('ChemicalShipmentController (e2e)', () => {
           documentsIds: 'doc-001',
         })
         .expect(404);
+    });
+
+    it('cadastra uma nova carga química informando todos os campos adicionais do edital (code, unit, origin, destination, entryDate)', async () => {
+      const entryDate = '2026-10-24T12:00:00.000Z';
+      const payload = {
+        productId: activeProduct.id,
+        responsibleUserId: responsibleUser.id,
+        quantityProduct: 1200,
+        documentsIds: `DOC-${randomUUID()}`,
+        code: 'CARGO-E2E-2026',
+        unit: 'toneladas',
+        origin: 'Porto de Santos - Terminal Químico',
+        destination: 'Terminal Industrial Mauá',
+        entryDate,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send(payload)
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        code: 'CARGO-E2E-2026',
+        productId: activeProduct.id,
+        responsibleUserId: responsibleUser.id,
+        quantityProduct: 1200,
+        unit: 'toneladas',
+        origin: 'Porto de Santos - Terminal Químico',
+        destination: 'Terminal Industrial Mauá',
+        status: StatusShipment.REGISTERED,
+      });
+      expect(new Date(response.body.entryDate).toISOString()).toBe(entryDate);
+    });
+
+    it('rejeita cadastro com código já existente (409 Conflict)', async () => {
+      const code = `CARGO-DUP-${randomUUID().slice(0, 8)}`;
+      await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send({
+          productId: activeProduct.id,
+          responsibleUserId: responsibleUser.id,
+          quantityProduct: 100,
+          documentsIds: 'doc-001',
+          code,
+        })
+        .expect(201);
+
+      const dupResponse = await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send({
+          productId: activeProduct.id,
+          responsibleUserId: responsibleUser.id,
+          quantityProduct: 200,
+          documentsIds: 'doc-002',
+          code,
+        })
+        .expect(409);
+
+      expect(dupResponse.body.message).toContain('Já existe uma carga química');
+    });
+
+    it('rejeita cadastro com campos textuais que excedem o tamanho máximo permitido (400 Bad Request)', async () => {
+      await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send({
+          productId: activeProduct.id,
+          responsibleUserId: responsibleUser.id,
+          quantityProduct: 100,
+          documentsIds: 'doc-001',
+          unit: 'u'.repeat(25),
+        })
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .post('/chemical-shipment')
+        .send({
+          productId: activeProduct.id,
+          responsibleUserId: responsibleUser.id,
+          quantityProduct: 100,
+          documentsIds: 'doc-001',
+          code: 'c'.repeat(65),
+        })
+        .expect(400);
     });
   });
 
@@ -552,6 +640,62 @@ describe('ChemicalShipmentController (e2e)', () => {
       expect(recorded?.actorId).not.toBe(responsibleUser.id);
       expect(recorded?.actorName).toBe('Operador Portuário Santos');
       expect(recorded?.description).toContain('Operador Portuário Santos');
+    });
+  });
+
+  describe('PATCH /chemical-shipment/:id — Atualização Cadastral', () => {
+    it('permite atualizar os campos adicionais (code, unit, origin, destination, entryDate) nos status permitidos', async () => {
+      const created = await createValidShipment();
+      const newEntryDate = '2026-10-25T15:00:00.000Z';
+
+      const updateRes = await request(app.getHttpServer())
+        .patch(`/chemical-shipment/${created.id}`)
+        .send({
+          code: 'CARGO-E2E-UPDATED',
+          unit: 'litros',
+          origin: 'Porto de Paranaguá',
+          destination: 'Terminal Químico de Santos',
+          entryDate: newEntryDate,
+          quantityProduct: 300,
+        })
+        .expect(200);
+
+      expect(updateRes.body).toMatchObject({
+        id: created.id,
+        code: 'CARGO-E2E-UPDATED',
+        unit: 'litros',
+        origin: 'Porto de Paranaguá',
+        destination: 'Terminal Químico de Santos',
+        quantityProduct: 300,
+      });
+      expect(new Date(updateRes.body.entryDate).toISOString()).toBe(newEntryDate);
+    });
+
+    it('rejeita atualização com campos textuais vazios (422 Unprocessable Entity)', async () => {
+      const created = await createValidShipment();
+
+      const response = await request(app.getHttpServer())
+        .patch(`/chemical-shipment/${created.id}`)
+        .send({
+          code: '   ',
+        })
+        .expect(422);
+
+      expect(response.body.message).toContain('código da carga não pode ser vazio');
+    });
+
+    it('rejeita atualização com código já pertencente a outra carga (409 Conflict)', async () => {
+      const shipment1 = await createValidShipment();
+      const shipment2 = await createValidShipment();
+
+      const response = await request(app.getHttpServer())
+        .patch(`/chemical-shipment/${shipment2.id}`)
+        .send({
+          code: shipment1.code,
+        })
+        .expect(409);
+
+      expect(response.body.message).toContain('Já existe uma carga química');
     });
   });
 

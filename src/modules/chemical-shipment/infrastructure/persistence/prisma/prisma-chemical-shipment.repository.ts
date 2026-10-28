@@ -38,18 +38,28 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
         await this.prismaService.chemicalShipment.create({
           data: {
             id: chemicalShipment.id,
+            code: chemicalShipment.code,
             createdAt: chemicalShipment.createdAt,
             updatedAt: chemicalShipment.updatedAt,
             status: chemicalShipment.status,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
+            unit: chemicalShipment.unit,
+            origin: chemicalShipment.origin,
+            destination: chemicalShipment.destination,
+            entryDate: chemicalShipment.entryDate,
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
           },
         });
 
       return PrismaChemicalShipmentRepository.toDomain(createdChemicalShipment);
-    } catch (error) {
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && 'code' in error && (error as { code: string }).code === 'P2002') {
+        throw new ConflictError(
+          `Já existe uma carga química cadastrada com o código "${chemicalShipment.code}".`,
+        );
+      }
       this.logger.error(
         `Erro ao persistir carga química no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
@@ -66,6 +76,7 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
       const pageSize = Number(filters.pageSize);
 
       const where = {
+        code: filters.code,
         status: filters.status,
         productId: filters.productId,
         responsibleUserId: filters.responsibleUserId,
@@ -123,6 +134,25 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
     }
   }
 
+  async findByCode(code: string): Promise<ChemicalShipment | null> {
+    try {
+      const record = await this.prismaService.chemicalShipment.findFirst({
+        where: { code, deletedAt: null },
+        include: {
+          responsibleUser: true,
+        },
+      });
+
+      return record ? PrismaChemicalShipmentRepository.toDomain(record) : null;
+    } catch (error) {
+      this.logger.error(
+        `Erro ao buscar carga química por código ${code} no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
   async update(
     chemicalShipment: ChemicalShipment,
     expectedPreviousStatus?: StatusShipment | StatusShipment[],
@@ -140,10 +170,15 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
             deletedAt: null,
           },
           data: {
+            code: chemicalShipment.code,
             updatedAt: chemicalShipment.updatedAt,
             status: chemicalShipment.status,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
+            unit: chemicalShipment.unit,
+            origin: chemicalShipment.origin,
+            destination: chemicalShipment.destination,
+            entryDate: chemicalShipment.entryDate,
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
           },
@@ -179,11 +214,16 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
           where: { id: chemicalShipment.id },
           data: {
             id: chemicalShipment.id,
+            code: chemicalShipment.code,
             createdAt: chemicalShipment.createdAt,
             updatedAt: chemicalShipment.updatedAt,
             status: chemicalShipment.status,
             productId: chemicalShipment.productId,
             quantityProduct: chemicalShipment.quantityProduct,
+            unit: chemicalShipment.unit,
+            origin: chemicalShipment.origin,
+            destination: chemicalShipment.destination,
+            entryDate: chemicalShipment.entryDate,
             responsibleUserId: chemicalShipment.responsibleUserId,
             documentsIds: chemicalShipment.documentsIds,
           },
@@ -193,9 +233,14 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
         });
 
       return PrismaChemicalShipmentRepository.toDomain(updatedChemicalShipment);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof DomainError) {
         throw error;
+      }
+      if (typeof error === 'object' && error !== null && 'code' in error && (error as { code: string }).code === 'P2002') {
+        throw new ConflictError(
+          `Já existe uma carga química cadastrada com o código "${chemicalShipment.code}".`,
+        );
       }
       this.logger.error(
         `Erro ao persistir carga química no banco de dados: ${error instanceof Error ? error.message : String(error)}`,
@@ -227,11 +272,16 @@ export class PrismaChemicalShipmentRepository implements ChemicalShipmentReposit
   ): ChemicalShipment {
     return ChemicalShipment.restore({
       id: chemicalShipment.id,
+      code: chemicalShipment.code,
       createdAt: chemicalShipment.createdAt,
       updatedAt: chemicalShipment.updatedAt,
       status: chemicalShipment.status as unknown as StatusShipment,
       productId: chemicalShipment.productId,
       quantityProduct: chemicalShipment.quantityProduct,
+      unit: chemicalShipment.unit,
+      origin: chemicalShipment.origin,
+      destination: chemicalShipment.destination,
+      entryDate: chemicalShipment.entryDate,
       responsibleUserId: chemicalShipment.responsibleUserId,
       responsibleUser: chemicalShipment.responsibleUser
         ? User.restore({

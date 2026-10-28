@@ -5,8 +5,13 @@ import { UserResponseDto } from '@/modules/user/presentation/dtos/user-response.
 
 interface ChemicalShipmentResponseDtoData {
   id: string;
+  code: string;
   productId: string;
   quantityProduct: number;
+  unit: string;
+  origin: string;
+  destination: string;
+  entryDate: Date;
   status: StatusShipment;
   responsibleUserId: string;
   responsibleUser?: UserResponseDto | null;
@@ -23,11 +28,46 @@ export class ChemicalShipmentResponseDto {
   })
   id: string;
 
+  @ApiProperty({
+    type: String,
+    description: 'Código identificador único da carga química',
+    example: 'CARGO-2026-001',
+  })
+  code: string;
+
   @ApiProperty({ type: String, example: 'prod-001' })
   productId: string;
 
   @ApiProperty({ type: Number, example: 100 })
   quantityProduct: number;
+
+  @ApiProperty({
+    type: String,
+    description: 'Unidade de medida da carga',
+    example: 'toneladas',
+  })
+  unit: string;
+
+  @ApiProperty({
+    type: String,
+    description: 'Origem da carga / Porto de embarque',
+    example: 'Porto de Santos - Terminal Químico',
+  })
+  origin: string;
+
+  @ApiProperty({
+    type: String,
+    description: 'Destino da carga / Porto ou terminal de desembarque',
+    example: 'Terminal Industrial Mauá',
+  })
+  destination: string;
+
+  @ApiProperty({
+    type: Date,
+    description: 'Data e hora de entrada no terminal portuário',
+    example: '2026-10-24T12:00:00.000Z',
+  })
+  entryDate: Date;
 
   @ApiProperty({ enum: StatusShipment, example: StatusShipment.ANALYZING })
   status: StatusShipment;
@@ -61,8 +101,13 @@ export class ChemicalShipmentResponseDto {
   static fromEntity(shipment: ChemicalShipment): ChemicalShipmentResponseDto {
     return new ChemicalShipmentResponseDto({
       id: shipment.id,
+      code: shipment.code,
       productId: shipment.productId,
       quantityProduct: shipment.quantityProduct,
+      unit: shipment.unit,
+      origin: shipment.origin,
+      destination: shipment.destination,
+      entryDate: shipment.entryDate,
       status: shipment.status,
       responsibleUserId: shipment.responsibleUserId,
       responsibleUser: shipment.responsibleUser

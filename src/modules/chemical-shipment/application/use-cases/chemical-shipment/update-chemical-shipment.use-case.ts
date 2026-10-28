@@ -10,6 +10,7 @@ import {
 } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
 import {
   BusinessRuleError,
+  ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 import { Inject, Injectable, Optional } from '@nestjs/common';
@@ -27,6 +28,11 @@ export interface UpdateChemicalShipmentInput {
   responsibleUserId?: string;
   documentsIds?: string;
   quantityProduct?: number;
+  code?: string;
+  unit?: string;
+  origin?: string;
+  destination?: string;
+  entryDate?: Date | string;
 }
 
 @Injectable()
@@ -78,12 +84,42 @@ export class UpdateChemicalShipmentUseCase {
       existingChemicalShipment.changeResponsibleUser(input.responsibleUserId);
     }
 
-    if (input.documentsIds) {
+    if (input.documentsIds !== undefined) {
       existingChemicalShipment.changeDocuments(input.documentsIds);
     }
 
     if (input.quantityProduct !== undefined) {
       existingChemicalShipment.changeQuantityProduct(input.quantityProduct);
+    }
+
+    if (input.code !== undefined) {
+      const normalizedCode = input.code.trim();
+      if (normalizedCode && normalizedCode !== existingChemicalShipment.code) {
+        const existingWithCode =
+          await this.chemicalShipments.findByCode(normalizedCode);
+        if (existingWithCode && existingWithCode.id !== existingChemicalShipment.id) {
+          throw new ConflictError(
+            `Já existe uma carga química cadastrada com o código "${normalizedCode}".`,
+          );
+        }
+      }
+      existingChemicalShipment.changeCode(input.code);
+    }
+
+    if (input.unit !== undefined) {
+      existingChemicalShipment.changeUnit(input.unit);
+    }
+
+    if (input.origin !== undefined) {
+      existingChemicalShipment.changeOrigin(input.origin);
+    }
+
+    if (input.destination !== undefined) {
+      existingChemicalShipment.changeDestination(input.destination);
+    }
+
+    if (input.entryDate !== undefined) {
+      existingChemicalShipment.changeEntryDate(input.entryDate);
     }
 
     const updated = await this.chemicalShipments.update(existingChemicalShipment);
@@ -108,8 +144,12 @@ export class UpdateChemicalShipmentUseCase {
         action,
         description,
         details: {
+          code: updated.code,
           status: updated.status,
           quantity: updated.quantityProduct,
+          unit: updated.unit,
+          origin: updated.origin,
+          destination: updated.destination,
         },
       });
     }

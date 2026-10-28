@@ -14,7 +14,7 @@ export function buildSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
   return new DocumentBuilder()
     .setTitle('QuimoviaAPI')
     .setDescription(
-      'A QuimoviaAPI é uma API REST desenvolvida para o gerenciamento de produtos químicos, oferecendo recursos para cadastro, consulta, atualização e exclusão de produtos e suas respectivas informações.',
+      'A QuimoviaAPI é uma API REST desenvolvida para o gerenciamento logístico, fiscal e operacional de produtos e cargas químicas em contexto portuário (Porto de Santos), garantindo controle rigoroso do ciclo de vida, conformidade documental e segurança no pátio.',
     )
     .setVersion('1.0')
     .addBearerAuth(
@@ -29,14 +29,15 @@ export function buildSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
     )
     .addTag('Autenticação', 'Login e encerramento das sessões dos usuários')
     .addTag('Produtos Químicos', 'Operações relacionadas aos produtos químicos')
-    .addTag('Inspeções', 'Operações relacionadas as inspeções')
+    .addTag('Cargas Químicas', 'Operações e ciclo de vida das cargas químicas portuárias')
+    .addTag('Inspeções', 'Operações relacionadas às inspeções portuárias')
     .addTag(
       'Documentação das Cargas',
-      'Operações relacionadas as documentações das cargas',
+      'Operações relacionadas às documentações e dossiês das cargas',
     )
     .addTag(
       'Operações dos usuários',
-      'Operações relacionadas as operações dos usuários',
+      'Operações relacionadas à gestão e cadastro de usuários',
     )
     .build();
 }

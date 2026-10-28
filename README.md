@@ -28,286 +28,297 @@
 
 ---
 
-## 📑 Sumário
+## Sumário
 
-- [1. Sobre o Projeto](#1-sobre-o-projeto)
-  - [1.1. Contexto do Problema](#11-contexto-do-problema)
-  - [1.2. A Solução Quimovia](#12-a-solução-quimovia)
-  - [1.3. Objetivos do Tech Challenge (Fase 2)](#13-objetivos-do-tech-challenge-fase-2)
-- [2. Arquitetura e Design de Software](#2-arquitetura-e-design-de-software)
-- [3. Tecnologias Utilizadas](#3-tecnologias-utilizadas)
-- [4. Modelagem e Persistência de Dados](#4-modelagem-e-persistência-de-dados)
-  - [4.1. Escolha do Banco de Dados](#41-escolha-do-banco-de-dados)
-  - [4.2. Ciclo de Vida da Carga, Máquina de Estados e Auditoria](#42-ciclo-de-vida-da-carga-máquina-de-estados-e-auditoria)
-- [5. Configuração e Execução](#5-configuração-e-execução)
+- [1. Sobre o projeto](#1-sobre-o-projeto)
+  - [1.1. Contexto e fluxo principal](#11-contexto-e-fluxo-principal)
+  - [1.2. Objetivos](#12-objetivos)
+  - [1.3. Escopo da Fase 2](#13-escopo-da-fase-2)
+- [2. Arquitetura e organização](#2-arquitetura-e-organização)
+- [3. Tecnologias utilizadas e justificativa de escolha](#3-tecnologias-utilizadas-e-justificativa-de-escolha)
+  - [3.1. Justificativa da escolha do framework (NestJS)](#31-justificativa-da-escolha-do-framework-nestjs)
+  - [3.2. Tecnologias adotadas](#32-tecnologias-adotadas)
+- [4. Modelagem e persistência de dados](#4-modelagem-e-persistência-de-dados)
+  - [4.1. Escolha do banco de dados (MySQL 8.4)](#41-escolha-do-banco-de-dados-mysql-84)
+  - [4.2. Estrutura da modelagem de dados (Edital Fase 2 - Item 7)](#42-estrutura-da-modelagem-de-dados-edital-fase-2---item-7)
+  - [4.3. Ciclo de vida da carga, máquina de estados e auditoria](#43-ciclo-de-vida-da-carga-máquina-de-estados-e-auditoria)
+- [5. Configuração e execução](#5-configuração-e-execução)
   - [5.1. Pré-requisitos](#51-pré-requisitos)
-  - [5.2. Variáveis de Ambiente](#52-variáveis-de-ambiente)
-  - [5.3. Executando com Docker e Localmente](#53-executando-com-docker-e-localmente)
-  - [5.4. Scripts Disponíveis](#54-scripts-disponíveis)
-- [6. Documentação da API e Endpoints](#6-documentação-da-api-e-endpoints)
-  - [6.1. Swagger / OpenAPI](#61-swagger--openapi)
-  - [6.2. Controle de Status da Carga Química (Ciclo de Vida)](#62-controle-de-status-da-carga-química-ciclo-de-vida)
-  - [6.3. Principais Endpoints](#63-principais-endpoints)
-- [7. Qualidade de Software e Testes](#7-qualidade-de-software-e-testes)
-- [8. Integração Contínua (CI/CD)](#8-integração-contínua-cicd)
-- [9. Integrantes do Grupo](#9-integrantes-do-grupo)
+  - [5.2. Variáveis de ambiente](#52-variáveis-de-ambiente)
+  - [5.3. Execução com Docker ou ambiente local](#53-execução-com-docker-ou-ambiente-local)
+  - [5.4. Scripts disponíveis](#54-scripts-disponíveis)
+- [6. Documentação da API e endpoints](#6-documentação-da-api-e-endpoints)
+  - [6.1. Swagger / OpenAPI e acesso](#61-swagger--openapi-e-acesso)
+  - [6.2. Ciclo de vida e máquina de estados da carga](#62-ciclo-de-vida-e-máquina-de-estados-da-carga)
+  - [6.3. Endpoints do ciclo de vida da carga](#63-endpoints-do-ciclo-de-vida-da-carga)
+  - [6.4. Exemplos de requisição e resposta](#64-exemplos-de-requisição-e-resposta)
+  - [6.5. Mapeamento semântico de códigos de erro HTTP](#65-mapeamento-semântico-de-códigos-de-erro-http)
+  - [6.6. Principais endpoints por módulo](#66-principais-endpoints-por-módulo)
+- [7. Qualidade de software e testes](#7-qualidade-de-software-e-testes)
+- [8. Logs e observabilidade inicial (Edital Item 10)](#8-logs-e-observabilidade-inicial-edital-item-10)
+- [9. Integração contínua (CI/CD)](#9-integração-contínua-cicd)
+- [10. Diferenciais e APIs além de REST (Edital Item 14)](#10-diferenciais-e-apis-além-de-rest-edital-item-14)
+- [11. Equipe](#11-equipe)
 
 ---
 
-## 1. Sobre o Projeto
+## 1. Sobre o projeto
 
-### 1.1. Contexto do Problema
+O **Quimovia** é um sistema de gestão de cargas químicas em um contexto portuário inspirado nas operações do Porto de Santos.
 
-As operações portuárias de comércio exterior — inspiradas na rotina de terminais logísticos como o **Porto de Santos** — movimentam diariamente milhares de toneladas de insumos e cargas perigosas. A gestão desse fluxo impõe desafios críticos de segurança operacional, meio ambiente e conformidade regulatória:
+O controle manual dessas informações dificulta a identificação de pendências, a atribuição de responsabilidades e a consulta ao histórico das cargas. A API organiza esses registros e aplica regras para controlar a liberação, o bloqueio e a movimentação.
 
-- **Riscos Severos de Acidentes e Contaminação:** O manuseio e armazenagem de compostos químicos inflamáveis, tóxicos ou corrosivos exigem segregação rigorosa por classes de risco e grupos de compatibilidade.
-- **Burocracia e Fiscalização Rigorosa:** Nenhuma carga química pode desembarcar, transitar ou ser liberada sem documentação técnica completa (como FISPQ/FDS, licenças ambientais, certificados e notas fiscais) e vistorias físicas dos fiscais portuários.
-- **Falhas de Rastreabilidade Humana:** Processos manuais aumentam os riscos de liberações indevidas de cargas bloqueadas, falta de responsáveis técnicos nomeados ou ausência de histórico confiável de auditoria.
+O projeto é desenvolvido para o Tech Challenge da pós-graduação em Full Stack Development da FIAP. Nesta Fase 2, o foco é a implementação do backend a partir da [modelagem e da arquitetura definidas na Fase 1](https://github.com/TechChallengeFiap/Quimovia).
 
-### 1.2. A Solução Quimovia
+### 1.1. Contexto e fluxo principal
 
-O **Quimovia** é uma plataforma backend concebida para atuar como o núcleo transacional e fiscalizador do pátio portuário. A aplicação centraliza:
+O processo começa no cadastro dos produtos e acompanha a carga até sua movimentação e finalização:
 
-1. **Gestão do Ciclo de Vida da Carga Química:** Controle rigoroso de status, impedindo transições ilícitas (máquina de estados finitos).
-2. **Fiscalização e Inspeção Física:** Protocolo digital para vistorias de integridade de embalagens, ausência de vazamento, rotulagem correta, validade e equipamentos de segurança.
-3. **Controle de Acessos e Responsáveis Técnicos:** Governança por papéis operacionais (Operador Portuário, Motorista/Transportador, Responsável Técnico, Gerente de Operações e Administrador).
-4. **Governança Documental:** Bloqueio mandatório de liberação sem os devidos identificadores de documentação anexados.
+1. **Cadastrar os produtos químicos** e seus documentos regulatórios.
+2. **Registrar uma carga vinculada** a um produto químico, informando quantidade, unidade de medida, procedência, destino, data de entrada e o responsável técnico.
+3. **Cadastrar a documentação** obrigatória da carga.
+4. **Registrar as inspeções** e seus respectivos resultados técnicos.
+5. **Atualizar o status da carga** para liberação, bloqueio ou cancelamento, conforme as regras de negócio.
+6. **Registrar a movimentação e a finalização** das cargas liberadas.
 
-### 1.3. Objetivos do Tech Challenge (Fase 2)
+### 1.2. Objetivos
 
-O Tech Challenge é a atividade integradora obrigatória da Pós-Graduação em Full Stack Development da FIAP (valendo 90% da nota da fase). Nesta Fase 2, o objetivo é transformar a modelagem de domínio realizada na etapa anterior em uma implementação backend em Node.js com:
+O projeto tem como objetivo centralizar as informações de produtos e cargas químicas, organizar a documentação e as inspeções e identificar os responsáveis pelas operações. O histórico de ações e alterações mantém a rastreabilidade das operações.
 
-- API REST documentada e validada;
-- Banco de dados relacional com integridade referencial;
-- Containerização e orquestração com Docker;
-- Cobertura de testes automatizados (unitários e ponta a ponta);
-- Pipeline de integração contínua (CI) automatizado via GitHub Actions;
-- Arquitetura limpa com separação estrita de responsabilidades.
+A API oferece documentação clara e uma estrutura limpa que facilita testes automatizados, manutenção e evolução sustentável.
 
----
+### 1.3. Escopo da Fase 2
 
-## 2. Arquitetura e Design de Software
+Esta fase entrega a primeira API REST do projeto, com persistência de dados, regras de negócio e gerenciamento de usuários, perfis e sessões. A aplicação inclui registros de auditoria para acompanhar as ações realizadas.
 
-O Quimovia adota o padrão **Monólito Modular** fundamentado nos princípios de **Domain-Driven Design (DDD)** e **Clean Architecture**. A aplicação é estruturada em _bounded contexts_ independentes (`chemical-shipment`, `inspection`, `user`, `document-compliance`, `audit-log`), protegendo as regras de negócio centrais contra dependências diretas de frameworks externos ou bibliotecas de infraestrutura.
+A entrega reúne:
 
-> ### 📖 Documentação Detalhada da Arquitetura
->
-> Todas as decisões arquiteturais, estruturação detalhada de pastas, mapeamento de camadas (`domain`, `application`, `infrastructure`, `presentation`), regras de dependência, padrões de nomenclatura e boas práticas estão centralizadas na pasta [`docs/`](./docs/):
->
-> 🔗 **Consulte a documentação completa em:** [**`docs/arquitetura/02-organizacao-e-aplicacao.md`**](./docs/arquitetura/02-organizacao-e-aplicacao.md)
+- documentação dos endpoints e exemplos de uso;
+- testes automatizados dos principais fluxos;
+- ambiente de execução com API e banco em containers Docker;
+- automação da validação, compilação e execução dos testes via CI/CD.
 
 ---
 
-## 3. Tecnologias Utilizadas
+## 2. Arquitetura e organização
 
-- **Runtime:** [Node.js](https://nodejs.org/) (versão 24.x LTS)
-- **Framework Web:** [NestJS](https://nestjs.com/) v12
-- **Linguagem:** [TypeScript](https://www.typescriptlang.org/) v6
-- **ORM & Migrations:** [Prisma ORM](https://www.prisma.io/) v7 (utilizando `@prisma/adapter-mariadb` e client tipado em `src/generated/prisma`)
-- **Banco de Dados:** [MySQL](https://www.mysql.com/) 8.4 (executado via Docker)
-- **Documentação de API:** [Swagger / OpenAPI 3.0](https://swagger.io/) (`@nestjs/swagger`)
-- **Testes Automatizados:** [Jest](https://jestjs.io/) e [Supertest](https://github.com/ladjs/supertest)
-- **Linter & Formatador:** [Oxlint](https://oxc.rs/) e [Prettier](https://prettier.io/)
-- **Containerização:** [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
-- **Integração Contínua (CI):** [GitHub Actions](https://github.com/features/actions)
+O backend é um **monólito modular**, orientado por **Domain-Driven Design (DDD)** e **Clean Architecture**. Os módulos em `src/modules/` organizam produtos químicos, cargas, documentação, inspeções, usuários e auditoria. Cada contexto separa domínio puro, casos de uso/aplicação, persistência/infraestrutura e apresentação HTTP.
+
+As decisões arquiteturais e a estrutura de pastas estão documentadas em detalhes em [Fundamentos e decisões](./docs/arquitetura/01-fundamentos-e-decisoes.md) e [Organização e aplicação](./docs/arquitetura/02-organizacao-e-aplicacao.md).
 
 ---
 
-## 4. Modelagem e Persistência de Dados
+## 3. Tecnologias utilizadas e justificativa de escolha
 
-### 4.1. Escolha do Banco de Dados
+### 3.1. Justificativa da escolha do framework (NestJS)
 
-A persistência do Quimovia foi estruturada sobre o banco relacional **MySQL 8.4**:
+Conforme estabelecido no Edital do Tech Challenge (Fase 2, item 1), o grupo optou pelo **NestJS** pelos seguintes fatores técnicos e arquiteturais:
+
+1. **Aderência Natural a Clean Architecture e DDD:** O NestJS fornece um sistema nativo de injeção de dependências e inversão de controle (`IoC`), permitindo isolar a camada de domínio puro contra acoplamentos de infraestrutura e HTTP.
+2. **Modularidade e Escalabilidade (Monólito Modular):** A separação em módulos (`ChemicalProductsModule`, `ChemicalShipmentModule`, `InspectionModule`, `UserModule`, `DocumentComplianceModule`, `AuditLogModule`) reflete os *bounded contexts* do negócio portuário.
+3. **Pipeline Robusto de Validação e Documentação:** Integração declarativa com `class-validator` e `class-transformer` via `ValidationPipe`, além de geração automática de contratos OpenAPI via `@nestjs/swagger`.
+4. **Tratamento Centralizado de Exceções:** Uso de `ExceptionFilters` (`DomainExceptionFilter`) para capturar erros agnósticos de domínio (`BusinessRuleError`, `ResourceNotFoundError`, `ConflictError`) e traduzi-los de forma consistente para os status HTTP correspondentes (`422`, `404`, `409`).
+
+### 3.2. Tecnologias adotadas
+
+| Área | Tecnologias adotadas no repositório |
+| :--- | :--- |
+| Execução | Node.js 24, utilizado no Dockerfile e no CI. |
+| Backend | NestJS 12 e TypeScript 6. |
+| Persistência | MySQL 8.4 e Prisma ORM 7, com `@prisma/adapter-mariadb`. |
+| Validação | `class-validator` e `class-transformer`. |
+| Documentação da API | Swagger/OpenAPI com `@nestjs/swagger`. |
+| Testes | Jest e Supertest. |
+| Análise e formatação | Oxlint e Prettier. |
+| Containers | Docker e Docker Compose. |
+| Integração contínua | GitHub Actions. |
+
+As versões e dependências estão declaradas no [`package.json`](./package.json) e no lockfile.
+
+---
+
+## 4. Modelagem e persistência de dados
+
+### 4.1. Escolha do banco de dados (MySQL 8.4)
+
+A persistência do Quimovia foi estruturada sobre o banco relacional **MySQL 8.4** (conforme previsto no edital, que prevê bancos relacionais ou NoSQL):
 
 - **Garantias ACID:** Operações de liberação, inspeção e bloqueio de cargas químicas demandam consistência transacional absoluta.
-- **Integridade Referencial Forte:** Cargas obrigatoriamente referenciam usuários responsáveis existentes e itens de inspeção vinculam-se unicamente às suas respectivas vistorias (`Foreign Keys` e `Cascades`).
-- **Consultas Relacionais com Índices:** Utilização de índices em campos de consulta frequente (como `[responsibleUserId]`, `[status]` e índices compostos de inspeção).
+- **Integridade Referencial Forte:** Cargas obrigatoriamente referenciam produtos químicos existentes e usuários responsáveis (`Foreign Keys`), impedindo registros órfãos em operações críticas.
+- **Consultas Relacionais com Índices:** Utilização de índices em campos de consulta frequente (`[responsibleUserId]`, `[status]`, `[productId]` e índices compostos de auditoria e inspeção). O Prisma realiza o mapeamento e mantém as migrações versionadas.
 
-### 4.2. Ciclo de Vida da Carga, Máquina de Estados e Auditoria
+### 4.2. Estrutura da modelagem de dados (Edital Fase 2 - Item 7)
 
-- **Status Canônico em Banco (`ENUM`):** O status da carga é armazenado como um tipo `ENUM` nativo do MySQL (`REGISTERED`, `ANALYZING`, `INSPECTION`, `APPROVED`, `REPROVED`, `IN_TRANSIT`, `COMPLETED`, `CANCELLED`). Toda nova carga nasce estritamente com o status `REGISTERED`.
-- **Regras de Negócio no Domínio:** A máquina de estados não é delegada a constraints de banco nem espalhada em controllers; ela é encapsulada na camada de domínio puro ([`shipment-status-transitions.ts`](./src/modules/chemical-shipment/domain/value-objects/chemical-shipment/shipment-status-transitions.ts)), sendo validada pela entidade [`ChemicalShipment`](./src/modules/chemical-shipment/domain/entities/chemical-shipment/chemical-shipment.entity.ts) antes de qualquer persistência.
-- **Rastreabilidade e Auditoria Imutável:** Todas as transições de status geram registros imutáveis na tabela `ChemicalShipmentLog` com a ação `STATUS_CHANGED`, persistindo o usuário operador (`actorId`, `actorName`), timestamp e os metadados `{ "from": "<STATUS_ANTERIOR>", "to": "<NOVO_STATUS>" }`.
-- **Performance:** A coluna `status` da tabela `ChemicalShipment` conta com um índice dedicado (`ChemicalShipment_status_idx`), garantindo consultas eficientes de cargas por situação operacional no pátio.
+Conforme exigido pelo edital, a modelagem de dados responde às seguintes diretrizes:
 
-## 5. Configuração e Execução
+1. **Como os produtos químicos são armazenados:**
+   - Armazenados na tabela `ChemicalProduct`.
+   - Contém chave primária UUID, código identificador único (`code`), nome técnico (`technicalName`), descrição/nome comercial (`tradeName`), número ONU (`unNumber` com 4 dígitos numéricos), enums para classe de risco (`riskClass`) e estado físico (`physicalState`), status operacional (`ProductStatus`) e carimbos de auditoria (`createdAt`, `updatedAt`).
+   - Possui relação 1:N com a tabela `ProductDocument` com deleção em cascata para armazenamento de dossiês fiscais e ambientais vinculados ao produto.
+2. **Como as cargas químicas são armazenadas:**
+   - Armazenadas na tabela `ChemicalShipment`.
+   - Contém identificador UUID, código identificador único da carga (`code`), chave estrangeira para o produto químico (`productId`), chave estrangeira para o responsável técnico (`responsibleUserId`), quantidade de produto químico (`quantityProduct`), unidade de medida (`unit`), procedência (`origin`), destino portuário (`destination`), data de entrada no pátio (`entryDate`), protocolo de documentação declarada (`documentsIds`), carimbos de criação, atualização e `deletedAt` para suporte a soft delete / inativação lógica.
+3. **Como uma carga se relaciona com um produto químico:**
+   - Relacionamento relacional 1:N (`ChemicalProduct` 1 ── N `ChemicalShipment`).
+   - Uma carga química é estritamente vinculada a um produto químico existente via chave estrangeira física (`ChemicalShipment_productId_fkey`).
+   - A nível de aplicação e domínio, o caso de uso (`CreateChemicalShipmentUseCase`) valida previamente a integridade e impede o registro de novas cargas associadas a produtos químicos com status inativo (`INACTIVE`) ou bloqueado (`BLOCKED`).
+4. **Como o status da carga é controlado:**
+   - Armazenado como tipo `ENUM` nativo do MySQL (`REGISTERED`, `ANALYZING`, `INSPECTION`, `APPROVED`, `REPROVED`, `IN_TRANSIT`, `COMPLETED`, `CANCELLED`) indexado para consultas de alta performance.
+   - O controle transicional é executado pela Máquina de Estados Finitos encapsulada no domínio puro (`ChemicalShipment` e `shipment-status-transitions.ts`).
+   - Toda transição gera automaticamente um registro imutável na tabela de auditoria `ChemicalShipmentLog` (ação `STATUS_CHANGED`, registrando autor, data e metadados `{ from, to }`).
+5. **Como os dados poderão evoluir nas próximas fases:**
+   - **Campos Operacionais Implementados:** Código de manifesto (`code`), unidade de medida (`unit`), procedência e destino (`origin`, `destination`) e data de entrada (`entryDate`) já foram promovidos a campos de primeira classe no domínio e persistência. Próxima evolução: matriz de segregação por grupo de compatibilidade (`compatibilityGroup`).
+   - **Cargas Compostas (Multi-item):** Evolução para vistorias e manifestos compostos de múltiplos contêineres e produtos vinculados ao mesmo manifesto de navio (`InspectionScope.CARGO_ITEM`).
+   - **Particionamento e Arquivamento Frio:** Particionamento por faixa de data nas tabelas de log de auditoria (`*Log`) para retenção regulatória de longo prazo.
+
+### 4.3. Ciclo de vida da carga, máquina de estados e auditoria
+
+A [modelagem de dados detalhada](./docs/modelagem-de-dados.md) descreve os campos, relacionamentos e registros de auditoria. O modelo implementado está no [`schema.prisma`](./prisma/schema.prisma), com alterações em [`prisma/migrations`](./prisma/migrations).
+
+---
+
+## 5. Configuração e execução
 
 ### 5.1. Pré-requisitos
 
 Antes de iniciar, certifique-se de ter instalado em sua máquina:
 
-- [Node.js](https://nodejs.org/) (versão `>= 20.x`, recomendado `24.x`);
+- [Node.js](https://nodejs.org/) (versão `24.x`, utilizada no Docker e no CI);
 - [npm](https://www.npmjs.com/) (versão `>= 10.x`);
 - [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/) instalados e em execução.
 
-### 5.2. Variáveis de Ambiente
+### 5.2. Variáveis de ambiente
 
 O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e conexão com o banco de dados. As configurações disponíveis são:
 
-| Variável                 | Descrição                                                                                                | Exemplo Padrão                                                                                             |
-| :----------------------- | :------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
-| `MYSQL_ROOT_PASSWORD`    | Senha do usuário root do container MySQL                                                                 | `root_secret`                                                                                              |
-| `MYSQL_USER`             | Usuário da aplicação no banco                                                                            | `quimovia_user`                                                                                            |
-| `MYSQL_PASSWORD`         | Senha do usuário da aplicação                                                                            | `quimovia_pass`                                                                                            |
-| `MYSQL_DATABASE`         | Nome do banco de dados                                                                                   | `quimovia_db`                                                                                              |
-| `DATABASE_URL`           | URL de conexão utilizada pelo Prisma ORM                                                                 | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
-| `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
-| `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48`                                                                       |
-| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `31536000` (1 ano) no ambiente local; `3600` em produção                                                   |
-| `ADMIN_NAME`             | Nome do administrador inicial criado pelo seed (opcional)                                                | `Administrador do Sistema`                                                                                 |
-| `ADMIN_EMAIL`            | E-mail do administrador inicial criado pelo seed                                                         | `admin@quimovia.com`                                                                                       |
-| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | `Quimovia@2026` (padrão do `.env.example`; troque fora do ambiente local)                                  |
+| Variável | Descrição | Exemplo de configuração |
+| :--- | :--- | :--- |
+| `MYSQL_ROOT_PASSWORD` | Senha do usuário root do container MySQL | `root_secret` |
+| `MYSQL_USER` | Usuário da aplicação no banco | `quimovia_user` |
+| `MYSQL_PASSWORD` | Senha do usuário da aplicação | `quimovia_pass` |
+| `MYSQL_DATABASE` | Nome do banco de dados | `quimovia_db` |
+| `DATABASE_URL` | URL de conexão utilizada pelo Prisma ORM | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
+| `PORT` | Porta HTTP da API (opcional, padrão `3000`) | `3000` |
+| `JWT_SECRET` | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48` |
+| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`) | `31536000` (1 ano) no ambiente local; `3600` em produção |
+| `ADMIN_NAME` | Nome do administrador inicial criado pelo seed (opcional) | `Administrador do Sistema` |
+| `ADMIN_EMAIL` | E-mail do administrador inicial criado pelo seed | `admin@quimovia.com` |
+| `ADMIN_PASSWORD` | Senha do administrador inicial, com ao menos 8 caracteres | `Quimovia@2026` (padrão do `.env.example`; troque fora do ambiente local) |
 
-### 5.3. Executando com Docker e Localmente
+### 5.3. Execução com Docker ou ambiente local
 
-Siga o passo a passo abaixo para inicializar o ambiente completo:
-
-#### 1. Clonar o repositório e instalar dependências
+Clone o repositório:
 
 ```bash
 git clone https://github.com/TechChallengeFiap/QuimoviaApi.git
 cd QuimoviaApi
-npm install
 ```
 
-#### 2. Configurar as variáveis de ambiente
-
-Crie o arquivo `.env` na raiz do projeto com base no modelo de exemplo:
+Copie `.env.example` para `.env`:
 
 ```bash
 # Linux / macOS
 cp .env.example .env
-
-# Windows (PowerShell / CMD)
-copy .env.example .env
 ```
 
-> **Importante:** O `docker-compose.yml` utiliza essas variáveis para inicializar o MySQL. Verifique se as credenciais de `MYSQL_*` e a string de conexão em `DATABASE_URL` estão configuradas corretamente.
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+```
 
-> **Autenticação:** só o `JWT_SECRET` vem em branco no exemplo e precisa ser preenchido; sem ele, a API não sobe. Para gerá-lo, use por exemplo `openssl rand -base64 48`. O exemplo já traz o administrador inicial (`admin@quimovia.com` / `Quimovia@2026`) e o token com prazo de 1 ano, para facilitar o uso local e a avaliação.
+Preencha `MYSQL_*` e `JWT_SECRET` (ao menos 32 caracteres). Para gerar o segredo, use, por exemplo, `openssl rand -base64 48`. No modo local, substitua também os marcadores de `DATABASE_URL` pelas mesmas credenciais e pelo nome do banco; o arquivo `.env` não faz essa substituição automaticamente. O Docker Compose configura a conexão da API com o serviço `mysql` internamente.
 
-### 5.3. Executando com Docker e Localmente
+O exemplo define o administrador inicial `admin@quimovia.com`, senha `Quimovia@2026`, e duração de token de 1 ano para uso local e avaliação. Ajuste esses valores para outros ambientes. A duração efetiva do token segue `JWT_EXPIRES_IN_SECONDS`.
 
-Você pode executar o Quimovia de duas formas: **100% via Docker** (API + Banco de Dados em containers) ou **modo híbrido** (banco no Docker e API rodando localmente para desenvolvimento).
+#### Opção A: API e banco com Docker
 
----
+```bash
+docker compose up -d --build
+docker compose ps
+```
 
-#### Opção A: Execução Completa via Docker (Recomendada / Avaliação)
+O Compose inicia o MySQL, aguarda seu healthcheck e inicia a API após aplicar as migrações e executar o seed do administrador. O MySQL deve aparecer como `healthy` e a API como `running`.
 
-Com apenas um comando, o Docker Compose inicializa o banco MySQL, aguarda o _healthcheck_ de prontidão, compila a imagem da API via multi-stage build, aplica as migrações do Prisma, executa o seed do administrador inicial e sobe a aplicação:
+Para acompanhar a inicialização, use `docker compose logs -f api`. Para parar os serviços:
 
-1. **Configurar as variáveis de ambiente:**
-   ```bash
-   # Linux / macOS
-   cp .env.example .env
+```bash
+docker compose down
+```
 
-   # Windows (PowerShell / CMD)
-   copy .env.example .env
-   ```
-   > Certifique-se de preencher `JWT_SECRET` (mínimo 32 caracteres) e `ADMIN_PASSWORD` (mínimo 8 caracteres) no `.env`.
+#### Opção B: banco no Docker e API local
 
-2. **Subir todos os serviços (API + MySQL):**
-   ```bash
-   docker compose up -d --build
-   ```
+Com o `.env` configurado para `localhost:3333`, execute:
 
-3. **Verificar os serviços:**
-   ```bash
-   docker compose ps
-   ```
-   Ambos os containers (`quimovia-mysql` e `quimovia-api`) devem estar com status _running_ e _healthy_.
+```bash
+npm install
+docker compose up -d mysql
+npm run migrate:generate
+npm run migrate:deploy
+npm run migrate:seed
+npm run start:dev
+```
 
-4. **Acessar a API:**
-   - **API REST:** [http://localhost:3000](http://localhost:3000)
-   - **Documentação Interativa Swagger:** [http://localhost:3000/api](http://localhost:3000/api)
-
-5. **Para parar os containers:**
-   ```bash
-   docker compose down
-   ```
+`migrate:deploy` aplica as migrações versionadas. Use `npm run migrate:dev` ao desenvolver uma alteração no schema e criar uma nova migração. O seed não altera uma conta cujo e-mail já esteja cadastrado.
 
 ---
 
-#### Opção B: Desenvolvimento Local (Banco no Docker + API na Máquina)
+### 5.4. Scripts disponíveis
 
-Se você estiver desenvolvendo e quiser aproveitar o hot-reload (`tsx watch`):
-
-1. **Subir apenas o container do MySQL:**
-   ```bash
-   docker compose up -d mysql
-   ```
-
-2. **Gerar o Prisma Client e aplicar migrações:**
-   ```bash
-   npm run migrate:generate
-   npm run migrate:dev
-   ```
-
-3. **Criar o administrador inicial (Seed):**
-   ```bash
-   npm run migrate:seed
-   ```
-   > O seed pode ser executado mais de uma vez: se o e-mail já estiver cadastrado, nada é alterado. Com o `.env.example`, o login do administrador é `admin@quimovia.com` com a senha `Quimovia@2026`.
-
-4. **Iniciar a API em modo desenvolvimento:**
-   ```bash
-   npm run start:dev
-   ```
-   A aplicação estará acessível em `http://localhost:3000` (Swagger: `http://localhost:3000/api`).
+| Comando | Finalidade |
+| :--- | :--- |
+| `npm run build` | Compila a aplicação em `dist/`. |
+| `npm run start:dev` | Inicia em modo de desenvolvimento com hot-reload. |
+| `npm run start:prod` | Inicia a aplicação compilada em produção. |
+| `npm run start:debug` | Inicia em modo de depuração na porta `9229`. |
+| `npm run migrate:generate` | Gera os artefatos do Prisma Client. |
+| `npm run migrate:dev` | Aplica migrações em ambiente de desenvolvimento. |
+| `npm run migrate:deploy` | Aplica migrações pendentes em produção/CI. |
+| `npm run migrate:seed` | Executa o seed de dados iniciais. |
+| `npm run lint` | Executa a análise estática com Oxlint. |
+| `npm run format` | Formata os arquivos de código e testes com Prettier. |
 
 ---
 
-### 5.4. Scripts Disponíveis
+## 6. Documentação da API e endpoints
 
-| Comando                    | Descrição                                                   |
-| :------------------------- | :---------------------------------------------------------- |
-| `npm run start:dev`        | Inicia o servidor com hot-reload ativo via `tsx watch`      |
-| `npm run start:debug`      | Inicia em modo debug expondo a porta de inspeção `9229`     |
-| `npm run build`            | Compila os arquivos TypeScript gerando o bundle em `dist/`  |
-| `npm run start:prod`       | Executa a versão compilada em produção (`node dist/main`)   |
-| `npm run lint`             | Executa verificação estática de tipos e regras com `oxlint` |
-| `npm run format`           | Formata todo o código-fonte via `prettier`                  |
-| `npm run migrate:generate` | Gera o cliente Prisma tipado                                |
-| `npm run migrate:dev`      | Executa migrations em modo desenvolvimento                  |
-| `npm run migrate:deploy`   | Aplica migrations pendentes no banco                        |
-| `npm run migrate:seed`     | Cria o administrador inicial (também via `prisma db seed`)  |
+### 6.1. Swagger / OpenAPI e acesso
 
----
+Com a aplicação em execução, acesse o [Swagger](http://localhost:3000/api), que apresenta os parâmetros, exemplos de requisição e resposta e códigos de erro. A porta padrão da API é `3000`, configurável por `PORT`.
 
-## 6. Documentação da API e Endpoints
+Para usar as rotas protegidas, faça login em `POST /auth/login` com as credenciais do administrador definidas no `.env` e informe o `accessToken` em **Authorize**. A sessão permanece válida até expirar ou ser encerrada.
 
-### 6.1. Swagger / OpenAPI
+| Recurso | Rotas principais |
+| :--- | :--- |
+| Autenticação | `POST /auth/login` e `POST /auth/logout`. |
+| Produtos químicos | `POST`, `GET` em `/chemical-products`; `GET`, `PATCH`, `DELETE` em `/:id`; `PATCH /:id/status`. |
+| Documentos do produto | `POST`, `GET` em `/chemical-products/:id/documents`; `GET`, `PATCH`, `DELETE` em `/:documentId`. |
+| Cargas químicas | `POST`, `GET` em `/chemical-shipment`; `GET`, `PATCH`, `DELETE` em `/:id`; `PATCH /:id/status`, `/:id/release`, `/:id/block`, `/:id/cancel`; `GET /:id/transitions`. |
+| Inspeções | `POST`, `GET` em `/inspections`; `GET`, `PATCH`, `DELETE` em `/:id`. |
+| Documentação das cargas | `POST`, `GET` em `/shipment-documents`; `GET`, `PATCH`, `DELETE` em `/:id`. |
+| Usuários | `POST`, `GET` em `/users`; `GET`, `PATCH`, `DELETE` em `/:id`; `POST /shippers` e `PATCH /:id/role`. |
+| Auditoria | `GET /logs/users`, `/logs/chemical-products`, `/logs/chemical-shipments`, `/logs/inspections` e `/logs/shipment-documents`. |
 
-A API possui documentação interativa completa via Swagger. Com a aplicação em execução, acesse pelo navegador:
+A [referência detalhada da API](./docs/api.md) apresenta a especificação completa de payloads, headers e parâmetros.
 
-📍 **URL do Swagger:** [http://localhost:3000/api](http://localhost:3000/api)
+### 6.2. Ciclo de vida e máquina de estados da carga
 
-A documentação inclui exemplos de payloads, esquemas de entrada/saída, validações de campos e possíveis retornos de erro (`400`, `401`, `403`, `404`, `422`).
-
-Para testar as rotas que exigem login pelo Swagger, faça login em `POST /auth/login`, copie o `accessToken` da resposta e informe-o no botão **Authorize**. O Swagger guarda o token mesmo depois de recarregar a página.
-
-#### Roteiro rápido para avaliar a API
-
-1. Copie o `.env.example` para `.env` e preencha o `JWT_SECRET` (`openssl rand -base64 48`).
-2. Suba o banco: `docker compose up -d`.
-3. Crie as tabelas e o administrador: `npm run migrate:dev` e `npm run migrate:seed`.
-4. Suba a API: `npm run start:dev`.
-5. No Swagger ([http://localhost:3000/api](http://localhost:3000/api)), faça login em `POST /auth/login` com `admin@quimovia.com` / `Quimovia@2026`.
-6. Copie o `accessToken`, clique em **Authorize** e cole o token. Ele vale por 1 ano e continua salvo no Swagger, então o login é feito uma vez só.
-
-### 6.2. Controle de Status da Carga Química (Ciclo de Vida)
-
-Conforme as diretrizes do **Edital do Tech Challenge (Fase 2)**, a carga química segue uma máquina de estados finitos com regras inegociáveis de transição, garantindo conformidade operacional, segurança no pátio e impossibilidade de bypass.
-
-#### Diagrama da Máquina de Estados
+Novas cargas exigem produto químico ativo, quantidade maior que zero e responsável técnico existente. Elas começam em `REGISTERED` e seguem as transições abaixo:
 
 ```mermaid
 stateDiagram-v2
+  state "Registrada" as REGISTERED
+  state "Em análise" as ANALYZING
+  state "Em inspeção" as INSPECTION
+  state "Liberada" as APPROVED
+  state "Bloqueada" as REPROVED
+  state "Em movimentação" as IN_TRANSIT
+  state "Finalizada" as COMPLETED
+  state "Cancelada" as CANCELLED
   [*] --> REGISTERED : Cadastro da carga
   REGISTERED --> ANALYZING : Iniciar análise
   ANALYZING --> INSPECTION : Enviar para inspeção
-  INSPECTION --> APPROVED : Liberar (exige doc. ativa)
-  INSPECTION --> REPROVED : Bloquear vistoria
+  INSPECTION --> APPROVED : Liberar
+  INSPECTION --> REPROVED : Bloquear carga
   APPROVED --> IN_TRANSIT : Iniciar movimentação
   IN_TRANSIT --> COMPLETED : Finalizar carga
   REGISTERED --> CANCELLED : Cancelar
@@ -319,28 +330,15 @@ stateDiagram-v2
   CANCELLED --> [*] : Estado Terminal
 ```
 
-#### Matriz de Transições Canônicas do Edital
-
-| Status Atual | Nome Legível | Transições Permitidas | Condições / Regras de Negócio |
-| :--- | :--- | :--- | :--- |
-| `REGISTERED` | Registrada | `ANALYZING`, `CANCELLED` | Status inicial de toda carga recém-criada no sistema. |
-| `ANALYZING` | Em análise | `INSPECTION`, `CANCELLED` | Triagem inicial de conformidade preliminar da carga. |
-| `INSPECTION` | Em inspeção | `APPROVED`, `REPROVED`, `CANCELLED` | Vistoria técnica. A liberação para `APPROVED` **exige documentação obrigatória ativa e vigente**. |
-| `APPROVED` | Liberada | `IN_TRANSIT`, `CANCELLED` | Carga apta para trânsito logístico no terminal portuário. |
-| `REPROVED` | Bloqueada | `CANCELLED` | Carga reprovada na vistoria. **Proibida de entrar em movimentação**. |
-| `IN_TRANSIT` | Em movimentação | `COMPLETED` | Transporte em andamento no terminal. |
-| `COMPLETED` | Finalizada | *(nenhuma)* | **Estado Terminal:** imutável, não permite novas alterações de status. |
-| `CANCELLED` | Cancelada | *(nenhuma)* | **Estado Terminal:** cancelada não pode ser liberada nem reativada. |
-
 #### Regras Inegociáveis de Proteção de Domínio
 
 1. **Compliance Documental Mandatório:** Uma carga **não pode ser liberada (`APPROVED`) sem documentação técnica obrigatória ativa e vigente** verificada via módulo `document-compliance` (retorna erro `422 Unprocessable Entity`).
 2. **Carga Bloqueada:** Uma carga bloqueada/reprovada (`REPROVED`) **jamais pode entrar em movimentação** (`IN_TRANSIT`).
 3. **Imutabilidade Terminal:** Cargas finalizadas (`COMPLETED`) ou canceladas (`CANCELLED`) não podem sofrer nenhuma transição posterior.
-4. **Fechamento de Backdoor na Edição:** Alterações cadastrais na carga (`quantityProduct`, etc.) via `PATCH /chemical-shipment/:id` são permitidas **estritamente nos status `REGISTERED` e `ANALYZING`**. Uma vez enviada para inspeção ou liberada, a composição física está lacrada para edição.
+4. **Fechamento de Backdoor na Edição:** Alterações cadastrais na carga (`quantityProduct`, `unit`, `origin`, `destination`, etc.) via `PATCH /chemical-shipment/:id` são permitidas **estritamente nos status `REGISTERED` e `ANALYZING`**. Uma vez enviada para inspeção ou liberada, a composição física está lacrada para edição.
 5. **Auditoria Contínua:** Toda e qualquer mudança de status grava automaticamente um registro em `ChemicalShipmentLog` com ação `STATUS_CHANGED`, registrando autor, data e metadados com status de origem e destino (`{ from, to }`).
 
-#### Endpoints do Ciclo de Vida da Carga
+### 6.3. Endpoints do ciclo de vida da carga
 
 A API disponibiliza tanto a rota de transição exigida pelo edital quanto endpoints semânticos (*task-based*), além de um endpoint diferencial para consulta das transições abertas:
 
@@ -352,13 +350,16 @@ A API disponibiliza tanto a rota de transição exigida pelo edital quanto endpo
 | `PATCH` | `/chemical-shipment/:id/block` | **[Edital / Bloquear]** Bloqueia a carga química (`REPROVED`) a partir do status de inspeção. |
 | `PATCH` | `/chemical-shipment/:id/cancel` | **[Edital / Cancelar]** Cancela a carga química a partir dos status permitidos, tornando-a terminal. |
 
-#### Exemplos de Requisição e Resposta
+### 6.4. Exemplos de requisição e resposta
 
-##### 1. Consulta de Transições Permitidas (Diferencial)
+#### 1. Consulta de Transições Permitidas (Diferencial)
+
 ```http
 GET /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/transitions
 ```
+
 **Resposta (200 OK):**
+
 ```json
 {
   "shipmentId": "326d18f1-f7a5-40ae-9e3d-b32f085bfca7",
@@ -372,7 +373,8 @@ GET /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/transitions
 }
 ```
 
-##### 2. Alteração de Status pelo Endpoint Geral do Edital
+#### 2. Alteração de Status pelo Endpoint Geral do Edital
+
 ```http
 PATCH /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/status
 Content-Type: application/json
@@ -381,12 +383,19 @@ Content-Type: application/json
   "status": "ANALYZING"
 }
 ```
+
 **Resposta (200 OK):**
+
 ```json
 {
   "id": "326d18f1-f7a5-40ae-9e3d-b32f085bfca7",
+  "code": "CARGO-326D18F1",
   "productId": "88733221-39fe-4ef9-8cc5-4e7cb803ba91",
   "quantityProduct": 100,
+  "unit": "kg",
+  "origin": "Porto de Santos",
+  "destination": "Terminal Portuário",
+  "entryDate": "2026-10-24T12:00:00.000Z",
   "status": "ANALYZING",
   "responsibleUserId": "f12ca16e-5fa7-4a0f-ba10-8b29df939ac1",
   "documentsIds": "doc-fispq-2026",
@@ -395,11 +404,14 @@ Content-Type: application/json
 }
 ```
 
-##### 3. Tentativa de Liberação sem Documentação Técnica Obrigatória
+#### 3. Tentativa de Liberação sem Documentação Técnica Obrigatória
+
 ```http
 PATCH /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/release
 ```
+
 **Resposta de Erro de Negócio (422 Unprocessable Entity):**
+
 ```json
 {
   "statusCode": 422,
@@ -410,7 +422,7 @@ PATCH /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/release
 }
 ```
 
-#### Mapeamento Semântico de Códigos de Erro HTTP
+### 6.5. Mapeamento semântico de códigos de erro HTTP
 
 | Código | Significado | Quando Ocorre |
 | :--- | :--- | :--- |
@@ -418,28 +430,38 @@ PATCH /chemical-shipment/326d18f1-f7a5-40ae-9e3d-b32f085bfca7/release
 | `401 Unauthorized` | Não Autenticado | Ausência do cabeçalho `Authorization: Bearer <token>` ou token JWT expirado/inválido. |
 | `403 Forbidden` | Não Autorizado | Usuário autenticado não possui papel operacional permitido para executar a ação. |
 | `404 Not Found` | Recurso Não Encontrado | Identificador de carga química, usuário responsável ou produto químico não localizado. |
+| `409 Conflict` | Conflito de Integridade | E-mail já cadastrado no sistema ou duplicidade de código único. |
 | `422 Unprocessable Entity` | Erro de Regra de Negócio | Transição proibida na máquina de estados, liberação sem documentação ou movimentação de carga bloqueada (`BusinessRuleError`). |
 
-### 6.3. Principais Endpoints
+### 6.6. Principais endpoints por módulo
 
-As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa; sem ele, a API responde `401`. Hoje, o guard protege o logout e a gestão de usuários; cada módulo pode exigir login nas próprias rotas importando o `AuthModule` e usando `@UseGuards(AuthGuard)`. Para restringir a rota a alguns perfis, use `@UseGuards(AuthGuard, RolesGuard)` com `@Roles()`: com outro perfil, a API responde `403`. O perfil conferido é o atual do usuário, então uma troca de perfil vale já na próxima requisição.
+As rotas protegidas pelo `AuthGuard` exigem o cabeçalho `Authorization: Bearer <token>`, com o token de uma sessão ativa; sem ele, a API responde `401`. O guard protege o logout e a gestão de usuários; cada módulo pode exigir login nas próprias rotas importando o `AuthModule` e usando `@UseGuards(AuthGuard)`. Para restringir a rota a alguns perfis, usa-se `@UseGuards(AuthGuard, RolesGuard)` com `@Roles()`: com outro perfil, a API responde `403`. O perfil conferido é o atual do usuário, então uma troca de perfil vale já na próxima requisição.
 
 #### Autenticação (`/auth`)
 
 - `POST /auth/login` — Confere e-mail e senha, inicia uma sessão e devolve o token de acesso (`401` para credenciais inválidas e `403` para conta inativa ou bloqueada).
-- `POST /auth/logout` — Encerra a sessão do token enviado, que deixa de valer na hora.
+- `POST /auth/logout` — Encerra a sessão do token enviado, que deixa de valer imediatamente.
 
-Bloquear, inativar ou excluir um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login de novo.
+Bloquear, inativar ou excluir um usuário encerra as sessões dele, e reativar a conta não as reativa: é preciso fazer login novamente.
 
-A autorização por perfil (RN-ACE-04) é aplicada, por enquanto, na gestão de usuários.
+#### Produtos Químicos (`/chemical-products`)
+
+- `POST /chemical-products` — Cadastra novo produto químico perigoso (nome técnico, código único, número ONU, classe de risco e usuário técnico responsável). O status inicial padrão é `UNDER_ANALYSIS`.
+- `GET /chemical-products` — Lista produtos químicos cadastrados com paginação (`page`, `limit`) e filtros (`code`, `technicalName`, `unNumber`, `riskClass`, `status`).
+- `GET /chemical-products/:id` — Retorna os dados cadastrais detalhados do produto e seus documentos regulatórios vinculados.
+- `PATCH /chemical-products/:id` — Atualiza dados cadastrais do produto químico (nome técnico, nome comercial, número ONU, etc.).
+- `PATCH /chemical-products/:id/status` — Altera o status do produto químico (`ACTIVE`, `INACTIVE`, `BLOCKED`). É através deste endpoint que ocorre a inativação ou desbloqueio de produtos pelo Operador Portuário.
+- `DELETE /chemical-products/:id` — Exclui o produto químico do catálogo (quando não vinculado a cargas em andamento).
+- `POST /chemical-products/:id/documents` — Anexa dossiê documental (FISPQ/FDS, Licença Ambiental, etc.) ao produto químico.
+- `DELETE /chemical-products/:id/documents/:documentId` — Remove documento técnico do produto químico.
 
 #### Cargas Químicas (`/chemical-shipment`)
 
-- `POST /chemical-shipment` — Registra uma nova carga química (status inicial `REGISTERED`).
-- `GET /chemical-shipment` — Lista cargas químicas com paginação e filtros (`status`, `productId`, `responsibleUserId`, `documentsIds`).
+- `POST /chemical-shipment` — Registra uma nova carga química (campos: `productId`, `responsibleUserId`, `quantityProduct`, `code`, `unit`, `origin`, `destination`, `entryDate`, `documentsIds`; status inicial `REGISTERED`).
+- `GET /chemical-shipment` — Lista cargas químicas com paginação e filtros (`status`, `productId`, `responsibleUserId`, `code`, `documentsIds`).
 - `GET /chemical-shipment/:id` — Retorna os detalhes de uma carga química pelo ID.
 - `GET /chemical-shipment/:id/transitions` — Consulta as opções de transição válidas para o status atual da carga (**diferencial**).
-- `PATCH /chemical-shipment/:id` — Atualiza dados cadastrais da carga (`quantityProduct`). Permitido exclusivamente nos status `REGISTERED` e `ANALYZING`.
+- `PATCH /chemical-shipment/:id` — Atualiza dados cadastrais da carga (`quantityProduct`, `unit`, `origin`, `destination`, `entryDate`). Permitido exclusivamente nos status `REGISTERED` e `ANALYZING`.
 - `PATCH /chemical-shipment/:id/status` — Altera o status da carga conforme a máquina de estados do edital.
 - `PATCH /chemical-shipment/:id/release` — Libera a carga química (`APPROVED`), conferindo automaticamente a documentação técnica obrigatória.
 - `PATCH /chemical-shipment/:id/block` — Bloqueia a carga química (`REPROVED`) a partir do status de inspeção.
@@ -477,49 +499,72 @@ Cadastrar usuários internos, remover e trocar o perfil de usuários exige o tok
 - `GET /users` — Lista usuários cadastrados com suporte a busca por e-mail, perfil e status.
 - `GET /users/:id` — Busca informações cadastrais do usuário.
 - `PATCH /users/:id` — Atualiza nome, e-mail, senha ou status (`ACTIVE`, `INACTIVE`, `BLOCKED`).
-- `PATCH /users/:id/role` — Troca o perfil de acesso do usuário (só o administrador).
-- `DELETE /users/:id` — Exclui o usuário logicamente (`isDeleted` e `deletedAt`): ele some das buscas e da listagem e perde o acesso, mas o registro é mantido. Cadastrar de novo o mesmo e-mail em `POST /users` reativa esse registro, com o mesmo id.
+- `PATCH /users/:id/role` — Troca o perfil de acesso do usuário (restrito ao administrador).
+- `DELETE /users/:id` — Exclui o usuário logicamente (`isDeleted` e `deletedAt`): ele não aparece nas buscas e perde o acesso, mas o registro é mantido. Cadastrar de novo o mesmo e-mail em `POST /users` reativa esse registro, mantendo o histórico.
 
 ---
 
-## 7. Qualidade de Software e Testes
+## 7. Qualidade de software e testes
 
-A suíte de testes cobre regras de domínio, casos de uso, filtros de erro e fluxos de integração:
+A suíte abrange testes unitários e testes de integração/E2E com Jest e Supertest, cobrindo regras de domínio, casos de uso, repositórios, tratamento de exceções com filtros de erro e rotas HTTP:
 
 ```bash
-# Executa os testes unitários
+# Testes unitários
 npm test
 
-# Verifica os tipos da aplicação e dos testes
-npm run typecheck
-
-# Executa os testes em modo watch (desenvolvimento contínuo)
+# Testes em modo contínuo (watch)
 npm run test:watch
 
-# Executa os testes de integração e ponta a ponta (E2E)
+# Verificação estática de tipos TypeScript
+npm run typecheck
+
+# Testes HTTP ponta a ponta (E2E)
 npm run test:e2e
 
-# Gera o relatório completo de cobertura de código
+# Relatório de cobertura de código
 npm run test:cov
 ```
 
-Os testes automatizados validam cenários críticos exigidos no Tech Challenge, incluindo:
+Os testes automatizados cobrem cenários críticos exigidos no Tech Challenge, incluindo:
 
+- Cadastro de produto químico válido e bloqueio de cadastro sem nome ou sem classe de risco;
+- Registro de carga química com produto e usuário válidos;
+- Bloqueio de carga com produto químico inativo ou quantidade menor ou igual a zero;
 - Bloqueio de liberação de carga sem documentação obrigatória;
-- Impedimento de transições ilegais na máquina de estados;
-- Bloqueio de movimentação de cargas marcadas como `BLOCKED`;
-- Validação e hash criptográfico de senhas;
-- Login, sessões com expiração e encerramento, e exigência do token de acesso nas rotas protegidas pelo `AuthGuard`;
-- Gestão de usuários restrita ao Administrador do Sistema, com a troca de perfil em rota própria e valendo na próxima requisição; os demais usuários editam só os próprios dados;
-- Tratamento de exceções e mapeamento padronizado de erros de domínio.
+- Transições de status permitidas da carga e bloqueio de transições proibidas na máquina de estados;
+- Cancelamento de carga a partir dos status permitidos;
+- Bloqueio de movimentação de carga bloqueada com erro de negócio (`BusinessRuleError`);
+- Hash criptográfico de senhas e autenticação com sessões ativas;
+- Exclusão lógica de usuários (`isDeleted` e `deletedAt`) e controle de perfis pelo administrador;
+- Validação e sincronização dos novos campos operacionais da carga (`code`, `unit`, `origin`, `destination`, `entryDate`).
 
 ---
 
-## 8. Integração Contínua (CI/CD)
+## 8. Logs e observabilidade inicial (Edital Item 10)
 
-O projeto conta com um pipeline automatizado de Integração Contínua configurado via GitHub Actions em [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+O Quimovia implementa uma estratégia de observabilidade em camadas para facilitar o monitoramento operacional e a auditoria forense do pátio:
 
-O pipeline é disparado automaticamente a cada `push` ou `pull_request` nas branches `main` e `develop`:
+1. **Auditoria Transacional em Banco (Tabelas `*Log`):**
+   - Cada bounded context conta com uma tabela de log imutável dedicada (`ChemicalShipmentLog`, `ChemicalProductLog`, `UserLog`, `InspectionLog`, `ShipmentDocumentLog`).
+   - Registra o identificador da entidade afetada (`entityId`), o operador responsável (`actorId`, `actorName`), a ação realizada (`CREATED`, `STATUS_CHANGED`, `DELETED`, etc.), timestamp de auditoria e detalhes contextuais em JSON (como status anterior e novo: `{ from, to }`).
+   - Os logs de auditoria sobrevivem mesmo a eventuais exclusões lógicas das entidades monitoradas e podem ser consultados via endpoints `GET /logs/*`.
+2. **Logs Estruturados na Aplicação (NestJS Logger):**
+   - Uso de `Logger` nativo tipado em Use Cases e Controllers para rastreamento de eventos vitais:
+     - Criação de novos produtos químicos e cargas;
+     - Transições de status e tentativas de violação de máquina de estados;
+     - Bloqueios em vistorias de inspeção e liberações com conformidade documental;
+     - Falhas de autenticação e trocas de perfil de usuários;
+     - Erros de validação e exceções não tratadas.
+3. **Evolução Futura (Prometheus & Grafana):**
+   - Arquitetura preparada para acoplamento de interceptor de métricas RED (Rate, Errors, Duration) e exportador Prometheus para painéis Grafana no terminal portuário.
+
+---
+
+## 9. Integração contínua (CI/CD)
+
+O projeto conta com um pipeline automatizado de Integração Contínua configurado via GitHub Actions em [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
+O pipeline é disparado automaticamente a cada `push` ou `pull_request` nas branches `main` e `develop`, além de execução manual por `workflow_dispatch`:
 
 ```text
 [Push / Pull Request]
@@ -554,16 +599,27 @@ O pipeline é disparado automaticamente a cada `push` ou `pull_request` nas bran
 
 ---
 
-## 9. Integrantes do Grupo
+## 10. Diferenciais e APIs além de REST (Edital Item 14)
+
+Conforme destacado no edital, o core obrigatório da Fase 2 é 100% suportado pela **API RESTful**. Além do fluxo padrão, o projeto implementa diferenciais como:
+
+1. **Endpoint de Transições Abertas (`GET /chemical-shipment/:id/transitions`):**
+   - Permite que interfaces frontend ou sistemas de pátio consultem dinamicamente em tempo real quais transições de status estão abertas para a carga, seus rótulos legíveis e se ela já atingiu um estado terminal.
+2. **Backlog de APIs Complementares (GraphQL / gRPC):**
+   - Para as próximas etapas de evolução do QuimiPort, está prevista a introdução de um gateway GraphQL para consultas compostas (ex.: consultar detalhes de um produto químico agregando histórico de cargas e inspeções em uma única requisição flexível), bem como serviços gRPC para validação de alta vazão nas cancelas físicas de entrada portuária.
+
+---
+
+## 11. Equipe
 
 Projeto desenvolvido para a **Pós-Graduação em Full Stack Development — FIAP**:
 
-| Nome             | RM      |  GitHub |
-| :--------------- | :------ | :---------------- |
-| **Ygor Takashi Nishi** | RM: 375939 | [Perfil](https://github.com/TakashiNishii)       |
-| **Matheus Felicio Brazolin** | RM: 375006 | [Perfil](https://github.com/MatheusBrazolin)       |
-| **Paulo Henrique dos Santos Miliano** | RM375284 | [Perfil](https://github.com/PauloMiliano)       |
-| **Letícia Gabrielle Videira dos Santos** | RM: 376263 | [Perfil](https://github.com/SantosLet)       |
+| Nome | RM | GitHub |
+| :--- | :--- | :--- |
+| **Ygor Takashi Nishi** | RM: 375939 | [Perfil](https://github.com/TakashiNishii) |
+| **Matheus Felicio Brazolin** | RM: 375006 | [Perfil](https://github.com/MatheusBrazolin) |
+| **Paulo Henrique dos Santos Miliano** | RM: 375284 | [Perfil](https://github.com/PauloMiliano) |
+| **Letícia Gabrielle Videira dos Santos** | RM: 376263 | [Perfil](https://github.com/SantosLet) |
 
 ---
 
