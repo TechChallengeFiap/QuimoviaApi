@@ -27,6 +27,8 @@ export interface ChemicalProductProperties {
   documents: ProductDocument[];
   createdAt: Date;
   updatedAt: Date;
+  /** Preenchido quando o produto foi excluído logicamente (soft delete). Ausente equivale a nulo. */
+  deletedAt?: Date | null;
 }
 
 export interface CreateChemicalProductData {
@@ -66,6 +68,7 @@ export class ChemicalProduct {
   #responsibleUser: User | null;
   #documents: ProductDocument[];
   #updatedAt: Date;
+  #deletedAt: Date | null;
 
   private constructor(properties: ChemicalProductProperties) {
     this.id = properties.id;
@@ -81,6 +84,7 @@ export class ChemicalProduct {
     this.#responsibleUser = properties.responsibleUser ?? null;
     this.#documents = [...properties.documents];
     this.#updatedAt = properties.updatedAt;
+    this.#deletedAt = properties.deletedAt ?? null;
   }
 
   /** Cria um novo produto químico, validando os dados informados. */
@@ -101,6 +105,7 @@ export class ChemicalProduct {
       documents: (data.documents ?? []).map((document) => ProductDocument.create(document)),
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
     });
   }
 
@@ -153,6 +158,36 @@ export class ChemicalProduct {
 
   get updatedAt(): Date {
     return this.#updatedAt;
+  }
+
+  get deletedAt(): Date | null {
+    return this.#deletedAt;
+  }
+
+  isDeleted(): boolean {
+    return this.#deletedAt !== null;
+  }
+
+  /**
+   * Exclusão lógica: o registro permanece no banco para preservar as cargas,
+   * lotes e demais históricos que referenciam o produto, mas some do catálogo.
+   */
+  markAsDeleted(at: Date = new Date()): void {
+    if (this.isDeleted()) {
+      return;
+    }
+
+    this.#deletedAt = at;
+    this.markAsUpdated();
+  }
+
+  restoreFromDeletion(): void {
+    if (!this.isDeleted()) {
+      throw new BusinessRuleError('O produto químico não está excluído.');
+    }
+
+    this.#deletedAt = null;
+    this.markAsUpdated();
   }
 
   changeCode(code: string): void {
@@ -216,7 +251,7 @@ export class ChemicalProduct {
 
   /** Apenas produtos ativos podem ser utilizados em novas operações. */
   canBeUsedInOperations(): boolean {
-    return this.#status === ProductStatus.ACTIVE;
+    return this.#status === ProductStatus.ACTIVE && !this.isDeleted();
   }
 
   addDocument(data: CreateProductDocumentData): ProductDocument {
@@ -269,6 +304,7 @@ export class ChemicalProduct {
       documents: this.documents,
       createdAt: this.createdAt,
       updatedAt: this.#updatedAt,
+      deletedAt: this.#deletedAt,
     };
   }
 
