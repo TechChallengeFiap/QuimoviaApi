@@ -1,3 +1,4 @@
+import type { AuthenticatedRequest } from '@/modules/user/public/index.js';
 import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChemicalShipmentController } from '@/modules/chemical-shipment/presentation/controllers/chemical-shipment.controller.js';
@@ -22,6 +23,7 @@ import { CancelChemicalShipmentUseCase } from '@/modules/chemical-shipment/appli
 import { OptionalAuthGuard } from '@/modules/user/infrastructure/auth/optional-auth.guard.js';
 
 describe('ChemicalShipmentController', () => {
+  const request = {} as AuthenticatedRequest;
   let controller: ChemicalShipmentController;
   let createUseCase: jest.Mocked<CreateChemicalShipmentUseCase>;
   let listUseCase: jest.Mocked<ListChemicalShipmentUseCase>;
@@ -131,12 +133,15 @@ describe('ChemicalShipmentController', () => {
     it('deve cadastrar uma carga química com sucesso', async () => {
       createUseCase.execute.mockResolvedValue(mockShipment);
 
-      const result = await controller.createChemicalShipment({
-        productId: 'prod-001',
-        quantityProduct: 100,
-        responsibleUserId: 'user-001',
-        documentsIds: 'doc-001',
-      });
+      const result = await controller.createChemicalShipment(
+        {
+          productId: 'prod-001',
+          quantityProduct: 100,
+          responsibleUserId: 'user-001',
+          documentsIds: 'doc-001',
+        },
+        request,
+      );
 
       expect(result.id).toBe(mockShipment.id);
       expect(result.productId).toBe('prod-001');
@@ -148,12 +153,15 @@ describe('ChemicalShipmentController', () => {
       );
 
       await expect(
-        controller.createChemicalShipment({
-          productId: '',
-          quantityProduct: 100,
-          responsibleUserId: 'user-001',
-          documentsIds: 'doc-001',
-        }),
+        controller.createChemicalShipment(
+          {
+            productId: '',
+            quantityProduct: 100,
+            responsibleUserId: 'user-001',
+            documentsIds: 'doc-001',
+          },
+          request,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -163,12 +171,15 @@ describe('ChemicalShipmentController', () => {
       );
 
       await expect(
-        controller.createChemicalShipment({
-          productId: 'prod-001',
-          quantityProduct: 100,
-          responsibleUserId: 'user-inexistente',
-          documentsIds: 'doc-001',
-        }),
+        controller.createChemicalShipment(
+          {
+            productId: 'prod-001',
+            quantityProduct: 100,
+            responsibleUserId: 'user-inexistente',
+            documentsIds: 'doc-001',
+          },
+          request,
+        ),
       ).rejects.toThrow(ResourceNotFoundError);
     });
 
@@ -178,12 +189,15 @@ describe('ChemicalShipmentController', () => {
       );
 
       await expect(
-        controller.createChemicalShipment({
-          productId: 'prod-001',
-          responsibleUserId: 'user-001',
-          documentsIds: 'doc-001',
-          quantityProduct: 1000,
-        }),
+        controller.createChemicalShipment(
+          {
+            productId: 'prod-001',
+            responsibleUserId: 'user-001',
+            documentsIds: 'doc-001',
+            quantityProduct: 1000,
+          },
+          request,
+        ),
       ).rejects.toThrow(InternalServerErrorException);
     });
   });
@@ -279,11 +293,15 @@ describe('ChemicalShipmentController', () => {
     it('deve atualizar a carga química com sucesso', async () => {
       updateUseCase.execute.mockResolvedValue(mockShipment);
 
-      const result = await controller.updateChemicalShipment(mockShipment.id, {
-        productId: 'prod-001',
-        responsibleUserId: 'user-001',
-        documentsIds: 'doc-001',
-      });
+      const result = await controller.updateChemicalShipment(
+        mockShipment.id,
+        {
+          productId: 'prod-001',
+          responsibleUserId: 'user-001',
+          documentsIds: 'doc-001',
+        },
+        request,
+      );
 
       expect(result.id).toBe(mockShipment.id);
     });
@@ -294,11 +312,15 @@ describe('ChemicalShipmentController', () => {
       );
 
       await expect(
-        controller.updateChemicalShipment(mockShipment.id, {
-          productId: '',
-          responsibleUserId: 'user-001',
-          documentsIds: 'doc-001',
-        }),
+        controller.updateChemicalShipment(
+          mockShipment.id,
+          {
+            productId: '',
+            responsibleUserId: 'user-001',
+            documentsIds: 'doc-001',
+          },
+          request,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -308,9 +330,13 @@ describe('ChemicalShipmentController', () => {
       );
 
       await expect(
-        controller.updateChemicalShipment(mockShipment.id, {
-          responsibleUserId: 'user-inexistente',
-        }),
+        controller.updateChemicalShipment(
+          mockShipment.id,
+          {
+            responsibleUserId: 'user-inexistente',
+          },
+          request,
+        ),
       ).rejects.toThrow(ResourceNotFoundError);
     });
 
@@ -320,11 +346,15 @@ describe('ChemicalShipmentController', () => {
       );
 
       await expect(
-        controller.updateChemicalShipment(mockShipment.id, {
-          productId: 'prod-001',
-          responsibleUserId: 'user-001',
-          documentsIds: 'doc-001',
-        }),
+        controller.updateChemicalShipment(
+          mockShipment.id,
+          {
+            productId: 'prod-001',
+            responsibleUserId: 'user-001',
+            documentsIds: 'doc-001',
+          },
+          request,
+        ),
       ).rejects.toThrow(InternalServerErrorException);
     });
   });
@@ -333,7 +363,10 @@ describe('ChemicalShipmentController', () => {
     it('deve deletar a carga química com sucesso', async () => {
       deleteUseCase.execute.mockResolvedValue();
 
-      const result = await controller.deleteChemicalShipment(mockShipment.id);
+      const result = await controller.deleteChemicalShipment(
+        mockShipment.id,
+        request,
+      );
 
       expect(result).toBeUndefined();
     });
@@ -344,7 +377,7 @@ describe('ChemicalShipmentController', () => {
       );
 
       await expect(
-        controller.deleteChemicalShipment(mockShipment.id),
+        controller.deleteChemicalShipment(mockShipment.id, request),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -354,7 +387,7 @@ describe('ChemicalShipmentController', () => {
       );
 
       await expect(
-        controller.deleteChemicalShipment(mockShipment.id),
+        controller.deleteChemicalShipment(mockShipment.id, request),
       ).rejects.toThrow(InternalServerErrorException);
     });
   });

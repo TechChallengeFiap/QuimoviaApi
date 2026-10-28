@@ -37,6 +37,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
           id: document.id,
           shipmentId: document.shipmentId,
           shipperId: document.shipperId,
+          responsibleUserId: document.responsibleUserId,
           compositionVersion: document.compositionVersion,
           attachments: {
             create: document.attachments.map((attachment) =>
@@ -56,7 +57,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
           'Já existe documentação cadastrada para esta carga.',
         );
       }
-      throw error;
+      return this.rethrowWriteError(error, document.id);
     }
   }
 
@@ -72,6 +73,7 @@ export class PrismaShipmentDocumentRepository implements ShipmentDocumentReposit
         },
         data: {
           revision: { increment: 1 },
+          responsibleUserId: document.responsibleUserId,
           attachments: {
             upsert: document.attachments.map((attachment) => ({
               where: { id: attachment.id },

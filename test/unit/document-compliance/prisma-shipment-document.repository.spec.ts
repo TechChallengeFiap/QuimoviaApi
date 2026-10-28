@@ -97,6 +97,7 @@ describe('PrismaShipmentDocumentRepository', () => {
         },
         data: {
           revision: { increment: 1 },
+          responsibleUserId: document.responsibleUserId,
           attachments: {
             upsert: document.attachments.map((attachment) => ({
               where: { id: attachment.id },
@@ -207,6 +208,45 @@ describe('PrismaShipmentDocumentRepository', () => {
           attachments: { create: record.attachments },
         }),
       }),
+    );
+  });
+
+  it('persiste apenas o identificador do responsável na criação e atualização', async () => {
+    document = ShipmentDocument.create(
+      createShipmentDocumentData({
+        responsibleUserId: 'bb113c8c-b2bf-49b5-8d6b-b456c49aca5d',
+      }),
+    );
+    delegate.create.mockResolvedValue(persistedRecord());
+    delegate.update.mockResolvedValue(persistedRecord());
+    await repository.create(document);
+    await repository.update(document);
+    for (const operation of ['create', 'update'] as const) {
+      expect(delegate[operation]).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            responsibleUserId: document.responsibleUserId,
+          }),
+        }),
+      );
+    }
+  });
+
+  it('consulta documentos sem acessar tabelas de outros contextos', async () => {
+    delegate.findUnique.mockResolvedValue(persistedRecord());
+    delegate.findMany.mockResolvedValue([persistedRecord()]);
+    delegate.count.mockResolvedValue(1);
+    await repository.findById(document.id);
+    await repository.findByShipmentId(document.shipmentId);
+    await repository.list({ page: 1, pageSize: 20 });
+    const include = {
+      attachments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+    };
+    expect(delegate.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ include }),
+    );
+    expect(delegate.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ include }),
     );
   });
 });

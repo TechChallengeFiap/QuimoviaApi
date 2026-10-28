@@ -159,9 +159,14 @@ describe('ChemicalShipmentController (e2e)', () => {
 
     return response.body as {
       id: string;
+      code: string;
       productId: string;
       responsibleUserId: string;
       quantityProduct: number;
+      unit: string;
+      origin: string;
+      destination: string;
+      entryDate: string;
       documentsIds: string;
       status: StatusShipment;
       createdAt: string;
@@ -477,6 +482,36 @@ describe('ChemicalShipmentController (e2e)', () => {
   });
 
   describe('Ciclo de Vida da Carga e Transições de Status', () => {
+    it('libera a carga com documentação e responsável cadastrados pela API', async () => {
+      const shipment = await createValidShipment();
+      const document = await request(app.getHttpServer())
+        .post('/shipment-documents')
+        .send({
+          shipmentId: shipment.id,
+          shipperId: responsibleUser.id,
+          responsibleUserId: responsibleUser.id,
+          compositionVersion: 1,
+          attachments: [createAttachmentData({ expiresAt: null })],
+        })
+        .expect(201);
+      expect(document.body.responsibleUser).toEqual({
+        id: responsibleUser.id,
+        name: responsibleUser.name,
+      });
+
+      for (const status of [StatusShipment.ANALYZING, StatusShipment.INSPECTION]) {
+        await request(app.getHttpServer())
+          .patch(`/chemical-shipment/${shipment.id}/status`)
+          .send({ status })
+          .expect(200);
+      }
+      const released = await request(app.getHttpServer())
+        .patch(`/chemical-shipment/${shipment.id}/release`)
+        .send({})
+        .expect(200);
+      expect(released.body.status).toBe(StatusShipment.APPROVED);
+    });
+
     it('executa o fluxo completo do edital: Registrada → Em análise → Em inspeção → Liberada → Em movimentação → Finalizada', async () => {
       const created = await createValidShipment();
       const patch = (endpoint: string, body?: object) =>

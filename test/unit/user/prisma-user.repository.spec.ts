@@ -58,6 +58,18 @@ describe('PrismaUserRepository', () => {
     await expect(repository.registerLogin(loggedInUser())).resolves.toBe(false);
   });
 
+  it('busca usuários em lote e exclui registros com exclusão lógica', async () => {
+    const user = loggedInUser();
+    prisma.user.findMany.mockResolvedValue([
+      { ...user.toObject(), isDeleted: false },
+    ]);
+    const found = await repository.findByIds([user.id]);
+    expect(found.map((item) => item.toObject())).toEqual([user.toObject()]);
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { id: { in: [user.id] }, isDeleted: false },
+    });
+  });
+
   describe('exclusão lógica', () => {
     const record = {
       id: 'user-001',

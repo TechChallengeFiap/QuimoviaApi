@@ -7,6 +7,7 @@ import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
 import { ShipmentDocumentRepositoryMock } from '../../mocks/shipment-document-repository.mock.js';
 import { UserRepositoryMock } from '../../mocks/user-repository.mock.js';
+import { UserDirectoryMock } from '../../mocks/user-directory.mock.js';
 import { AuditLogRecorderMock } from '../../mocks/audit-log-recorder.mock.js';
 import { AuditedEntity } from '@/modules/audit-log/domain/enums/audited-entity.enum.js';
 import { AuditAction } from '@/modules/audit-log/domain/enums/audit-action.enum.js';
@@ -31,7 +32,7 @@ describe('Document Compliance Audit Logging (unit)', () => {
         name: 'Embarcador Santos',
         email: 'santos@quimovia.com',
         passwordHash: 'hash',
-        role: UserRole.OPERATOR,
+        role: UserRole.PORT_OPERATOR,
       }),
     );
   });
@@ -39,7 +40,7 @@ describe('Document Compliance Audit Logging (unit)', () => {
   it('registra log ao cadastrar documentação de carga', async () => {
     const useCase = new CreateShipmentDocumentUseCase(
       documentsRepo,
-      usersRepo,
+      new UserDirectoryMock(usersRepo),
       auditLogs,
     );
 
@@ -67,7 +68,7 @@ describe('Document Compliance Audit Logging (unit)', () => {
 
     const useCase = new UpdateShipmentDocumentUseCase(
       documentsRepo,
-      usersRepo,
+      new UserDirectoryMock(usersRepo),
       auditLogs,
     );
 
@@ -102,7 +103,7 @@ describe('Document Compliance Audit Logging (unit)', () => {
 
     const useCase = new DeleteShipmentDocumentUseCase(
       documentsRepo,
-      usersRepo,
+      new UserDirectoryMock(usersRepo),
       auditLogs,
     );
 

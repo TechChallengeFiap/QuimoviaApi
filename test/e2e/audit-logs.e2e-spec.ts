@@ -71,7 +71,7 @@ describe('AuditLogsController (e2e)', () => {
         name: 'Operador Silva',
         email: 'operador@quimovia.com',
         passwordHash: 'hash:S3nhaForte!',
-        role: UserRole.OPERATOR,
+        role: UserRole.PORT_OPERATOR,
       }),
     );
 
@@ -90,10 +90,16 @@ describe('AuditLogsController (e2e)', () => {
 
   it('rejeita acesso de usuário não autenticado com 401', async () => {
     await request(app.getHttpServer()).get('/logs/users').expect(401);
-    await request(app.getHttpServer()).get('/logs/chemical-products').expect(401);
-    await request(app.getHttpServer()).get('/logs/chemical-shipments').expect(401);
+    await request(app.getHttpServer())
+      .get('/logs/chemical-products')
+      .expect(401);
+    await request(app.getHttpServer())
+      .get('/logs/chemical-shipments')
+      .expect(401);
     await request(app.getHttpServer()).get('/logs/inspections').expect(401);
-    await request(app.getHttpServer()).get('/logs/shipment-documents').expect(401);
+    await request(app.getHttpServer())
+      .get('/logs/shipment-documents')
+      .expect(401);
   });
 
   it('rejeita acesso de perfil sem privilégio de SYSTEM_ADMIN com 403', async () => {
@@ -144,7 +150,8 @@ describe('AuditLogsController (e2e)', () => {
         actorId: 'admin-1',
         actorName: 'Admin',
         action: AuditAction.STATUS_CHANGED,
-        description: 'Usuário "Admin" alterou o status do produto químico "prod-456" para INACTIVE',
+        description:
+          'Usuário "Admin" alterou o status do produto químico "prod-456" para INACTIVE',
       }),
     );
 
