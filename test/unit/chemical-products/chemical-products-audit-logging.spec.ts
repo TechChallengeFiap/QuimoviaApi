@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { CreateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/create-chemical-product.use-case.js';
 import { UpdateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/update-chemical-product.use-case.js';
-import { ChangeChemicalProductStatusUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/change-chemical-product-status.use-case.js';
+import { ActivateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/activate-chemical-product.use-case.js';
 import { DeleteChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/delete-chemical-product.use-case.js';
+import { RestoreChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/restore-chemical-product.use-case.js';
+import { LotRepositoryMock } from '../../mocks/lot-repository.mock.js';
 import { AddProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/add-product-document.use-case.js';
 import { UpdateProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/update-product-document.use-case.js';
 import { RemoveProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/remove-product-document.use-case.js';
@@ -114,16 +116,18 @@ describe('Chemical Products Audit Logging (unit)', () => {
       }),
     );
 
-    const useCase = new ChangeChemicalProductStatusUseCase(
+    const useCase = new ActivateChemicalProductUseCase(
       productsRepo,
       usersRepo,
       auditLogs,
     );
 
-    await useCase.execute(product.id, ProductStatus.ACTIVE, {
+    await useCase.execute(product.id, {
       id: 'op-1',
       name: 'Operador Silva',
     });
+
+    expect((await productsRepo.findById(product.id))?.status).toBe(ProductStatus.ACTIVE);
 
     expect(auditLogs.logs).toHaveLength(1);
     expect(auditLogs.logs[0]).toMatchObject({
@@ -149,6 +153,7 @@ describe('Chemical Products Audit Logging (unit)', () => {
 
     const useCase = new DeleteChemicalProductUseCase(
       productsRepo,
+      new LotRepositoryMock(),
       usersRepo,
       auditLogs,
     );
@@ -165,6 +170,16 @@ describe('Chemical Products Audit Logging (unit)', () => {
       action: AuditAction.DELETED,
     });
     expect(auditLogs.logs[0].description).toContain('Solvente X');
+
+    const restore = new RestoreChemicalProductUseCase(productsRepo, usersRepo, auditLogs);
+    await restore.execute(product.id, { id: responsibleUser.id, name: responsibleUser.name });
+
+    expect(auditLogs.logs).toHaveLength(2);
+    expect(auditLogs.logs[1]).toMatchObject({
+      entityId: product.id,
+      action: AuditAction.UPDATED,
+      details: { restored: true },
+    });
   });
 
   it('registra log ao adicionar, atualizar e remover documento do produto', async () => {

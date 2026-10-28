@@ -56,6 +56,26 @@ describe('ChemicalProduct', () => {
     expect(product.responsibleUserId).toBe('user-002');
   });
 
+  it('exclusão lógica: marca, sai de operação e pode ser desfeita', () => {
+    const product = createValidProduct({ status: ProductStatus.ACTIVE });
+    expect(product.isDeleted()).toBe(false);
+    expect(() => product.restoreFromDeletion()).toThrow(BusinessRuleError);
+
+    const at = new Date('2026-10-28T12:00:00Z');
+    product.markAsDeleted(at);
+
+    expect(product.isDeleted()).toBe(true);
+    expect(product.deletedAt).toEqual(at);
+    expect(product.canBeUsedInOperations()).toBe(false);
+
+    product.markAsDeleted();
+    expect(product.deletedAt).toEqual(at);
+
+    product.restoreFromDeletion();
+    expect(product.isDeleted()).toBe(false);
+    expect(product.canBeUsedInOperations()).toBe(true);
+  });
+
   it('trata nome comercial vazio como ausente', () => {
     expect(createValidProduct({ tradeName: '   ' }).tradeName).toBeNull();
     expect(createValidProduct({ tradeName: undefined }).tradeName).toBeNull();
