@@ -33,7 +33,10 @@ import {
   ApiTags,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
-import { ChangeChemicalProductStatusUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/change-chemical-product-status.use-case.js';
+import { ActivateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/activate-chemical-product.use-case.js';
+import { BlockChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/block-chemical-product.use-case.js';
+import { DeactivateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/deactivate-chemical-product.use-case.js';
+import { RestoreChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/restore-chemical-product.use-case.js';
 import { CreateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/create-chemical-product.use-case.js';
 import { DeleteChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/delete-chemical-product.use-case.js';
 import { FindChemicalProductByIdUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/find-chemical-product-by-id.use-case.js';
@@ -42,10 +45,7 @@ import { UpdateChemicalProductUseCase } from '@/modules/chemical-products/applic
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
 import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/product-risk-class.enum.js';
 import { ProductStatus } from '@/modules/chemical-products/domain/enums/product-status.enum.js';
-import {
-  ASSIGNABLE_PRODUCT_STATUSES,
-  ChangeChemicalProductStatusDto,
-} from '@/modules/chemical-products/presentation/dtos/change-chemical-product-status.dto.js';
+import { ApiStatusTransition } from '@/modules/chemical-products/presentation/decorators/api-status-transition.decorator.js';
 import { ChemicalProductPageResponseDto } from '@/modules/chemical-products/presentation/dtos/chemical-product-page-response.dto.js';
 import { ChemicalProductResponseDto } from '@/modules/chemical-products/presentation/dtos/chemical-product-response.dto.js';
 import { CreateChemicalProductDto } from '@/modules/chemical-products/presentation/dtos/create-chemical-product.dto.js';
@@ -90,10 +90,16 @@ export class ChemicalProductsController {
     private readonly findProductById: FindChemicalProductByIdUseCase,
     @Inject(UpdateChemicalProductUseCase)
     private readonly updateProduct: UpdateChemicalProductUseCase,
-    @Inject(ChangeChemicalProductStatusUseCase)
-    private readonly changeProductStatus: ChangeChemicalProductStatusUseCase,
+    @Inject(ActivateChemicalProductUseCase)
+    private readonly activateProduct: ActivateChemicalProductUseCase,
+    @Inject(DeactivateChemicalProductUseCase)
+    private readonly deactivateProduct: DeactivateChemicalProductUseCase,
+    @Inject(BlockChemicalProductUseCase)
+    private readonly blockProduct: BlockChemicalProductUseCase,
     @Inject(DeleteChemicalProductUseCase)
     private readonly deleteProduct: DeleteChemicalProductUseCase,
+    @Inject(RestoreChemicalProductUseCase)
+    private readonly restoreProduct: RestoreChemicalProductUseCase,
   ) {}
 
   @Post()
@@ -417,109 +423,136 @@ export class ChemicalProductsController {
     }
   }
 
-  @Patch(':id/status')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Altera o status de um produto químico',
+  @Post(':id/activate')
+  @ApiStatusTransition({
+    summary: 'Ativa um produto químico',
     description:
-      'Permite ao Operador Portuário ativar, inativar ou bloquear um produto químico. UNDER_ANALYSIS é apenas o status inicial e não pode ser atribuído por aqui.',
+      'Coloca o produto em ACTIVE, liberando-o para uso em novas operações e para o recebimento de lotes (Operador Portuário). Um produto já ativo é devolvido sem alteração.',
+    responseType: ChemicalProductResponseDto,
+    params: [PRODUCT_ID_PARAM],
+    notFoundDescription: 'Produto químico não encontrado.',
+    notFoundExample: PRODUCT_NOT_FOUND_EXAMPLE,
   })
-  @ApiParam(PRODUCT_ID_PARAM)
-  @ApiBody({
-    type: ChangeChemicalProductStatusDto,
-    description: `Novo status do produto. Valores aceitos: ${ASSIGNABLE_PRODUCT_STATUSES.join(', ')}.`,
-    examples: {
-      ativar: {
-        summary: 'Ativar o produto',
-        value: { status: ProductStatus.ACTIVE },
-      },
-      inativar: {
-        summary: 'Inativar o produto',
-        value: { status: ProductStatus.INACTIVE },
-      },
-      bloquear: {
-        summary: 'Bloquear o produto',
-        value: { status: ProductStatus.BLOCKED },
-      },
-    },
-  })
-  @ApiOkResponse({
-    description: 'Status do produto químico alterado com sucesso.',
-    type: ChemicalProductResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Status inválido ou não permitido.',
-    schema: {
-      example: {
-        message: ['status must be one of the following values: ACTIVE, INACTIVE, BLOCKED'],
-        error: 'Bad Request',
-        statusCode: 400,
-      },
-    },
-  })
-  @ApiNotFoundResponse({
-    description: 'Produto químico não encontrado.',
-    schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
-  })
-  @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar a alteração de status do produto químico.',
-  })
-  async changeStatus(
+  async activate(
     @Param('id') id: string,
-    @Body(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        expectedType: ChangeChemicalProductStatusDto,
-      }),
-    )
-    dto: ChangeChemicalProductStatusDto,
     @Req() req: AuthenticatedRequest,
   ): Promise<ChemicalProductResponseDto> {
     try {
-      const actor = req?.auth ? { id: req.auth.userId } : null;
-      const product = await this.changeProductStatus.execute(id, dto.status, actor);
+      const product = await this.activateProduct.execute(id, ChemicalProductsController.actorOf(req));
       return ChemicalProductResponseDto.fromEntity(product);
     } catch (error) {
-      this.handleError(error, `a alteração de status do produto químico com ID ${id}`);
+      this.handleError(error, `a ativação do produto químico com ID ${id}`);
+    }
+  }
+
+  @Post(':id/deactivate')
+  @ApiStatusTransition({
+    summary: 'Inativa um produto químico',
+    description:
+      'Coloca o produto em INACTIVE, impedindo seu uso em novas operações (Operador Portuário). Um produto já inativo é devolvido sem alteração.',
+    responseType: ChemicalProductResponseDto,
+    params: [PRODUCT_ID_PARAM],
+    notFoundDescription: 'Produto químico não encontrado.',
+    notFoundExample: PRODUCT_NOT_FOUND_EXAMPLE,
+  })
+  async deactivate(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ChemicalProductResponseDto> {
+    try {
+      const product = await this.deactivateProduct.execute(id, ChemicalProductsController.actorOf(req));
+      return ChemicalProductResponseDto.fromEntity(product);
+    } catch (error) {
+      this.handleError(error, `a inativação do produto químico com ID ${id}`);
+    }
+  }
+
+  @Post(':id/block')
+  @ApiStatusTransition({
+    summary: 'Bloqueia um produto químico',
+    description:
+      'Coloca o produto em BLOCKED, por exemplo por pendência legal ou de segurança (Operador Portuário). Um produto já bloqueado é devolvido sem alteração.',
+    responseType: ChemicalProductResponseDto,
+    params: [PRODUCT_ID_PARAM],
+    notFoundDescription: 'Produto químico não encontrado.',
+    notFoundExample: PRODUCT_NOT_FOUND_EXAMPLE,
+  })
+  async block(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ChemicalProductResponseDto> {
+    try {
+      const product = await this.blockProduct.execute(id, ChemicalProductsController.actorOf(req));
+      return ChemicalProductResponseDto.fromEntity(product);
+    } catch (error) {
+      this.handleError(error, `o bloqueio do produto químico com ID ${id}`);
     }
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Remove um produto químico',
-    description: 'Remove o produto químico pelo ID, junto com todos os documentos vinculados a ele.',
+    summary: 'Exclui um produto químico (exclusão lógica)',
+    description:
+      'Marca o produto como excluído (soft delete). O registro é preservado para não quebrar cargas químicas, lotes e históricos que o referenciam, mas deixa de aparecer nas buscas e listagens. Não é permitido quando há lotes em aberto. A exclusão pode ser desfeita em POST /chemical-products/{id}/restore.',
   })
   @ApiParam(PRODUCT_ID_PARAM)
-  @ApiNoContentResponse({ description: 'Produto químico removido com sucesso.' })
+  @ApiNoContentResponse({ description: 'Produto químico excluído com sucesso.' })
   @ApiNotFoundResponse({
     description: 'Produto químico não encontrado.',
     schema: { example: PRODUCT_NOT_FOUND_EXAMPLE },
   })
-  @ApiConflictResponse({
-    description: 'Produto químico possui cargas ou registros vinculados e não pode ser removido.',
+  @ApiUnprocessableEntityResponse({
+    description: 'O produto possui lotes em aberto.',
     schema: {
       example: {
-        message: 'Não é possível excluir o produto químico porque existem registros associados a ele.',
-        error: 'Conflict',
-        statusCode: 409,
+        message:
+          'Não é possível excluir um produto químico com lotes em aberto; conclua ou descarte os lotes antes.',
+        error: 'Unprocessable Entity',
+        statusCode: 422,
       },
     },
   })
   @ApiInternalServerErrorResponse({
-    description: 'Erro interno do servidor ao processar a remoção do produto químico.',
+    description: 'Erro interno do servidor ao processar a exclusão do produto químico.',
   })
   async remove(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ): Promise<void> {
     try {
-      const actor = req?.auth ? { id: req.auth.userId } : null;
-      await this.deleteProduct.execute(id, actor);
+      await this.deleteProduct.execute(id, ChemicalProductsController.actorOf(req));
     } catch (error) {
-      this.handleError(error, `a remoção do produto químico com ID ${id}`);
+      this.handleError(error, `a exclusão do produto químico com ID ${id}`);
     }
+  }
+
+  @Post(':id/restore')
+  @ApiStatusTransition({
+    summary: 'Restaura um produto químico excluído',
+    description:
+      'Desfaz a exclusão lógica e devolve o produto ao catálogo, com o mesmo status que tinha antes da exclusão.',
+    responseType: ChemicalProductResponseDto,
+    params: [PRODUCT_ID_PARAM],
+    notFoundDescription: 'Produto químico não encontrado.',
+    notFoundExample: PRODUCT_NOT_FOUND_EXAMPLE,
+    businessRuleExample: 'O produto químico não está excluído.',
+  })
+  async restore(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ChemicalProductResponseDto> {
+    try {
+      const product = await this.restoreProduct.execute(id, ChemicalProductsController.actorOf(req));
+      return ChemicalProductResponseDto.fromEntity(product);
+    } catch (error) {
+      this.handleError(error, `a restauração do produto químico com ID ${id}`);
+    }
+  }
+
+  /** Ator das ações para o log de auditoria: o usuário da sessão, quando a rota é autenticada. */
+  private static actorOf(req: AuthenticatedRequest | undefined) {
+    return req?.auth ? { id: req.auth.userId } : null;
   }
 
   /**

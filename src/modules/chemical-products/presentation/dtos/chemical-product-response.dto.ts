@@ -31,6 +31,13 @@ export class ChemicalProductResponseDto {
   @ApiProperty({ type: Date }) createdAt: Date;
   @ApiProperty({ type: Date }) updatedAt: Date;
 
+  @ApiProperty({
+    type: Date,
+    nullable: true,
+    description: 'Data da exclusão lógica; nulo para produtos ativos no catálogo.',
+  })
+  deletedAt: Date | null;
+
   private constructor(data: ChemicalProductResponseDto) {
     Object.assign(this, data);
   }
@@ -54,6 +61,7 @@ export class ChemicalProductResponseDto {
       ),
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
+      deletedAt: product.deletedAt,
     });
   }
 }
