@@ -23,6 +23,7 @@ import { OptionalAuthGuard } from '@/modules/user/infrastructure/auth/optional-a
 import {
   ApiBadRequestResponse,
   ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
@@ -99,10 +100,26 @@ export class ChemicalShipmentController {
     type: CreateChemicalShipmentDTO,
     description: 'Dados necessários para o cadastro da carga química.',
     examples: {
-      padrao: {
-        summary: 'Exemplo de payload válido',
+      completo: {
+        summary: 'Exemplo com todos os atributos do edital',
         description:
-          'Payload com dados mínimos obrigatórios para criar a carga química',
+          'Payload com código da carga, produto, quantidade, unidade, origem, destino, data de entrada, responsável e documentação',
+        value: {
+          code: 'CARGO-2026-001',
+          productId: 'prod-001',
+          quantityProduct: 1500,
+          unit: 'toneladas',
+          origin: 'Porto de Santos - Terminal Químico',
+          destination: 'Terminal Industrial Mauá',
+          entryDate: '2026-10-24T12:00:00.000Z',
+          responsibleUserId: 'user-001',
+          documentsIds: 'doc-001',
+        },
+      },
+      minimo: {
+        summary: 'Exemplo com campos mínimos (demais campos gerados com defaults)',
+        description:
+          'Payload mínimo: campos code, unit, origin, destination e entryDate assumem padrões do sistema',
         value: {
           productId: 'prod-001',
           quantityProduct: 100,
@@ -136,6 +153,17 @@ export class ChemicalShipmentController {
         message: 'Usuário não encontrado(a) para o identificador "user-001".',
         error: 'Not Found',
         statusCode: 404,
+      },
+    },
+  })
+  @ApiConflictResponse({
+    description: 'Já existe uma carga química cadastrada com o código fornecido.',
+    schema: {
+      example: {
+        message:
+          'Já existe uma carga química cadastrada com o código "CARGO-2026-001".',
+        error: 'Conflict',
+        statusCode: 409,
       },
     },
   })
@@ -317,12 +345,15 @@ export class ChemicalShipmentController {
     type: UpdateChemicalShipmentDto,
     description: 'Dados necessários para a atualização da carga química.',
     examples: {
-      padrão: {
-        summary: 'Exemplo de payload válido',
+      padrao: {
+        summary: 'Exemplo de payload de atualização válido',
         description:
-          'Payload com dados mínimos obrigatórios para atualizar a carga química',
+          'Payload atualizando quantidade, unidade de medida, origem, destino ou código da carga',
         value: {
-          quantityProduct: 150,
+          quantityProduct: 250,
+          unit: 'toneladas',
+          origin: 'Porto de Santos - Cais do Saboó',
+          destination: 'Terminal Químico de Cubatão',
           documentsIds: 'DOC-456',
         },
       },
@@ -363,6 +394,17 @@ export class ChemicalShipmentController {
         message: ['Carga química não encontrada.'],
         error: 'Not Found',
         statusCode: 404,
+      },
+    },
+  })
+  @ApiConflictResponse({
+    description: 'Já existe uma carga química cadastrada com o código fornecido.',
+    schema: {
+      example: {
+        message:
+          'Já existe uma carga química cadastrada com o código "CARGO-2026-001".',
+        error: 'Conflict',
+        statusCode: 409,
       },
     },
   })

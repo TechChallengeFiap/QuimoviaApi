@@ -12,6 +12,7 @@ import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
 import { StatusShipment } from '@/modules/chemical-shipment/domain/value-objects/chemical-shipment/status-shipment.vo.js';
 import {
   BusinessRuleError,
+  ConflictError,
   ResourceNotFoundError,
 } from '@/shared/domain/errors/domain.error.js';
 
@@ -162,6 +163,44 @@ describe('CreateChemicalShipmentUseCase', () => {
     } as any;
 
     await expect(useCase.execute(input)).rejects.toThrow(BusinessRuleError);
+  });
+
+  it('cria uma carga química com todos os campos adicionais do edital informados', async () => {
+    const entryDate = new Date('2026-10-24T12:00:00.000Z');
+    const input = {
+      productId: 'prod-001',
+      quantityProduct: 1500,
+      responsibleUserId: 'user-001',
+      documentsIds: 'doc-001',
+      code: 'CARGO-EDITAL-2026',
+      unit: 'toneladas',
+      origin: 'Porto de Santos - Terminal Químico',
+      destination: 'Terminal Industrial Mauá',
+      entryDate,
+    };
+
+    const chemicalShipment = await useCase.execute(input);
+
+    expect(chemicalShipment.code).toBe('CARGO-EDITAL-2026');
+    expect(chemicalShipment.quantityProduct).toBe(1500);
+    expect(chemicalShipment.unit).toBe('toneladas');
+    expect(chemicalShipment.origin).toBe('Porto de Santos - Terminal Químico');
+    expect(chemicalShipment.destination).toBe('Terminal Industrial Mauá');
+    expect(chemicalShipment.entryDate).toEqual(entryDate);
+  });
+
+  it('deve lançar ConflictError ao tentar criar carga com código já cadastrado', async () => {
+    const input = {
+      productId: 'prod-001',
+      quantityProduct: 100,
+      responsibleUserId: 'user-001',
+      documentsIds: 'doc-001',
+      code: 'CARGO-DUPLICATE-001',
+    };
+
+    await useCase.execute(input);
+
+    await expect(useCase.execute(input)).rejects.toThrow(ConflictError);
   });
 });
 

@@ -178,6 +178,28 @@ describe.each([false, true])(
         type: 'string',
         enum: Object.values(StatusShipment),
       });
+      expect(
+        document.components?.schemas?.CreateChemicalShipmentDTO,
+      ).toMatchObject({
+        properties: {
+          code: expect.anything(),
+          unit: expect.anything(),
+          origin: expect.anything(),
+          destination: expect.anything(),
+          entryDate: expect.anything(),
+        },
+      });
+      expect(
+        document.components?.schemas?.ChemicalShipmentResponseDto,
+      ).toMatchObject({
+        properties: {
+          code: expect.anything(),
+          unit: expect.anything(),
+          origin: expect.anything(),
+          destination: expect.anything(),
+          entryDate: expect.anything(),
+        },
+      });
     });
 
     async function createShipment() {
