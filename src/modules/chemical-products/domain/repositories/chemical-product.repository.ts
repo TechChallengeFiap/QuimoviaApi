@@ -19,19 +19,24 @@ export interface ChemicalProductPage {
   pageSize: number;
 }
 
+export interface FindChemicalProductOptions {
+  /** Inclui produtos excluídos logicamente. Por padrão eles são ignorados. */
+  includeDeleted?: boolean;
+}
+
 /**
  * Porta de persistência do agregado Produto Químico.
  *
  * O agregado é persistido por inteiro: `create` e `update` gravam o produto e
- * seus documentos. A camada de aplicação depende apenas desta interface; a
- * implementação concreta (Prisma) vive na camada de infraestrutura.
+ * seus documentos. A exclusão é lógica (deletedAt), feita pela entidade e
+ * persistida por `update`; por isso não há `remove`. As buscas e a listagem
+ * ignoram produtos excluídos, salvo quando `includeDeleted` é informado.
  */
 export interface ChemicalProductRepository {
   create(product: ChemicalProduct): Promise<ChemicalProduct>;
   update(product: ChemicalProduct): Promise<ChemicalProduct>;
-  remove(id: string): Promise<void>;
-  findById(id: string): Promise<ChemicalProduct | null>;
-  findByCode(code: string): Promise<ChemicalProduct | null>;
+  findById(id: string, options?: FindChemicalProductOptions): Promise<ChemicalProduct | null>;
+  findByCode(code: string, options?: FindChemicalProductOptions): Promise<ChemicalProduct | null>;
   list(filters: ChemicalProductSearchFilters): Promise<ChemicalProductPage>;
 }
 

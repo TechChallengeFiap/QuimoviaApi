@@ -10,7 +10,7 @@ import { CreateShipmentDocumentDto } from './create-shipment-document.dto.js';
 
 export class UpdateShipmentDocumentDto extends PickType(
   CreateShipmentDocumentDto,
-  ['attachments'] as const,
+  ['attachments', 'responsibleUserId'] as const,
 ) {
   @ApiPropertyOptional({
     type: [String],

@@ -14,6 +14,8 @@ import { PrismaSessionRepository } from '@/modules/user/infrastructure/persisten
 import { PrismaUserRepository } from '@/modules/user/infrastructure/persistence/prisma/prisma-user.repository.js';
 import { AuthModule } from '@/modules/user/auth.module.js';
 import { UsersController } from '@/modules/user/presentation/controllers/users.controller.js';
+import { USER_DIRECTORY } from '@/modules/user/public/user-directory.contract.js';
+import { UserDirectoryService } from '@/modules/user/application/services/user-directory.service.js';
 
 /**
  * Cadastro de usuários. Importa o AuthModule para proteger as rotas de
@@ -33,9 +35,15 @@ import { UsersController } from '@/modules/user/presentation/controllers/users.c
     ChangeUserRoleUseCase,
     DeleteUserUseCase,
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
+    { provide: USER_DIRECTORY, useClass: UserDirectoryService },
     { provide: SESSION_REPOSITORY, useClass: PrismaSessionRepository },
     { provide: PASSWORD_HASHER, useClass: ScryptPasswordHasher },
   ],
-  exports: [USER_REPOSITORY, SESSION_REPOSITORY, PASSWORD_HASHER],
+  exports: [
+    USER_DIRECTORY,
+    USER_REPOSITORY,
+    SESSION_REPOSITORY,
+    PASSWORD_HASHER,
+  ],
 })
 export class UserModule {}

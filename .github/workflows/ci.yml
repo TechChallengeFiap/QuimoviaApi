@@ -37,19 +37,22 @@ jobs:
       - name: 3. Geracao do Prisma Client
         run: npx prisma generate
 
-      - name: 4. Verificacao de Build e Compilacao
+      - name: 4. Verificacao de tipos TypeScript
+        run: npm run typecheck
+
+      - name: 5. Verificacao de Build e Compilacao
         run: npm run build
 
-      - name: 5. Execucao de Testes Unitarios
+      - name: 6. Execucao de Testes Unitarios
         run: npm test
 
-      - name: 6. Execucao de Testes E2E
+      - name: 7. Execucao de Testes E2E
         run: npm run test:e2e
 
-      - name: 7. Execucao de Cobertura de Codigo
+      - name: 8. Execucao de Cobertura de Codigo
         run: npm run test:cov
 
-      - name: 8. Upload do relatorio de cobertura
+      - name: 9. Upload do relatorio de cobertura
         if: always()
         uses: actions/upload-artifact@v4
         with:

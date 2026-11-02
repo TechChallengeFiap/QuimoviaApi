@@ -55,10 +55,15 @@ export class CreateChemicalProductUseCase {
     actor?: ChemicalProductActionActor | null,
   ): Promise<ChemicalProduct> {
     const code = input.code.trim().toUpperCase();
-    const existing = await this.products.findByCode(code);
+    /** O código é único no banco mesmo para excluídos, então a verificação os inclui. */
+    const existing = await this.products.findByCode(code, { includeDeleted: true });
 
     if (existing) {
-      throw new ConflictError(`Já existe um produto químico cadastrado com o código "${code}".`);
+      throw new ConflictError(
+        existing.isDeleted()
+          ? `Já existe um produto químico excluído com o código "${code}"; restaure-o em vez de cadastrar outro.`
+          : `Já existe um produto químico cadastrado com o código "${code}".`,
+      );
     }
 
     const responsibleUser = await this.users.findById(input.responsibleUserId);

@@ -166,6 +166,7 @@ model ShipmentDocument {
   id                 String                       @id @default(uuid())
   shipmentId         String                       @unique(map: "CargoDocument_cargoId_key") @map("cargoId")
   shipperId          String
+  responsibleUserId  String?
   compositionVersion Int
   status             ShipmentDocumentStatus       @default(PENDING)
   submittedAt        DateTime?
@@ -175,6 +176,7 @@ model ShipmentDocument {
   updatedAt          DateTime                     @updatedAt
 
   @@index([shipperId, status], map: "CargoDocument_shipperId_status_idx")
+  @@index([responsibleUserId])
   @@map("CargoDocument")
 }
 
@@ -245,8 +247,11 @@ model ChemicalProduct {
   shipments         ChemicalShipment[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
+  lots              Lot[]
+  deletedAt         DateTime?
 
   @@index([responsibleUserId])
+  @@index([deletedAt])
 }
 
 model ProductDocument {
@@ -352,4 +357,31 @@ model ShipmentDocumentLog {
 
   @@index([entityId, createdAt])
   @@index([actorId, createdAt])
+}
+
+enum LotStatus {
+  RECEIVED
+  UNDER_INSPECTION
+  AVAILABLE
+  RESERVED
+  IN_STORAGE
+  QUARANTINED
+  RELEASED
+  EXPIRED
+  DISPOSED
+}
+
+model Lot {
+  id                     String          @id @default(uuid())
+  chemicalProductId      String
+  chemicalProduct        ChemicalProduct @relation(fields: [chemicalProductId], references: [id])
+  lotNumber              String          @db.VarChar(60)
+  quantity               Decimal         @db.Decimal(14, 3)
+  status                 LotStatus       @default(RECEIVED)
+  reservedForOperationId String?         @db.VarChar(120)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  @@unique([chemicalProductId, lotNumber])
+  @@index([chemicalProductId, status])
 }

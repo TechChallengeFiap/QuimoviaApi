@@ -11,6 +11,10 @@ import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/chemical-products/domain/
 import { SHIPMENT_DOCUMENT_REPOSITORY } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
 import { ChemicalProductRepositoryMock } from '../mocks/chemical-product-repository.mock.js';
 import { ShipmentDocumentRepositoryMock } from '../mocks/shipment-document-repository.mock.js';
+import { UserModule } from '@/modules/user/user.module.js';
+import { USER_DIRECTORY } from '@/modules/user/public/index.js';
+import { UserDirectoryMock } from '../mocks/user-directory.mock.js';
+import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
 
 const documentPayload = {
@@ -68,6 +72,17 @@ describe('Document CRUD without design metadata', () => {
         { provide: CHEMICAL_PRODUCT_REPOSITORY, useValue: products },
       ],
     })
+      .overrideModule(UserModule)
+      .useModule({
+        module: class TestUserModule {},
+        providers: [
+          {
+            provide: USER_DIRECTORY,
+            useValue: new UserDirectoryMock(new UserRepositoryMock()),
+          },
+        ],
+        exports: [USER_DIRECTORY],
+      })
       .overrideProvider(SHIPMENT_DOCUMENT_REPOSITORY)
       .useValue(new ShipmentDocumentRepositoryMock())
       .compile();

@@ -1,7 +1,6 @@
 import { jest } from '@jest/globals';
 import { PrismaChemicalProductRepository } from '@/modules/chemical-products/infrastructure/persistence/prisma/prisma-chemical-product.repository.js';
 import type { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
-import { ConflictError } from '@/shared/domain/errors/domain.error.js';
 import { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
 import { ProductDocumentType } from '@/modules/chemical-products/domain/enums/product-document-type.enum.js';
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
@@ -14,8 +13,7 @@ function createPrismaFake() {
     chemicalProduct: {
       create: jest.fn<PrismaMethod>(),
       update: jest.fn<PrismaMethod>(),
-      delete: jest.fn<PrismaMethod>(),
-      findUnique: jest.fn<PrismaMethod>(),
+      findFirst: jest.fn<PrismaMethod>(),
       findMany: jest.fn<PrismaMethod>(),
       count: jest.fn<PrismaMethod>(),
     },
@@ -88,38 +86,60 @@ describe('PrismaChemicalProductRepository', () => {
     );
   });
 
-  describe('remove', () => {
-    it('remove o produto químico com sucesso', async () => {
-      prisma.chemicalProduct.delete.mockResolvedValueOnce({ id: 'prod-001' });
+  describe('exclusão lógica', () => {
+    it('as buscas ignoram produtos excluídos por padrão', async () => {
+      prisma.chemicalProduct.findFirst.mockResolvedValueOnce(null);
 
-      await expect(repository.remove('prod-001')).resolves.toBeUndefined();
-      expect(prisma.chemicalProduct.delete).toHaveBeenCalledWith({
-        where: { id: 'prod-001' },
+      await expect(repository.findById('prod-001')).resolves.toBeNull();
+      expect(prisma.chemicalProduct.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'prod-001', deletedAt: null } }),
+      );
+    });
+
+    it('includeDeleted remove o filtro de deletedAt da busca por código', async () => {
+      prisma.chemicalProduct.findFirst.mockResolvedValueOnce(null);
+
+      await repository.findByCode('PRODUCT-01', { includeDeleted: true });
+
+      expect(prisma.chemicalProduct.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { code: 'PRODUCT-01' } }),
+      );
+    });
+
+    it('a listagem só considera produtos não excluídos', async () => {
+      prisma.chemicalProduct.findMany.mockResolvedValueOnce([]);
+      prisma.chemicalProduct.count.mockResolvedValueOnce(0);
+
+      await repository.list({ page: 1, pageSize: 20 });
+
+      expect(prisma.chemicalProduct.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ deletedAt: null }) }),
+      );
+      expect(prisma.chemicalProduct.count).toHaveBeenCalledWith({
+        where: expect.objectContaining({ deletedAt: null }),
       });
     });
 
-    it('converte erro P2003 (violação de chave estrangeira) em ConflictError', async () => {
-      const p2003Error = Object.assign(
-        new Error('Foreign key constraint failed on the field: `productId`'),
-        { code: 'P2003' },
-      );
-      prisma.chemicalProduct.delete.mockRejectedValue(p2003Error);
+    it('a exclusão lógica é persistida pelo update, com deletedAt preenchido', async () => {
+      const product = ChemicalProduct.create({
+        code: 'PRODUCT-02',
+        technicalName: 'Amônia anidra',
+        unNumber: '1005',
+        riskClass: ProductRiskClass.GASES,
+        physicalState: ProductPhysicalState.GASEOUS,
+        responsibleUserId: 'user-reference',
+      });
+      const at = new Date('2026-10-28T12:00:00Z');
+      product.markAsDeleted(at);
+      prisma.chemicalProduct.update.mockResolvedValueOnce({ ...product.toObject(), documents: [] });
 
-      await expect(repository.remove('prod-001')).rejects.toThrow(
-        ConflictError,
-      );
-      await expect(repository.remove('prod-001')).rejects.toThrow(
-        'Não é possível excluir o produto químico porque existem registros associados a ele.',
-      );
-    });
+      const persisted = await repository.update(product);
 
-    it('repassa outros erros inesperados sem mascarar', async () => {
-      const unexpectedError = new Error('Database connection failed');
-      prisma.chemicalProduct.delete.mockRejectedValueOnce(unexpectedError);
-
-      await expect(repository.remove('prod-001')).rejects.toThrow(
-        unexpectedError,
+      expect(prisma.chemicalProduct.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ deletedAt: at }) }),
       );
+      expect(persisted.deletedAt).toEqual(at);
+      expect(persisted.isDeleted()).toBe(true);
     });
   });
 });

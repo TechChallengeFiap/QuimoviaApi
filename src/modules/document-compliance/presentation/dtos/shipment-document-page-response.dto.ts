@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { ShipmentDocumentPage } from '@/modules/document-compliance/domain/repositories/shipment-document.repository.js';
+import type { ShipmentDocumentDetailsPage } from '@/modules/document-compliance/application/dto/shipment-document-details.js';
 import { ShipmentDocumentResponseDto } from './shipment-document-response.dto.js';
 
 export class ShipmentDocumentPageResponseDto {
@@ -24,11 +24,13 @@ export class ShipmentDocumentPageResponseDto {
     Object.assign(this, data);
   }
 
-  static fromPage(page: ShipmentDocumentPage): ShipmentDocumentPageResponseDto {
+  static fromPage(
+    page: ShipmentDocumentDetailsPage,
+  ): ShipmentDocumentPageResponseDto {
     return new ShipmentDocumentPageResponseDto({
       ...page,
       items: page.items.map((document) =>
-        ShipmentDocumentResponseDto.fromEntity(document),
+        ShipmentDocumentResponseDto.fromDetails(document),
       ),
     });
   }

@@ -109,6 +109,8 @@ O projeto utiliza **MySQL** porque seus dados são estruturados e possuem relaci
 
 O produto químico reúne os dados de identificação e risco. A carga registra a operação vinculada a esse produto por `productId`, com quantidade e responsável técnico. Documentos e inspeções registram as evidências da operação.
 
+O contexto de produtos químicos também gerencia lotes, com dados de recebimento e transições próprias para inspeção, disponibilidade, reserva, armazenamento e descarte. A exclusão de produtos é lógica e pode ser revertida pela operação de restauração.
+
 A [modelagem de dados](./docs/modelagem-de-dados.md) descreve os campos, relacionamentos e registros de auditoria. O modelo implementado está no [`schema.prisma`](./prisma/schema.prisma), com alterações em [`prisma/migrations`](./prisma/migrations).
 
 ## 8. Configuração e execução
@@ -204,6 +206,7 @@ npm run start:dev
 | `npm run start:prod`  | Inicia a aplicação compilada.                |
 | `npm run start:debug` | Inicia em modo de depuração na porta `9229`. |
 | `npm run lint`        | Executa a análise estática.                  |
+| `npm run typecheck`   | Verifica os tipos TypeScript.                |
 | `npm run format`      | Formata os arquivos de código e testes.      |
 
 ## 9. Documentação da API e endpoints
@@ -217,15 +220,18 @@ Para usar as rotas protegidas, faça login em `POST /auth/login` com as credenci
 | Recurso                 | Rotas principais                                                                                                                                                     |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Autenticação            | `POST /auth/login` e `POST /auth/logout`.                                                                                                                            |
-| Produtos químicos       | `POST`, `GET` em `/chemical-products`; `GET`, `PATCH`, `DELETE` em `/:id`; `PATCH /:id/status`.                                                                      |
+| Produtos químicos       | `POST`, `GET` em `/chemical-products`; `GET`, `PATCH`, `DELETE` em `/:id`; `POST /:id/activate`, `/:id/deactivate`, `/:id/block` e `/:id/restore`.                   |
 | Documentos do produto   | `POST`, `GET` em `/chemical-products/:id/documents`; `GET`, `PATCH`, `DELETE` em `/:documentId`.                                                                     |
+| Lotes do produto        | `POST`, `GET` em `/chemical-products/:productId/lots`; `GET`, `PATCH` em `/:lotId`; ações de inspeção, reserva, armazenamento, liberação e descarte via `POST`.      |
 | Cargas químicas         | `POST`, `GET` em `/chemical-shipment`; `GET`, `PATCH`, `DELETE` em `/:id`; `PATCH /:id/status`, `/:id/release`, `/:id/block`, `/:id/cancel`; `GET /:id/transitions`. |
 | Inspeções               | `POST`, `GET` em `/inspections`; `GET`, `PATCH`, `DELETE` em `/:id`.                                                                                                 |
 | Documentação das cargas | `POST`, `GET` em `/shipment-documents`; `GET`, `PATCH`, `DELETE` em `/:id`.                                                                                          |
 | Usuários                | `POST`, `GET` em `/users`; `GET`, `PATCH`, `DELETE` em `/:id`; `POST /shippers` e `PATCH /:id/role`.                                                                 |
 | Auditoria               | `GET /logs/users`, `/logs/chemical-products`, `/logs/chemical-shipments`, `/logs/inspections` e `/logs/shipment-documents`.                                          |
 
-A [referência da API](./docs/api.md) detalha as operações, as permissões e os exemplos de uso.
+A documentação das cargas aceita um responsável técnico opcional (`responsibleUserId`), cuja existência é validada pela aplicação. As respostas incluem seu identificador e o resumo `responsibleUser` com nome e ID. Omitir o campo na atualização preserva o vínculo; se o usuário não estiver mais disponível, o resumo retorna `null` e o identificador histórico permanece.
+
+A [referência da API](./docs/api.md) detalha as operações, as permissões e os exemplos de uso. O Swagger apresenta as rotas e os contratos da versão em execução.
 
 ### 9.2. Controle de status das cargas
 
@@ -267,6 +273,9 @@ A suíte abrange domínio, casos de uso, repositórios, tratamento de erros e ro
 # Testes unitários
 npm test
 
+# Verificação de tipos TypeScript
+npm run typecheck
+
 # Testes HTTP (E2E)
 npm run test:e2e
 
@@ -276,7 +285,7 @@ npm run test:cov
 
 ## 11. Integração contínua
 
-O fluxo em [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) executa instalação de dependências, análise estática, geração do Prisma Client, compilação, testes unitários e E2E e publicação do relatório de cobertura.
+O fluxo em [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) executa instalação de dependências, análise estática, geração do Prisma Client, verificação de tipos, compilação, testes unitários e E2E e publicação do relatório de cobertura.
 
 É acionado por `push` ou `pull_request` para `main` e `develop`, além da execução manual por `workflow_dispatch`.
 

@@ -3,6 +3,7 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { CHEMICAL_PRODUCT_REPOSITORY } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
+import { LOT_REPOSITORY } from '@/modules/chemical-products/domain/repositories/lot.repository.js';
 import { ChemicalProductsModule } from '@/modules/chemical-products/chemical-products.module.js';
 import { User } from '@/modules/user/domain/entities/user.entity.js';
 import { UserRole } from '@/modules/user/domain/enums/user-role.enum.js';
@@ -11,6 +12,7 @@ import { USER_REPOSITORY } from '@/modules/user/domain/repositories/user.reposit
 import { AUTH_CONFIG } from '@/modules/user/infrastructure/auth/auth.config.js';
 import { DomainExceptionFilter } from '@/shared/presentation/filters/domain-exception.filter.js';
 import { ChemicalProductRepositoryMock } from '../mocks/chemical-product-repository.mock.js';
+import { LotRepositoryMock } from '../mocks/lot-repository.mock.js';
 import { SessionRepositoryMock } from '../mocks/session-repository.mock.js';
 import { UserRepositoryMock } from '../mocks/user-repository.mock.js';
 import { TEST_AUTH_CONFIG } from '../mocks/auth-config.mock.js';
@@ -42,6 +44,8 @@ describe('ChemicalProductsController (e2e)', () => {
     })
       .overrideProvider(CHEMICAL_PRODUCT_REPOSITORY)
       .useClass(ChemicalProductRepositoryMock)
+      .overrideProvider(LOT_REPOSITORY)
+      .useClass(LotRepositoryMock)
       .overrideProvider(AUTH_CONFIG)
       .useValue(TEST_AUTH_CONFIG)
       .overrideProvider(USER_REPOSITORY)
@@ -259,27 +263,37 @@ describe('ChemicalProductsController (e2e)', () => {
       .expect(400);
   });
 
-  it('altera o status do produto: ativar, inativar e bloquear', async () => {
+  it('ativa, inativa e bloqueia o produto por endpoints de ação', async () => {
     const created = await createProduct();
 
-    for (const status of ['ACTIVE', 'INACTIVE', 'BLOCKED']) {
+    const actions: Array<[string, string]> = [
+      ['activate', 'ACTIVE'],
+      ['deactivate', 'INACTIVE'],
+      ['block', 'BLOCKED'],
+      ['activate', 'ACTIVE'],
+    ];
+
+    for (const [action, status] of actions) {
       await request(app.getHttpServer())
-        .patch(`/chemical-products/${created.id}/status`)
-        .send({ status })
+        .post(`/chemical-products/${created.id}/${action}`)
         .expect(200)
         .expect(({ body }) => {
           expect(body.status).toBe(status);
         });
     }
+
+    await request(app.getHttpServer())
+      .post('/chemical-products/id-inexistente/block')
+      .expect(404);
   });
 
-  it('rejeita devolver o produto ao status EM ANÁLISE', async () => {
+  it('não existe mais o endpoint genérico de status', async () => {
     const created = await createProduct();
 
     await request(app.getHttpServer())
       .patch(`/chemical-products/${created.id}/status`)
-      .send({ status: 'UNDER_ANALYSIS' })
-      .expect(400);
+      .send({ status: 'ACTIVE' })
+      .expect(404);
   });
 
   it('vincula e desvincula documentos do produto', async () => {
@@ -305,7 +319,7 @@ describe('ChemicalProductsController (e2e)', () => {
       .expect(404);
   });
 
-  it('remove um produto e passa a retornar 404 nas buscas seguintes', async () => {
+  it('exclui logicamente um produto, reserva o código e permite restaurá-lo', async () => {
     const created = await createProduct();
 
     await request(app.getHttpServer())
@@ -314,34 +328,39 @@ describe('ChemicalProductsController (e2e)', () => {
     await request(app.getHttpServer())
       .get(`/chemical-products/${created.id}`)
       .expect(404);
+
+    const list = await request(app.getHttpServer())
+      .get('/chemical-products')
+      .expect(200);
+    expect(list.body.total).toBe(0);
+
+    await request(app.getHttpServer())
+      .post('/chemical-products')
+      .send({ ...validProduct, responsibleUserId: responsibleUser.id })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.message).toContain('excluído');
+      });
+
+    await request(app.getHttpServer())
+      .post(`/chemical-products/${created.id}/restore`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.deletedAt).toBeNull();
+        expect(body.code).toBe('H2SO4-98');
+      });
+
+    await request(app.getHttpServer())
+      .get(`/chemical-products/${created.id}`)
+      .expect(200);
+    await request(app.getHttpServer())
+      .post(`/chemical-products/${created.id}/restore`)
+      .expect(422);
   });
 
   it('retorna 404 ao remover um produto inexistente', async () => {
     await request(app.getHttpServer())
       .delete('/chemical-products/id-inexistente')
       .expect(404);
-  });
-
-  it('retorna 409 Conflict ao remover um produto com referências vinculadas', async () => {
-    const created = await createProduct();
-    const productRepo = app.get<ChemicalProductRepositoryMock>(CHEMICAL_PRODUCT_REPOSITORY);
-    const originalRemove = productRepo.remove.bind(productRepo);
-    productRepo.remove = async () => {
-      const { ConflictError } = await import('@/shared/domain/errors/domain.error.js');
-      throw new ConflictError(
-        'Não é possível excluir o produto químico porque existem registros associados a ele.',
-      );
-    };
-
-    try {
-      await request(app.getHttpServer())
-        .delete(`/chemical-products/${created.id}`)
-        .expect(409)
-        .expect(({ body }) => {
-          expect(body.message).toContain('existem registros associados');
-        });
-    } finally {
-      productRepo.remove = originalRemove;
-    }
   });
 });

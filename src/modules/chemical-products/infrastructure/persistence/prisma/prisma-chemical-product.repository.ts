@@ -3,6 +3,7 @@ import {
   ChemicalProductRepository,
   ChemicalProductSearchFilters,
   ChemicalProductPage,
+  FindChemicalProductOptions,
 } from '@/modules/chemical-products/domain/repositories/chemical-product.repository.js';
 import { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
 import { ProductDocument } from '@/modules/chemical-products/domain/entities/product-document.entity.js';
@@ -19,7 +20,6 @@ import type {
   UserModel,
 } from '@/generated/prisma/models.js';
 import { PrismaService } from '@/shared/infrastructure/persistence/prisma/prisma.service.js';
-import { ConflictError } from '@/shared/domain/errors/domain.error.js';
 
 type PersistedChemicalProduct = ChemicalProductModel & {
   documents: ProductDocumentModel[];
@@ -59,6 +59,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
   /**
    * Sincroniza o agregado inteiro em uma única operação: documentos que não
    * estão mais no agregado são removidos e os demais são criados ou mantidos.
+   * A exclusão lógica também passa por aqui, via deletedAt.
    */
   async update(product: ChemicalProduct): Promise<ChemicalProduct> {
     const documents = product.documents;
@@ -81,31 +82,24 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
     return PrismaChemicalProductRepository.toDomain(record);
   }
 
-  async remove(id: string): Promise<void> {
-    try {
-      await this.prisma.chemicalProduct.delete({ where: { id } });
-    } catch (error: any) {
-      if (error?.code === 'P2003') {
-        throw new ConflictError(
-          'Não é possível excluir o produto químico porque existem registros associados a ele.',
-        );
-      }
-      throw error;
-    }
-  }
-
-  async findById(id: string): Promise<ChemicalProduct | null> {
-    const record = await this.prisma.chemicalProduct.findUnique({
-      where: { id },
+  async findById(
+    id: string,
+    options: FindChemicalProductOptions = {},
+  ): Promise<ChemicalProduct | null> {
+    const record = await this.prisma.chemicalProduct.findFirst({
+      where: { id, ...PrismaChemicalProductRepository.deletedFilter(options) },
       include: WITH_RELATIONS,
     });
 
     return record ? PrismaChemicalProductRepository.toDomain(record) : null;
   }
 
-  async findByCode(code: string): Promise<ChemicalProduct | null> {
-    const record = await this.prisma.chemicalProduct.findUnique({
-      where: { code },
+  async findByCode(
+    code: string,
+    options: FindChemicalProductOptions = {},
+  ): Promise<ChemicalProduct | null> {
+    const record = await this.prisma.chemicalProduct.findFirst({
+      where: { code, ...PrismaChemicalProductRepository.deletedFilter(options) },
       include: WITH_RELATIONS,
     });
 
@@ -114,6 +108,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
 
   async list(filters: ChemicalProductSearchFilters): Promise<ChemicalProductPage> {
     const where = {
+      deletedAt: null,
       ...(filters.riskClass ? { riskClass: filters.riskClass } : {}),
       ...(filters.physicalState ? { physicalState: filters.physicalState } : {}),
       ...(filters.status ? { status: filters.status } : {}),
@@ -139,6 +134,10 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
     };
   }
 
+  private static deletedFilter(options: FindChemicalProductOptions) {
+    return options.includeDeleted ? {} : { deletedAt: null };
+  }
+
   private static toPersistence(product: ChemicalProduct) {
     return {
       code: product.code,
@@ -149,6 +148,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
       physicalState: product.physicalState,
       status: product.status,
       responsibleUserId: product.responsibleUserId,
+      deletedAt: product.deletedAt,
     };
   }
 
@@ -182,6 +182,7 @@ export class PrismaChemicalProductRepository implements ChemicalProductRepositor
       ),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
+      deletedAt: record.deletedAt,
     });
   }
 

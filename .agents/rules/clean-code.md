@@ -36,7 +36,7 @@ Sempre que encontrar qualquer inconsistência de clean code, code smells, duplic
 - **Filtros Globais**: O `DomainExceptionFilter` é responsável por capturar exceções de domínio e convertê-las nos status HTTP corretos:
   - `ResourceNotFoundError` -> 404 (Not Found)
   - `ConflictError` -> 409 (Conflict)
-  - `BusinessRuleError` -> 400 (Bad Request)
+  - `BusinessRuleError` -> 422 (Unprocessable Entity)
 - **Repositórios**: Convertem modelos de persistência (Prisma) para entidades de domínio e vice-versa.
 
 ---
