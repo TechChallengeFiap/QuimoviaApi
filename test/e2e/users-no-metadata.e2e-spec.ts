@@ -1,0 +1,201 @@
+import { jest } from '@jest/globals';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import request from 'supertest';
+import { disableDesignMetadata } from '../mocks/design-metadata.mock.js';
+
+/**
+ * Executa os endpoints como no `npm run start:dev` com tsx, que não emite a
+ * metadata `design:*`: a injeção de dependências, o filtro de erros e a
+ * validação passam a depender só do que está declarado explicitamente
+ * (@Inject e o DTO esperado pelo ValidationPipe).
+ *
+ * Assim como no main.ts, apenas o ValidationPipe é global; os erros de domínio
+ * são tratados pelo filtro declarado no controller.
+ */
+describe('UsersController sem a metadata de decorators (e2e)', () => {
+  let app: INestApplication;
+  let adminToken: string;
+
+  const payload = {
+    name: 'Maria Silva',
+    email: 'maria@quimovia.com',
+    password: 'S3nhaForte!',
+    role: 'PORT_OPERATOR',
+  };
+
+  beforeAll(async () => {
+    disableDesignMetadata();
+    // Os casos de uso registram os erros esperados (404, 409) no log.
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+    const { UserModule } = await import('@/modules/user/user.module.js');
+    const { USER_REPOSITORY } =
+      await import('@/modules/user/domain/repositories/user.repository.js');
+    const { PASSWORD_HASHER } =
+      await import('@/modules/user/application/contracts/password-hasher.contract.js');
+    const { SESSION_REPOSITORY } =
+      await import('@/modules/user/domain/repositories/session.repository.js');
+    const { UserRepositoryMock } =
+      await import('../mocks/user-repository.mock.js');
+    const { PasswordHasherMock } =
+      await import('../mocks/password-hasher.mock.js');
+    const { SessionRepositoryMock } =
+      await import('../mocks/session-repository.mock.js');
+    const { AUTH_CONFIG } =
+      await import('@/modules/user/infrastructure/auth/auth.config.js');
+    const { TEST_AUTH_CONFIG } = await import('../mocks/auth-config.mock.js');
+    const { loginAsAdmin } = await import('../mocks/admin-session.mock.js');
+
+    const moduleFixture = await Test.createTestingModule({
+      imports: [UserModule],
+    })
+      .overrideProvider(USER_REPOSITORY)
+      .useClass(UserRepositoryMock)
+      .overrideProvider(PASSWORD_HASHER)
+      .useClass(PasswordHasherMock)
+      .overrideProvider(SESSION_REPOSITORY)
+      .useClass(SessionRepositoryMock)
+      .overrideProvider(AUTH_CONFIG)
+      .useValue(TEST_AUTH_CONFIG)
+      .compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.init();
+
+    adminToken = await loginAsAdmin(app, app.get(USER_REPOSITORY));
+  });
+
+  afterAll(async () => {
+    jest.restoreAllMocks();
+    await app.close();
+  });
+
+  it('cadastra, busca, atualiza e remove um usuário', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(payload)
+      .expect(201);
+    const id = created.body.id as string;
+
+    await request(app.getHttpServer()).get(`/users/${id}`).expect(200);
+    await request(app.getHttpServer())
+      .patch(`/users/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'BLOCKED' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.status).toBe('BLOCKED');
+      });
+    await request(app.getHttpServer())
+      .patch(`/users/${id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'OPERATIONS_MANAGER' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.role).toBe('OPERATIONS_MANAGER');
+      });
+    await request(app.getHttpServer())
+      .delete(`/users/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(204);
+  });
+
+  it('traduz os erros de domínio para 404 e 409', async () => {
+    const duplicated = { ...payload, email: 'duplicado@quimovia.com' };
+
+    await request(app.getHttpServer()).get('/users/id-inexistente').expect(404);
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(duplicated)
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(duplicated)
+      .expect(409);
+  });
+
+  it('valida o corpo do cadastro, da atualização e da troca de perfil com o DTO esperado', async () => {
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...payload, password: '123' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...payload, email: 'extra@quimovia.com', admin: true })
+      .expect(400);
+
+    const created = await request(app.getHttpServer())
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...payload, email: 'status@quimovia.com' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'XPTO' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'SYSTEM_ADMIN' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'XPTO' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .patch(`/users/${created.body.id}/role`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({})
+      .expect(400);
+  });
+
+  it('cadastra o embarcador pela rota pública e valida o corpo com o RegisterShipperDto', async () => {
+    const shipper = {
+      name: 'Carlos Pereira',
+      email: 'carlos.pereira@transportadora.com',
+      password: 'S3nhaForte!',
+    };
+
+    await request(app.getHttpServer())
+      .post('/users/shippers')
+      .send({ ...shipper, role: 'SYSTEM_ADMIN' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post('/users/shippers')
+      .send(shipper)
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.role).toBe('SHIPPER_DRIVER');
+      });
+    await request(app.getHttpServer())
+      .post('/users/shippers')
+      .send(shipper)
+      .expect(409);
+  });
+
+  it('valida e converte os parâmetros da listagem', async () => {
+    await request(app.getHttpServer()).get('/users?page=0').expect(400);
+
+    const response = await request(app.getHttpServer())
+      .get('/users?role=PORT_OPERATOR&status=ACTIVE&page=1&pageSize=20')
+      .expect(200);
+
+    expect(response.body).toMatchObject({ page: 1, pageSize: 20 });
+  });
+});

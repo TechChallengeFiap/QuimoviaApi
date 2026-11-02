@@ -1,114 +1,305 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <img src="./QuimoviaLogo.jfif" alt="Quimovia Logo" width="260" style="border-radius: 16px;" />
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+<h1 align="center">Quimovia API</h1>
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+<p align="center">
+  <strong>Sistema de Gestão, Conformidade e Rastreabilidade de Cargas Químicas Portuárias</strong><br />
+  <em>Pós-Graduação em Full Stack Development — FIAP (Tech Challenge - Fase 2)</em>
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+<p align="center">
+  <a href="https://github.com/TechChallengeFiap/QuimoviaApi/actions/workflows/ci.yml">
+    <img src="https://github.com/TechChallengeFiap/QuimoviaApi/actions/workflows/ci.yml/badge.svg" alt="CI - Integração Contínua" />
+  </a>
+  <img src="https://img.shields.io/badge/version-0.0.1-blue.svg" alt="Versão do Projeto" />
+  <img src="https://img.shields.io/badge/Node.js-v24-339933?logo=node.js&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/NestJS-v12-E0234E?logo=nestjs&logoColor=white" alt="NestJS" />
+  <img src="https://img.shields.io/badge/TypeScript-v6-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Prisma-v7-2D3748?logo=prisma&logoColor=white" alt="Prisma ORM" />
+  <img src="https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white" alt="MySQL" />
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/OpenAPI-Swagger-85EA2D?logo=swagger&logoColor=black" alt="Swagger" />
+  <img src="https://img.shields.io/badge/Testes-Jest-C21325?logo=jest&logoColor=white" alt="Jest" />
+  <img src="https://img.shields.io/badge/Linter-Oxlint-cyan" alt="Oxlint" />
+  <img src="https://img.shields.io/badge/license-UNLICENSED-lightgrey.svg" alt="Licença" />
+</p>
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## Sumário
+
+- [1. Sobre o projeto](#1-sobre-o-projeto)
+- [2. Fluxo principal](#2-fluxo-principal)
+- [3. Objetivos](#3-objetivos)
+- [4. Escopo da Fase 2](#4-escopo-da-fase-2)
+- [5. Arquitetura e organização](#5-arquitetura-e-organização)
+- [6. Tecnologias utilizadas](#6-tecnologias-utilizadas)
+- [7. Modelagem e persistência de dados](#7-modelagem-e-persistência-de-dados)
+- [8. Configuração e execução](#8-configuração-e-execução)
+- [9. Documentação da API e endpoints](#9-documentação-da-api-e-endpoints)
+- [10. Qualidade de software e testes](#10-qualidade-de-software-e-testes)
+- [11. Integração contínua](#11-integração-contínua)
+- [12. Equipe](#12-equipe)
+
+---
+
+## 1. Sobre o projeto
+
+O **Quimovia** é um sistema de gestão de cargas químicas em um contexto portuário inspirado nas operações do Porto de Santos.
+
+O controle manual dessas informações dificulta a identificação de pendências, a atribuição de responsabilidades e a consulta ao histórico das cargas. A API organiza esses registros e aplica regras para controlar a liberação, o bloqueio e a movimentação.
+
+O projeto é desenvolvido para o Tech Challenge da pós-graduação em Full Stack Development da FIAP. Nesta Fase 2, o foco é a implementação do backend a partir da [modelagem e da arquitetura definidas na Fase 1](https://github.com/TechChallengeFiap/Quimovia).
+
+## 2. Fluxo principal
+
+O processo começa no cadastro dos produtos e acompanha a carga até sua movimentação e finalização:
+
+1. Cadastrar os produtos químicos e seus documentos.
+2. Registrar uma carga vinculada a um produto químico, informando a quantidade e o responsável técnico.
+3. Cadastrar a documentação da carga.
+4. Registrar as inspeções e seus resultados.
+5. Atualizar o status da carga para liberação, bloqueio ou cancelamento, conforme as regras de negócio.
+6. Registrar a movimentação e a finalização das cargas liberadas.
+
+## 3. Objetivos
+
+O projeto tem como objetivo centralizar as informações de produtos e cargas químicas, organizar a documentação e as inspeções e identificar os responsáveis pelas operações. O histórico de ações e alterações mantém a rastreabilidade das operações.
+
+A API deve oferecer documentação clara e uma estrutura que facilite testes, manutenção e evolução.
+
+## 4. Escopo da Fase 2
+
+Esta fase entrega a primeira API REST do projeto, com persistência de dados, regras de negócio e gerenciamento de usuários, perfis e sessões. A aplicação inclui registros de auditoria para acompanhar as ações realizadas.
+
+A entrega reúne:
+
+- documentação dos endpoints e exemplos de uso;
+- testes automatizados dos principais fluxos;
+- ambiente de execução com API e banco em containers;
+- automação da validação, compilação e execução dos testes.
+
+## 5. Arquitetura e organização
+
+O backend é um **monólito modular**, orientado por **Domain-Driven Design (DDD)** e **Clean Architecture**. Os módulos em `src/modules/` organizam produtos, cargas, documentação, inspeções, usuários e auditoria. Cada contexto separa domínio, casos de uso, persistência e apresentação HTTP.
+
+O NestJS foi escolhido por oferecer módulos e injeção de dependências, além de integração com validação, Swagger e testes. As decisões e a estrutura de pastas estão documentadas em [Fundamentos e decisões](./docs/arquitetura/01-fundamentos-e-decisoes.md) e [Organização e aplicação](./docs/arquitetura/02-organizacao-e-aplicacao.md).
+
+## 6. Tecnologias utilizadas
+
+| Área                 | Tecnologias adotadas no repositório                      |
+| -------------------- | -------------------------------------------------------- |
+| Execução             | Node.js 24, utilizado no Dockerfile e no CI.             |
+| Backend              | NestJS 12 e TypeScript 6.                                |
+| Persistência         | MySQL 8.4 e Prisma ORM 7, com `@prisma/adapter-mariadb`. |
+| Validação            | `class-validator` e `class-transformer`.                 |
+| Documentação da API  | Swagger/OpenAPI com `@nestjs/swagger`.                   |
+| Testes               | Jest e Supertest.                                        |
+| Análise e formatação | Oxlint e Prettier.                                       |
+| Containers           | Docker e Docker Compose.                                 |
+| Integração contínua  | GitHub Actions.                                          |
+
+As versões e dependências estão declaradas no [`package.json`](./package.json) e no lockfile.
+
+## 7. Modelagem e persistência de dados
+
+O projeto utiliza **MySQL** porque seus dados são estruturados e possuem relacionamentos entre produtos, cargas, usuários e inspeções. O modelo relacional permite consultas com índices e integridade referencial; o Prisma realiza o mapeamento e mantém as migrações versionadas.
+
+O produto químico reúne os dados de identificação e risco. A carga registra a operação vinculada a esse produto por `productId`, com quantidade e responsável técnico. Documentos e inspeções registram as evidências da operação.
+
+O contexto de produtos químicos também gerencia lotes, com dados de recebimento e transições próprias para inspeção, disponibilidade, reserva, armazenamento e descarte. A exclusão de produtos é lógica e pode ser revertida pela operação de restauração.
+
+A [modelagem de dados](./docs/modelagem-de-dados.md) descreve os campos, relacionamentos e registros de auditoria. O modelo implementado está no [`schema.prisma`](./prisma/schema.prisma), com alterações em [`prisma/migrations`](./prisma/migrations).
+
+## 8. Configuração e execução
+
+### 8.1. Pré-requisitos
+
+Antes de iniciar, certifique-se de ter instalado em sua máquina:
+
+- [Node.js](https://nodejs.org/) (versão `24.x`, utilizada no Docker e no CI);
+- [npm](https://www.npmjs.com/) (versão `>= 10.x`);
+- [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/) instalados e em execução.
+
+### 8.2. Variáveis de ambiente
+
+O projeto utiliza um arquivo `.env` para parametrizar credenciais, portas e conexão com o banco de dados. As configurações disponíveis são:
+
+| Variável                 | Descrição                                                                                                | Exemplo de configuração                                                                                    |
+| :----------------------- | :------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| `MYSQL_ROOT_PASSWORD`    | Senha do usuário root do container MySQL                                                                 | `root_secret`                                                                                              |
+| `MYSQL_USER`             | Usuário da aplicação no banco                                                                            | `quimovia_user`                                                                                            |
+| `MYSQL_PASSWORD`         | Senha do usuário da aplicação                                                                            | `quimovia_pass`                                                                                            |
+| `MYSQL_DATABASE`         | Nome do banco de dados                                                                                   | `quimovia_db`                                                                                              |
+| `DATABASE_URL`           | URL de conexão utilizada pelo Prisma ORM                                                                 | `mysql://quimovia_user:quimovia_pass@localhost:3333/quimovia_db?allowPublicKeyRetrieval=true&useSSL=false` |
+| `PORT`                   | Porta HTTP da API (opcional, padrão `3000`)                                                              | `3000`                                                                                                     |
+| `JWT_SECRET`             | Segredo que assina os tokens de acesso; obrigatório, com ao menos 32 caracteres (a API não sobe sem ele) | gerado com `openssl rand -base64 48`                                                                       |
+| `JWT_EXPIRES_IN_SECONDS` | Duração das sessões e dos tokens, em segundos (opcional, padrão `3600`)                                  | `31536000` (1 ano) no ambiente local; `3600` em produção                                                   |
+| `ADMIN_NAME`             | Nome do administrador inicial criado pelo seed (opcional)                                                | `Administrador do Sistema`                                                                                 |
+| `ADMIN_EMAIL`            | E-mail do administrador inicial criado pelo seed                                                         | `admin@quimovia.com`                                                                                       |
+| `ADMIN_PASSWORD`         | Senha do administrador inicial, com ao menos 8 caracteres                                                | `Quimovia@2026` (padrão do `.env.example`; troque fora do ambiente local)                                  |
+
+### 8.3. Execução com Docker ou ambiente local
+
+Clone o repositório:
 
 ```bash
-$ npm install
+git clone https://github.com/TechChallengeFiap/QuimoviaApi.git
+cd QuimoviaApi
 ```
 
-## Compile and run the project
+Copie `.env.example` para `.env`:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Linux / macOS
+cp .env.example .env
 ```
 
-## Run tests
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
+Preencha `MYSQL_*` e `JWT_SECRET` (ao menos 32 caracteres). Para gerar o segredo, use, por exemplo, `openssl rand -base64 48`. No modo local, substitua também os marcadores de `DATABASE_URL` pelas mesmas credenciais e pelo nome do banco; o arquivo `.env` não faz essa substituição automaticamente. O Docker Compose configura a conexão da API com o serviço `mysql` internamente.
+
+O exemplo define o administrador inicial `admin@quimovia.com`, senha `Quimovia@2026`, e duração de token de 1 ano para uso local e avaliação. Ajuste esses valores para outros ambientes. A duração efetiva do token segue `JWT_EXPIRES_IN_SECONDS`.
+
+#### Opção A: API e banco com Docker
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker compose up -d --build
+docker compose ps
 ```
 
-## Deployment
+O Compose inicia o MySQL, aguarda seu healthcheck e inicia a API após aplicar as migrações e executar o seed do administrador. O MySQL deve aparecer como `healthy` e a API como `running`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Para acompanhar a inicialização, use `docker compose logs -f api`. Para parar os serviços:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+docker compose down
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+#### Opção B: banco no Docker e API local
 
-## Observability
+Com o `.env` configurado para `localhost:3333`, execute:
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+```bash
+npm install
+docker compose up -d mysql
+npm run migrate:generate
+npm run migrate:deploy
+npm run migrate:seed
+npm run start:dev
+```
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+`migrate:deploy` aplica as migrações versionadas. Use `npm run migrate:dev` ao desenvolver uma alteração no schema e criar uma nova migração. O seed não altera uma conta cujo e-mail já esteja cadastrado.
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+---
 
-## Resources
+### 8.4. Outros comandos
 
-Check out a few resources that may come in handy when working with NestJS:
+| Comando               | Finalidade                                   |
+| --------------------- | -------------------------------------------- |
+| `npm run build`       | Compila a aplicação em `dist/`.              |
+| `npm run start:prod`  | Inicia a aplicação compilada.                |
+| `npm run start:debug` | Inicia em modo de depuração na porta `9229`. |
+| `npm run lint`        | Executa a análise estática.                  |
+| `npm run typecheck`   | Verifica os tipos TypeScript.                |
+| `npm run format`      | Formata os arquivos de código e testes.      |
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## 9. Documentação da API e endpoints
 
-## Support
+### 9.1. Acesso e recursos
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Com a aplicação em execução, acesse o [Swagger](http://localhost:3000/api), que apresenta os parâmetros, exemplos de requisição e resposta e códigos de erro. A porta padrão da API é `3000`, configurável por `PORT`.
 
-## Stay in touch
+Para usar as rotas protegidas, faça login em `POST /auth/login` com as credenciais do administrador definidas no `.env` e informe o `accessToken` em **Authorize**. A sessão permanece válida até expirar ou ser encerrada.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+| Recurso                 | Rotas principais                                                                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Autenticação            | `POST /auth/login` e `POST /auth/logout`.                                                                                                                            |
+| Produtos químicos       | `POST`, `GET` em `/chemical-products`; `GET`, `PATCH`, `DELETE` em `/:id`; `POST /:id/activate`, `/:id/deactivate`, `/:id/block` e `/:id/restore`.                   |
+| Documentos do produto   | `POST`, `GET` em `/chemical-products/:id/documents`; `GET`, `PATCH`, `DELETE` em `/:documentId`.                                                                     |
+| Lotes do produto        | `POST`, `GET` em `/chemical-products/:productId/lots`; `GET`, `PATCH` em `/:lotId`; ações de inspeção, reserva, armazenamento, liberação e descarte via `POST`.      |
+| Cargas químicas         | `POST`, `GET` em `/chemical-shipment`; `GET`, `PATCH`, `DELETE` em `/:id`; `PATCH /:id/status`, `/:id/release`, `/:id/block`, `/:id/cancel`; `GET /:id/transitions`. |
+| Inspeções               | `POST`, `GET` em `/inspections`; `GET`, `PATCH`, `DELETE` em `/:id`.                                                                                                 |
+| Documentação das cargas | `POST`, `GET` em `/shipment-documents`; `GET`, `PATCH`, `DELETE` em `/:id`.                                                                                          |
+| Usuários                | `POST`, `GET` em `/users`; `GET`, `PATCH`, `DELETE` em `/:id`; `POST /shippers` e `PATCH /:id/role`.                                                                 |
+| Auditoria               | `GET /logs/users`, `/logs/chemical-products`, `/logs/chemical-shipments`, `/logs/inspections` e `/logs/shipment-documents`.                                          |
 
-## License
+A documentação das cargas aceita um responsável técnico opcional (`responsibleUserId`), cuja existência é validada pela aplicação. As respostas incluem seu identificador e o resumo `responsibleUser` com nome e ID. Omitir o campo na atualização preserva o vínculo; se o usuário não estiver mais disponível, o resumo retorna `null` e o identificador histórico permanece.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+A [referência da API](./docs/api.md) detalha as operações, as permissões e os exemplos de uso. O Swagger apresenta as rotas e os contratos da versão em execução.
+
+### 9.2. Controle de status das cargas
+
+Novas cargas exigem produto ativo, quantidade maior que zero e responsável existente. Elas começam em `REGISTERED` e seguem as transições abaixo:
+
+```mermaid
+stateDiagram-v2
+  state "Registrada" as REGISTERED
+  state "Em análise" as ANALYZING
+  state "Em inspeção" as INSPECTION
+  state "Liberada" as APPROVED
+  state "Bloqueada" as REPROVED
+  state "Em movimentação" as IN_TRANSIT
+  state "Finalizada" as COMPLETED
+  state "Cancelada" as CANCELLED
+  [*] --> REGISTERED : Cadastro da carga
+  REGISTERED --> ANALYZING : Iniciar análise
+  ANALYZING --> INSPECTION : Enviar para inspeção
+  INSPECTION --> APPROVED : Liberar
+  INSPECTION --> REPROVED : Bloquear carga
+  APPROVED --> IN_TRANSIT : Iniciar movimentação
+  IN_TRANSIT --> COMPLETED : Finalizar carga
+  REGISTERED --> CANCELLED : Cancelar
+  ANALYZING --> CANCELLED : Cancelar
+  INSPECTION --> CANCELLED : Cancelar
+  APPROVED --> CANCELLED : Cancelar
+  REPROVED --> CANCELLED : Cancelar
+  COMPLETED --> [*] : Estado Terminal
+  CANCELLED --> [*] : Estado Terminal
+```
+
+A liberação exige documentação vinculada à carga, não marcada como `NON_COMPLIANT`, com ao menos um anexo não removido e vigente. Os dados cadastrais só podem ser alterados em `REGISTERED` ou `ANALYZING`. Cargas finalizadas ou canceladas não permitem novas transições de status.
+
+## 10. Qualidade de software e testes
+
+A suíte abrange domínio, casos de uso, repositórios, tratamento de erros e rotas HTTP. Os cenários incluem cadastro de produtos e cargas, validações de entrada, transições de status, liberação documental, autenticação e permissões. Os testes HTTP utilizam dependências substituídas.
+
+```bash
+# Testes unitários
+npm test
+
+# Verificação de tipos TypeScript
+npm run typecheck
+
+# Testes HTTP (E2E)
+npm run test:e2e
+
+# Relatório de cobertura
+npm run test:cov
+```
+
+## 11. Integração contínua
+
+O fluxo em [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) executa instalação de dependências, análise estática, geração do Prisma Client, verificação de tipos, compilação, testes unitários e E2E e publicação do relatório de cobertura.
+
+É acionado por `push` ou `pull_request` para `main` e `develop`, além da execução manual por `workflow_dispatch`.
+
+## 12. Equipe
+
+| Nome                                     | RM         | GitHub                                       |
+| :--------------------------------------- | :--------- | :------------------------------------------- |
+| **Ygor Takashi Nishi**                   | RM: 375939 | [Perfil](https://github.com/TakashiNishii)   |
+| **Matheus Felicio Brazolin**             | RM: 375006 | [Perfil](https://github.com/MatheusBrazolin) |
+| **Paulo Henrique dos Santos Miliano**    | RM: 375284 | [Perfil](https://github.com/PauloMiliano)    |
+| **Letícia Gabrielle Videira dos Santos** | RM: 376263 | [Perfil](https://github.com/SantosLet)       |
+
+---
+
+<p align="center">
+  <sub>Quimovia API • FIAP Pós Tech • Tech Challenge Fase 2</sub>
+</p>

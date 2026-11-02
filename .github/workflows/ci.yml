@@ -1,0 +1,61 @@
+name: CI - Integracao Continua
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  validate-build-test:
+    name: Validacao, Build e Testes
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: 'npm'
+
+      - name: 1. Instalacao de dependencias
+        run: npm ci
+
+      - name: 2. Validacao basica do projeto (Linting)
+        run: npm run lint
+
+      - name: 3. Geracao do Prisma Client
+        run: npx prisma generate
+
+      - name: 4. Verificacao de tipos TypeScript
+        run: npm run typecheck
+
+      - name: 5. Verificacao de Build e Compilacao
+        run: npm run build
+
+      - name: 6. Execucao de Testes Unitarios
+        run: npm test
+
+      - name: 7. Execucao de Testes E2E
+        run: npm run test:e2e
+
+      - name: 8. Execucao de Cobertura de Codigo
+        run: npm run test:cov
+
+      - name: 9. Upload do relatorio de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore

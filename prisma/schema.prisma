@@ -1,0 +1,387 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum InspectionScope {
+  CARGO
+  CARGO_ITEM
+}
+
+enum InspectionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InspectionRequirement {
+  EXPIRATION_DATE
+  PACKAGING_INTEGRITY
+  NO_LEAKAGE
+  CORRECT_LABELING
+  TRANSPORT_CONDITIONS
+  SAFETY_EQUIPMENT
+}
+
+enum InspectionItemResult {
+  COMPLIANT
+  NON_COMPLIANT
+}
+
+model Inspection {
+  id                 String           @id @default(uuid())
+  cargoId            String
+  cargo              ChemicalShipment @relation(fields: [cargoId], references: [id])
+  compositionVersion Int
+  scope              InspectionScope
+  cargoItemId        String?
+  inspectorId        String
+  inspector          User             @relation(fields: [inspectorId], references: [id])
+  status             InspectionStatus @default(PENDING)
+  items              InspectionItem[]
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([cargoId])
+  @@index([inspectorId, status])
+}
+
+model InspectionItem {
+  id           String                @id @default(uuid())
+  inspectionId String
+  inspection   Inspection            @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  requirement  InspectionRequirement
+  result       InspectionItemResult?
+  observation  String?               @db.VarChar(500)
+
+  @@unique([inspectionId, requirement])
+}
+
+enum UserRole {
+  PORT_OPERATOR
+  SHIPPER_DRIVER
+  TECHNICAL_MANAGER
+  OPERATIONS_MANAGER
+  SYSTEM_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+model User {
+  id                String             @id @default(uuid())
+  name              String             @db.VarChar(120)
+  email             String             @unique @db.VarChar(180)
+  passwordHash      String             @db.VarChar(255)
+  role              UserRole
+  status            UserStatus         @default(ACTIVE)
+  lastLoginAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  isDeleted         Boolean            @default(false)
+  deletedAt         DateTime?
+  chemicalShipments ChemicalShipment[]
+  sessions          Session[]
+  chemicalProducts  ChemicalProduct[]
+  inspections       Inspection[]
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  endedAt   DateTime?
+
+  @@index([userId, endedAt])
+}
+
+enum StatusShipment {
+  REGISTERED
+  ANALYZING
+  INSPECTION
+  APPROVED
+  REPROVED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+model ChemicalShipment {
+  id                String          @id @default(uuid())
+  code              String          @unique @db.VarChar(60)
+  productId         String
+  product           ChemicalProduct @relation(fields: [productId], references: [id])
+  quantityProduct   Float           @db.Float
+  unit              String          @default("kg") @db.VarChar(20)
+  origin            String          @default("Porto de Santos") @db.VarChar(120)
+  destination       String          @default("Terminal Portuário") @db.VarChar(120)
+  entryDate         DateTime        @default(now())
+  status            StatusShipment  @default(REGISTERED)
+  responsibleUserId String
+  responsibleUser   User            @relation(fields: [responsibleUserId], references: [id])
+  documentsIds      String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+  inspections       Inspection[]
+
+  @@index([responsibleUserId])
+  @@index([status])
+}
+
+enum ShipmentDocumentStatus {
+  PENDING
+  UNDER_REVIEW
+  COMPLIANT
+  NON_COMPLIANT
+
+  @@map("CargoDocumentStatus")
+}
+
+enum DocumentType {
+  SAFETY_DATA_SHEET
+  CERTIFICATE
+  LICENSE
+  DECLARATION
+  OTHER
+}
+
+model ShipmentDocument {
+  id                 String                       @id @default(uuid())
+  shipmentId         String                       @unique(map: "CargoDocument_cargoId_key") @map("cargoId")
+  shipperId          String
+  responsibleUserId  String?
+  compositionVersion Int
+  status             ShipmentDocumentStatus       @default(PENDING)
+  submittedAt        DateTime?
+  revision           Int                          @default(0)
+  attachments        ShipmentDocumentAttachment[]
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@index([shipperId, status], map: "CargoDocument_shipperId_status_idx")
+  @@index([responsibleUserId])
+  @@map("CargoDocument")
+}
+
+model ShipmentDocumentAttachment {
+  id                   String           @id @default(uuid())
+  shipmentDocumentId   String           @map("cargoDocumentId")
+  shipmentDocument     ShipmentDocument @relation(fields: [shipmentDocumentId], references: [id], onDelete: Cascade, map: "CargoDocumentAttachment_cargoDocumentId_fkey")
+  name                 String           @db.VarChar(180)
+  type                 DocumentType
+  fileReference        String           @db.VarChar(1024)
+  scopes               Json
+  issuedAt             DateTime
+  expiresAt            DateTime?
+  replacesAttachmentId String?
+  removedAt            DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([shipmentDocumentId], map: "CargoDocumentAttachment_cargoDocumentId_idx")
+  @@map("CargoDocumentAttachment")
+}
+
+enum ProductRiskClass {
+  EXPLOSIVES
+  GASES
+  FLAMMABLE_LIQUIDS
+  FLAMMABLE_SOLIDS
+  OXIDIZING_SUBSTANCES
+  TOXIC_SUBSTANCES
+  RADIOACTIVE_MATERIALS
+  CORROSIVE_SUBSTANCES
+  MISCELLANEOUS_DANGEROUS_SUBSTANCES
+}
+
+enum ProductPhysicalState {
+  SOLID
+  LIQUID
+  GASEOUS
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  UNDER_ANALYSIS
+}
+
+enum ProductDocumentType {
+  SAFETY_DATA_SHEET
+  CERTIFICATE
+  ENVIRONMENTAL_LICENSE
+  TECHNICAL_REPORT
+  AUTHORIZATION
+}
+
+model ChemicalProduct {
+  id                String               @id @default(uuid())
+  code              String               @unique @db.VarChar(40)
+  technicalName     String               @db.VarChar(180)
+  tradeName         String?              @db.VarChar(180)
+  unNumber          String               @db.VarChar(4)
+  riskClass         ProductRiskClass
+  physicalState     ProductPhysicalState
+  status            ProductStatus        @default(UNDER_ANALYSIS)
+  responsibleUserId String
+  responsibleUser   User                 @relation(fields: [responsibleUserId], references: [id])
+  documents         ProductDocument[]
+  shipments         ChemicalShipment[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  lots              Lot[]
+  deletedAt         DateTime?
+
+  @@index([responsibleUserId])
+  @@index([deletedAt])
+}
+
+model ProductDocument {
+  id        String              @id @default(uuid())
+  productId String
+  product   ChemicalProduct     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      ProductDocumentType
+  number    String              @db.VarChar(80)
+  expiresAt DateTime?
+  filePath  String              @db.VarChar(500)
+  createdAt DateTime            @default(now())
+
+  @@index([productId])
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria: histórico das ações dos usuários, uma tabela por entidade.
+//
+// As tabelas não têm chave estrangeira de propósito: o registro precisa
+// sobreviver à remoção da entidade auditada e do próprio autor. Por isso o
+// nome do autor é gravado no momento da ação (actorName), junto da descrição
+// legível ("Maria Silva cadastrou o produto químico H2SO4-98").
+// ---------------------------------------------------------------------------
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
+  STATUS_CHANGED
+  ROLE_CHANGED
+  LOGGED_IN
+  LOGGED_OUT
+  DOCUMENT_ADDED
+  DOCUMENT_UPDATED
+  DOCUMENT_REMOVED
+}
+
+model UserLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model ChemicalProductLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model ChemicalShipmentLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model InspectionLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model ShipmentDocumentLog {
+  id          String      @id @default(uuid())
+  entityId    String
+  actorId     String
+  actorName   String      @db.VarChar(120)
+  action      AuditAction
+  description String      @db.VarChar(500)
+  details     Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+enum LotStatus {
+  RECEIVED
+  UNDER_INSPECTION
+  AVAILABLE
+  RESERVED
+  IN_STORAGE
+  QUARANTINED
+  RELEASED
+  EXPIRED
+  DISPOSED
+}
+
+model Lot {
+  id                     String          @id @default(uuid())
+  chemicalProductId      String
+  chemicalProduct        ChemicalProduct @relation(fields: [chemicalProductId], references: [id])
+  lotNumber              String          @db.VarChar(60)
+  quantity               Decimal         @db.Decimal(14, 3)
+  status                 LotStatus       @default(RECEIVED)
+  reservedForOperationId String?         @db.VarChar(120)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  @@unique([chemicalProductId, lotNumber])
+  @@index([chemicalProductId, status])
+}

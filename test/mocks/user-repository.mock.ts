@@ -1,0 +1,76 @@
+import type {
+  UserRepository,
+  UserSearchFilters,
+  UserPage,
+} from '@/modules/user/domain/repositories/user.repository.js';
+import type { User } from '@/modules/user/domain/entities/user.entity.js';
+import { UserStatus } from '@/modules/user/domain/enums/user-status.enum.js';
+
+/**
+ * Implementação em memória de UserRepository, para uso nos testes. Guarda
+ * também os usuários excluídos, que as buscas ignoram como no banco.
+ */
+export class UserRepositoryMock implements UserRepository {
+  private readonly users = new Map<string, User>();
+
+  private activeUsers(): User[] {
+    return [...this.users.values()].filter((user) => !user.isDeleted);
+  }
+
+  async create(user: User): Promise<User> {
+    this.users.set(user.id, user);
+    return user;
+  }
+
+  async update(user: User): Promise<User> {
+    this.users.set(user.id, user);
+    return user;
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return this.activeUsers().find((user) => user.id === id) ?? null;
+  }
+
+  async findByIds(ids: readonly string[]): Promise<User[]> {
+    const identifiers = new Set(ids);
+    return this.activeUsers().filter((user) => identifiers.has(user.id));
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.activeUsers().find((user) => user.email === email) ?? null;
+  }
+
+  async findByEmailIncludingDeleted(email: string): Promise<User | null> {
+    return (
+      [...this.users.values()].find((user) => user.email === email) ?? null
+    );
+  }
+
+  async registerLogin(user: User): Promise<boolean> {
+    const stored = this.users.get(user.id);
+
+    return stored?.status === UserStatus.ACTIVE && !stored.isDeleted;
+  }
+
+  async list(filters: UserSearchFilters): Promise<UserPage> {
+    let items = this.activeUsers();
+
+    if (filters.role) {
+      items = items.filter((user) => user.role === filters.role);
+    }
+
+    if (filters.status) {
+      items = items.filter((user) => user.status === filters.status);
+    }
+
+    const total = items.length;
+    const start = (filters.page - 1) * filters.pageSize;
+
+    return {
+      items: items.slice(start, start + filters.pageSize),
+      total,
+      page: filters.page,
+      pageSize: filters.pageSize,
+    };
+  }
+}
