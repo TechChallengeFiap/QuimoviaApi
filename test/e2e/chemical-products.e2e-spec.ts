@@ -287,11 +287,26 @@ describe('ChemicalProductsController (e2e)', () => {
       .expect(404);
   });
 
-  it('não existe mais o endpoint genérico de status', async () => {
+  it('altera o status do produto via PATCH /:id/status e rejeita status inválido', async () => {
     const created = await createProduct();
+
+    for (const status of ['ACTIVE', 'INACTIVE', 'BLOCKED', 'ACTIVE']) {
+      await request(app.getHttpServer())
+        .patch(`/chemical-products/${created.id}/status`)
+        .send({ status })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.status).toBe(status);
+        });
+    }
 
     await request(app.getHttpServer())
       .patch(`/chemical-products/${created.id}/status`)
+      .send({ status: 'UNDER_ANALYSIS' })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .patch('/chemical-products/id-inexistente/status')
       .send({ status: 'ACTIVE' })
       .expect(404);
   });

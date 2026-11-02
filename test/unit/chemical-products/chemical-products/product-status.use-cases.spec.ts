@@ -1,11 +1,15 @@
 import { ActivateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/activate-chemical-product.use-case.js';
 import { BlockChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/block-chemical-product.use-case.js';
+import { ChangeChemicalProductStatusUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/change-chemical-product-status.use-case.js';
 import { DeactivateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/deactivate-chemical-product.use-case.js';
 import { ChemicalProduct } from '@/modules/chemical-products/domain/entities/chemical-product.entity.js';
 import { ProductPhysicalState } from '@/modules/chemical-products/domain/enums/product-physical-state.enum.js';
 import { ProductRiskClass } from '@/modules/chemical-products/domain/enums/product-risk-class.enum.js';
 import { ProductStatus } from '@/modules/chemical-products/domain/enums/product-status.enum.js';
-import { ResourceNotFoundError } from '@/shared/domain/errors/domain.error.js';
+import {
+  BusinessRuleError,
+  ResourceNotFoundError,
+} from '@/shared/domain/errors/domain.error.js';
 import { ChemicalProductRepositoryMock } from '../../../mocks/chemical-product-repository.mock.js';
 
 describe('Ações de status do produto químico', () => {
@@ -13,12 +17,14 @@ describe('Ações de status do produto químico', () => {
   let activate: ActivateChemicalProductUseCase;
   let deactivate: DeactivateChemicalProductUseCase;
   let block: BlockChemicalProductUseCase;
+  let changeStatus: ChangeChemicalProductStatusUseCase;
 
   beforeEach(() => {
     products = new ChemicalProductRepositoryMock();
     activate = new ActivateChemicalProductUseCase(products);
     deactivate = new DeactivateChemicalProductUseCase(products);
     block = new BlockChemicalProductUseCase(products);
+    changeStatus = new ChangeChemicalProductStatusUseCase(products);
   });
 
   async function registerProduct(): Promise<ChemicalProduct> {
@@ -35,19 +41,49 @@ describe('Ações de status do produto químico', () => {
   }
 
   it('lançam erro quando o produto não existe', async () => {
-    await expect(activate.execute('id-inexistente')).rejects.toThrow(ResourceNotFoundError);
-    await expect(deactivate.execute('id-inexistente')).rejects.toThrow(ResourceNotFoundError);
-    await expect(block.execute('id-inexistente')).rejects.toThrow(ResourceNotFoundError);
+    await expect(activate.execute('id-inexistente')).rejects.toThrow(
+      ResourceNotFoundError,
+    );
+    await expect(deactivate.execute('id-inexistente')).rejects.toThrow(
+      ResourceNotFoundError,
+    );
+    await expect(block.execute('id-inexistente')).rejects.toThrow(
+      ResourceNotFoundError,
+    );
+    await expect(
+      changeStatus.execute('id-inexistente', ProductStatus.ACTIVE),
+    ).rejects.toThrow(ResourceNotFoundError);
   });
 
   it('ativa, inativa e bloqueia o produto, persistindo cada mudança', async () => {
     const product = await registerProduct();
 
-    expect((await activate.execute(product.id)).status).toBe(ProductStatus.ACTIVE);
-    expect((await products.findById(product.id))?.status).toBe(ProductStatus.ACTIVE);
+    expect((await activate.execute(product.id)).status).toBe(
+      ProductStatus.ACTIVE,
+    );
+    expect((await products.findById(product.id))?.status).toBe(
+      ProductStatus.ACTIVE,
+    );
 
-    expect((await deactivate.execute(product.id)).status).toBe(ProductStatus.INACTIVE);
-    expect((await block.execute(product.id)).status).toBe(ProductStatus.BLOCKED);
+    expect((await deactivate.execute(product.id)).status).toBe(
+      ProductStatus.INACTIVE,
+    );
+    expect((await block.execute(product.id)).status).toBe(
+      ProductStatus.BLOCKED,
+    );
+
+    expect(
+      (await changeStatus.execute(product.id, ProductStatus.ACTIVE)).status,
+    ).toBe(ProductStatus.ACTIVE);
+    expect(
+      (await changeStatus.execute(product.id, ProductStatus.INACTIVE)).status,
+    ).toBe(ProductStatus.INACTIVE);
+    expect(
+      (await changeStatus.execute(product.id, ProductStatus.BLOCKED)).status,
+    ).toBe(ProductStatus.BLOCKED);
+    await expect(
+      changeStatus.execute(product.id, ProductStatus.UNDER_ANALYSIS),
+    ).rejects.toThrow(BusinessRuleError);
   });
 
   it('é idempotente quando o produto já está no status pedido', async () => {

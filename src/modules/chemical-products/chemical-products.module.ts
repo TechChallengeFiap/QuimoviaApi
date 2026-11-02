@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ActivateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/activate-chemical-product.use-case.js';
 import { AddProductDocumentUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/add-product-document.use-case.js';
 import { BlockChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/block-chemical-product.use-case.js';
+import { ChangeChemicalProductStatusUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/change-chemical-product-status.use-case.js';
 import { CreateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/create-chemical-product.use-case.js';
 import { DeactivateChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/deactivate-chemical-product.use-case.js';
 import { DeleteChemicalProductUseCase } from '@/modules/chemical-products/application/use-cases/chemical-products/delete-chemical-product.use-case.js';
@@ -47,6 +48,7 @@ import { UserModule } from '@/modules/user/user.module.js';
     ListChemicalProductsUseCase,
     FindChemicalProductByIdUseCase,
     UpdateChemicalProductUseCase,
+    ChangeChemicalProductStatusUseCase,
     ActivateChemicalProductUseCase,
     DeactivateChemicalProductUseCase,
     BlockChemicalProductUseCase,
